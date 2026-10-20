@@ -18,6 +18,15 @@ mise exec -- pnpm data:prepare
 
 `data:prepare`はネットワークアクセスを必要とします。固定したrevisionのParquetから必要な列と先頭10,000行を取得し、`public/data/questions.jsonl`と帰属情報を生成します。出力SHA-256も照合します。データセット全体をブラウザへダウンロードする構成にはしません。生成データはGit追跡対象外です。詳細は[データの扱い](docs/data.md)を参照してください。
 
+同時に`public/data/documents.jsonl`を生成します。こちらは質問文だけを含むasearch CLI用入力です。本体のCLIを用意した後、新しい出力先へ索引を構築できます。
+
+```sh
+asearch-cli build public/data/documents.jsonl public/data/questions.asix
+asearch-cli search public/data/questions.asix '地理'
+```
+
+CLIの導入方法は[asearchのREADME](https://github.com/tkhshtsh0917/asearch#ビルド)を参照してください。既存ファイルへの上書きは拒否されます。バイナリ索引も質問文の派生データとしてCC BY-SA 4.0で扱い、出典のJSONL・帰属情報と一緒に配布します。
+
 本体のRustソース・照合実装・正規化実装はこのrepoへコピーしません。画面は、本体のcommit/versionとSHA-256を固定したWASM配布成果物を利用する予定です。npmへの公開を前提とせず、tarballを受け渡せます。
 
 ## 構成

@@ -1,7 +1,11 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { parquetReadObjects } from "hyparquet";
-import { questionsFromRows, serializeQuestions } from "./corpus.ts";
+import {
+  questionsFromRows,
+  serializeDocs,
+  serializeQuestions,
+} from "./corpus.ts";
 import { rangeFile } from "./range-file.ts";
 
 const root = new URL("../../", import.meta.url);
@@ -39,7 +43,8 @@ const rows = await parquetReadObjects({
   rowEnd: source.rowStart + source.rows,
 });
 if (rows.length !== source.rows) throw new Error("Dataset row count changed");
-const content = serializeQuestions(questionsFromRows(rows, source.rowStart));
+const questions = questionsFromRows(rows, source.rowStart);
+const content = serializeQuestions(questions);
 const sha256 = createHash("sha256").update(content).digest("hex");
 if (source.outputSha256 !== sha256) {
   throw new Error("Prepared questions do not match the pinned SHA-256");
@@ -49,6 +54,7 @@ await mkdir(output, { recursive: true });
 const temporary = new URL("questions.jsonl.tmp", output);
 await writeFile(temporary, content);
 await rename(temporary, new URL("questions.jsonl", output));
+await writeFile(new URL("documents.jsonl", output), serializeDocs(questions));
 await writeFile(
   new URL("attribution.json", output),
   `${JSON.stringify(

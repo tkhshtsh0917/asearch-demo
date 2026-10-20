@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { questionsFromRows, serializeQuestions } from "./corpus.ts";
+import {
+  questionsFromRows,
+  serializeDocs,
+  serializeQuestions,
+} from "./corpus.ts";
 
 const source = {
   passage_id: 5n,
@@ -22,6 +26,14 @@ test("physical row IDs distinguish questions from the same article and preserve 
     ],
   );
   assert.equal(questions[0]?.text, source.query);
+  const docs = serializeDocs(questions)
+    .trimEnd()
+    .split("\n")
+    .map((line) => JSON.parse(line));
+  assert.deepEqual(docs, [
+    { key: 10, texts: [source.query] },
+    { key: 11, texts: ["別の質問？"] },
+  ]);
   assert.equal(
     serializeQuestions(questions),
     serializeQuestions(

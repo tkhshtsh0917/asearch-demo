@@ -59,3 +59,8 @@ export function questionsFromRows(
 export function serializeQuestions(questions: Question[]): string {
   return `${questions.map((question) => JSON.stringify(question)).join("\n")}\n`;
 }
+
+/** Builder input is separate from display metadata: only query text is indexed. */
+export function serializeDocs(questions: Question[]): string {
+  return `${questions.map(({ key, text }) => JSON.stringify({ key, texts: [text] })).join("\n")}\n`;
+}
