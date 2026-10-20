@@ -8,9 +8,12 @@ export async function jsonAsset(
   const response = await fetch(new URL(assetName(name), base), {
     credentials: "omit",
     cache: "no-cache",
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!response.ok || !response.body)
+  if (!response.ok || !response.body) {
+    void response.body?.cancel().catch(() => {});
     throw new Error(`Asset unavailable (${response.status})`);
+  }
   const reader = response.body.getReader(),
     chunks: Uint8Array[] = [];
   let total = 0,
@@ -51,8 +54,11 @@ export async function segmentStream(
 ): Promise<ReadableStream<Uint8Array>> {
   const response = await fetch(new URL(assetName(name), base), {
     credentials: "omit",
+    signal: AbortSignal.timeout(30_000),
   });
-  if (!response.ok || !response.body)
+  if (!response.ok || !response.body) {
+    void response.body?.cancel().catch(() => {});
     throw new Error(`Segment unavailable (${response.status})`);
+  }
   return response.body;
 }

@@ -11,7 +11,7 @@ async function query(page: Page, text: string) {
 }
 test("WASM search, explanations, intent DAG and attribution run without console errors", async ({
   page,
-}) => {
+}, testInfo) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await open(page);
@@ -23,6 +23,14 @@ test("WASM search, explanations, intent DAG and attribution run without console 
     /^https:\/\/ja.wikipedia.org\/wiki\//,
   );
   await expect(page.locator("footer")).toContainText("CC BY-SA 4.0");
+  if (
+    testInfo.project.name === "chromium" ||
+    testInfo.project.name === "iphone-profile"
+  )
+    await page.screenshot({
+      path: testInfo.outputPath("search.png"),
+      fullPage: true,
+    });
   await page.locator("#mode").selectOption("intent");
   await page.locator("#query").fill("電球交換");
   await expect(page.locator("#results")).toContainText("電球交換");
@@ -113,7 +121,7 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
     input.dispatchEvent(
       new CompositionEvent("compositionstart", { bubbles: true }),
     );
-    (input as HTMLInputElement).value = "日本";
+    (input as HTMLInputElement).value = "更新例";
     input.dispatchEvent(
       new InputEvent("input", { bubbles: true, isComposing: true }),
     );
@@ -122,7 +130,7 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
   expect(await page.locator("#metrics").textContent()).toBe(before);
   await page.locator("#query").evaluate((input) => {
     input.dispatchEvent(
-      new CompositionEvent("compositionend", { bubbles: true, data: "日本" }),
+      new CompositionEvent("compositionend", { bubbles: true, data: "更新例" }),
     );
   });
   await expect(page.locator("#results .question").first()).toContainText(
