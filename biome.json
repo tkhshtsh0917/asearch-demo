@@ -16,5 +16,10 @@
   },
   "files": {
     "includes": ["**", "!public/data", "!vendor", "!dist", "!public/site"]
+  },
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
   }
 }
