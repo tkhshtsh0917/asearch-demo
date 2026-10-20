@@ -11,7 +11,7 @@
     "typecheck": "tsc --noEmit && tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json",
     "lint": "biome check .",
     "fmt": "biome check --write .",
-    "docs:check": "prettier --check \"*.md\" \"docs/**/*.md\"",
+    "docs:check": "prettier --check \"*.md\" \"docs/**/*.md\" \".github/**/*.yml\"",
     "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
     "engine:prepare": "node tools/engine/prepare.ts",
