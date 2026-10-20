@@ -133,9 +133,8 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
       new CompositionEvent("compositionend", { bubbles: true, data: "更新例" }),
     );
   });
-  await expect(page.locator("#results .question").first()).toContainText(
-    "日本",
-  );
+  await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator("#results li")).toHaveCount(0);
   await page.locator("#query").fill("大学");
   await page.locator("#query").fill("更新例");
   await expect(page.locator("#metrics")).toContainText("0件一致");
