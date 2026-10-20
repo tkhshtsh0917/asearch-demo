@@ -12,14 +12,22 @@
     "lint": "biome check .",
     "fmt": "biome check --write .",
     "docs:check": "prettier --check \"*.md\" \"docs/**/*.md\"",
-    "test": "node --test tools/data/*.test.ts",
-    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check"
+    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
+    "engine:prepare": "node tools/engine/prepare.ts",
+    "engine:build": "node tools/engine/build.ts"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
     "@biomejs/biome": "2.5.15",
+    "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
     "hyparquet": "1.31.5",
     "prettier": "3.9.10",
-    "typescript": "7.0.2"
+    "typescript": "7.0.2",
+    "vite": "8.1.6"
+  },
+  "dependencies": {
+    "asearch-wasm": "file:vendor/asearch-wasm-0.1.0.tgz"
   }
 }
