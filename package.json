@@ -1,0 +1,25 @@
+{
+  "name": "asearch-demo",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=24.22.0 <25"
+  },
+  "scripts": {
+    "data:prepare": "node tools/data/prepare.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "fmt": "biome check --write .",
+    "docs:check": "prettier --check \"*.md\" \"docs/**/*.md\"",
+    "test": "node --test tools/data/*.test.ts",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/node": "24.19.2",
+    "hyparquet": "1.31.5",
+    "prettier": "3.9.10",
+    "typescript": "7.0.2"
+  }
+}

@@ -1,0 +1,11 @@
+{
+  "dataset": "cl-nagoya/auto-wiki-qa",
+  "revision": "672dd0d496352282b4064e944a16e00315b796a8",
+  "license": "CC-BY-SA-4.0",
+  "file": "data/train-00000-of-00004.parquet",
+  "fileBytes": 237510189,
+  "fileSha256": "3889a32033048828cd2d75d6257648467c650065de16ec9587ecd7030d374033",
+  "rowStart": 0,
+  "rows": 10000,
+  "outputSha256": "48ede3ca90bdeefc2a0925cd629035bb6e369aa812b97e34ea22ed0bd386898f"
+}
