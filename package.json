@@ -8,14 +8,19 @@
   },
   "scripts": {
     "data:prepare": "node tools/data/prepare.ts",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.app.json && tsc -p tsconfig.worker.json",
     "lint": "biome check .",
     "fmt": "biome check --write .",
     "docs:check": "prettier --check \"*.md\" \"docs/**/*.md\"",
-    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts",
+    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
     "engine:prepare": "node tools/engine/prepare.ts",
-    "engine:build": "node tools/engine/build.ts"
+    "engine:build": "node tools/engine/build.ts",
+    "data:index": "node tools/site/build.ts",
+    "build": "pnpm data:index && vite build",
+    "dev": "vite",
+    "preview": "vite preview",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
