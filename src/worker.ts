@@ -51,13 +51,12 @@ async function candidate(index: number) {
   if (
     manifest.indexId !== "auto-wiki-qa-questions" ||
     manifest.generation !== index + 1 ||
-    JSON.stringify(manifest.index) !==
-      JSON.stringify({
-        major: 1,
-        minor: 0,
-        symbol_unit: "code-point",
-        normalizer: { id: "ja-basic", version: 1, options: 31 },
-      })
+    manifest.index.major !== 1 ||
+    manifest.index.minor !== 0 ||
+    manifest.index.symbol_unit !== "code-point" ||
+    manifest.index.normalizer.id !== "ja-basic" ||
+    manifest.index.normalizer.version !== 1 ||
+    manifest.index.normalizer.options !== 31
   )
     throw new Error("Unexpected index definition");
   for (const part of manifest.segments) assetName(part.url);
