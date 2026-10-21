@@ -5,12 +5,12 @@ export default defineConfig({
   workers: 3,
   timeout: 30000,
   use: {
-    baseURL: "http://127.0.0.1:4175/asearch-demo/",
+    baseURL: "http://127.0.0.1:4185/asearch-demo/",
     trace: "retain-on-failure",
   },
   webServer: {
-    command: "pnpm preview --base /asearch-demo/ --port 4175 --strictPort",
-    url: "http://127.0.0.1:4175/asearch-demo/",
+    command: "pnpm preview --base /asearch-demo/ --port 4185 --strictPort",
+    url: "http://127.0.0.1:4185/asearch-demo/",
     reuseExistingServer: false,
   },
   projects: [
