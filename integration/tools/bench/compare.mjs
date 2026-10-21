@@ -73,10 +73,6 @@ const report = {
     }).trim().length > 0,
   node: process.version,
   v8: process.versions.v8,
-  rustRunningHarness: execFileSync("rustc", ["--version"], {
-    cwd: fileURLToPath(new URL("../../", import.meta.url)),
-    encoding: "utf8",
-  }).trim(),
   os: platform(),
   arch: arch(),
   cpu: cpus()[0]?.model,

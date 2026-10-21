@@ -7,7 +7,7 @@ Only U+FF61–FF9F's narrow decompositions and kana canonical compositions with 
 Regenerate from an independently downloaded copy of that exact file:
 
 ```sh
-python3 tools/unicode/generate.py UnicodeData.txt > crates/asearch-rs/src/normalize/tables.rs
+python3 tools/unicode/generate.py UnicodeData.txt > tables.rs
 ```
 
-The generator checks the source hash and uses the repository's pinned rustfmt. [Unicode License V3](LICENSE.txt) is retained verbatim from the [official license](https://www.unicode.org/license.txt), SHA-256 `e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96`. A copy is shipped with the Rust crate and the generated WASM package. This license covers the data-derived tables; new implementation code retains the project license.
+Run from the integration directory. The generator checks the source hash and formats stdout with rustfmt; install the Rust version pinned by the Rust repository first. Review tables.rs and explicitly copy it to that repository's normalization module. [Unicode License V3](LICENSE.txt) is retained verbatim from the [official license](https://www.unicode.org/license.txt), SHA-256 `e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96`. A copy is shipped with the Rust crate and the generated WASM package. This license covers the data-derived tables; new implementation code retains the project license.

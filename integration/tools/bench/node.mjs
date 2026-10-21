@@ -59,10 +59,6 @@ const report = {
   os: platform(),
   arch: arch(),
   cpu: cpus()[0]?.model,
-  rust: execFileSync("rustc", ["--version"], {
-    cwd: root,
-    encoding: "utf8",
-  }).trim(),
   recordedAtUtc: new Date().toISOString(),
   wasmSha256: sha(
     await readFile(
