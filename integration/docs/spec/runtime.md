@@ -11,3 +11,7 @@ The historical API proposals in api.md and M0 compatibility.md are design record
 ASIX major 1/minor 0 is unchanged. A golden segment generated before crate separation and all profiles/64 normalization settings test byte compatibility. CLI `build-flat INPUT_JSON OUTPUT_ASIX` accepts bounded UTF-16 columns and a version-1 numeric config for fixtures/server adapters; ordinary applications should use JSONL `build` and `delta`.
 
 Client benchmarks time load, search and update only. Server fixture creation and compaction run outside those intervals; they are not browser compaction measurements.
+
+CLI search, compaction and manifest publication read the ASIX symbol unit and normalizer descriptors. Code-point segments use the Ideal query profile; UTF-16 segments use asearch.ts-lib. Public Rust encoding and size calculation enforce text/unit limits as well as file size limits.
+
+Loopback fixture servers accept at most 64 MiB of JSON, matching the CLI input ceiling. Oversized requests return 413, malformed requests return 400, and builder failures return 422 without terminating the server. Fixture generation is outside client timing intervals.

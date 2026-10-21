@@ -1,4 +1,4 @@
-import { invoke } from "../fixtures/server.mjs";
+import { serveFixture } from "../fixtures/http.mjs";
 // Loopback-only test server. Not a deployment server.
 
 import { spawnSync } from "node:child_process";
@@ -50,22 +50,7 @@ const server = createServer(async (req, res) => {
   try {
     const path = new URL(req.url, "http://127.0.0.1").pathname;
     if (path === "/__fixture" && req.method === "POST") {
-      let body = "";
-      for await (const chunk of req) {
-        body += chunk;
-        if (Buffer.byteLength(body) > 64 * 1024 * 1024) {
-          res.writeHead(413).end();
-          return;
-        }
-      }
-      const { command, input } = JSON.parse(body);
-      if (!["build-flat", "compact"].includes(command)) {
-        res.writeHead(400).end();
-        return;
-      }
-      res
-        .writeHead(200, { "Content-Type": "application/octet-stream" })
-        .end(invoke(command, input));
+      await serveFixture(req, res);
       return;
     }
     if (
