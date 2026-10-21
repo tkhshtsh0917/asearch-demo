@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/tkhshtsh0917/asearch.git",
-  "revision": "d4dffd49d85826ca7d285c2e25d720942fc5ab6c",
+  "revision": "7fc1c087f9863071b9898e687c40a263954ff3f1",
   "package": "asearch-wasm",
   "version": "0.1.0",
   "archive": "asearch-wasm-0.1.0.tgz",
-  "sha256": "65ced14d9741a273c4a0e6dd1c9ee8f9a09439fa3044cd75e1805b6f9c459cb0"
+  "sha256": "bb3d66e82d8c7900065da9d5700ec028da6d8460287a90ee1eb4d650505b68a0"
 }
