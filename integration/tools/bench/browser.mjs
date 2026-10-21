@@ -93,10 +93,6 @@ try {
         cwd: root,
         encoding: "utf8",
       }).trim().length > 0,
-    rust: execFileSync("rustc", ["--version"], {
-      cwd: root,
-      encoding: "utf8",
-    }).trim(),
     os: platform(),
     arch: arch(),
     cpu: cpus()[0]?.model,

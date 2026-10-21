@@ -292,8 +292,8 @@ export class IntentIndex {
 
 ## 13. WASM ビルド構成
 
-- `cargo build --target wasm32-unknown-unknown --release` → `wasm-bindgen`（CLI を crate と完全に同じ版へ固定）→ `wasm-opt -O3`（Binaryen）。
-- wasm-packには依存せず、Cargo.lockと同じ版のwasm-bindgen CLIを直接使う。
+- Rust repoのRelease CIでWASMをビルドする。デモはタグ・SHA-256固定のRelease Assetsを取得し、`wasm-bindgen` → `wasm-opt -O3`（Binaryen）を実行する。
+- wasm-packには依存せず、ReleaseのRust Cargo.lockと同じ版のwasm-bindgen CLIを直接使う。
 - SIMDを採用した場合の成果物は 2 つ: `*_simd.wasm`（`-C target-feature=+simd128`）と基本版。実行時に小さな SIMD モジュールを `WebAssembly.validate` して選ぶ。SIMD のコードは `#[cfg(target_feature = "simd128")]` で分岐する（関数単位の `#[target_feature]` は使わない）。relaxed-simd は採用しない。
 - Rust 1.87 以降で既定有効の WASM 機能: multivalue、mutable-globals、reference-types、sign-ext、nontrapping-fptoint、bulk-memory。
 - `[profile.release]`: `opt-level = 3`、`lto = "fat"`、`codegen-units = 1`、`panic = "abort"`、`debug = false`、`strip = true`。

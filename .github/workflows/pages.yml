@@ -25,6 +25,9 @@ jobs:
       - run: pnpm --dir integration install --frozen-lockfile
       - run: node tools/engine/build.ts
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir integration fixtures:check
+      - run: pnpm --dir integration docs:check
+      - run: pnpm --dir integration test:bench
       - run: pnpm --dir integration typecheck
       - run: pnpm --dir integration lint
       - run: pnpm --dir integration test

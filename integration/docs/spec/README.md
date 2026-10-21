@@ -14,4 +14,4 @@ M0の互換照合では§19を優先し、§2の意味論に従う。一括索�
 | §16, §18           | [設計判断と参考資料](rationale.md)         |
 | §19                | [M0互換APIと実装契約](compatibility.md)    |
 
-§番号は文書をまたいで共通。仕様中の`crates/`・`tools/`・`vendor/`等はリポジトリルートからのパス。[開発順と現在の状態](../PLAN.md)、[決定の由来](../DECISIONS.md)、[ビルド・検証方法](../../README.md)を併用する。
+§番号は文書をまたいで共通。`crates/`はRust repo、`packages/`・`tools/`・`vendor/`はこのintegration workspaceを基準とする。M0当時の構成図とCIは歴史的記録であり、現行手順はREADMEとrepository-layoutを優先する。[開発順と現在の状態](../PLAN.md)、[決定の由来](../DECISIONS.md)、[ビルド・検証方法](../../README.md)を併用する。
