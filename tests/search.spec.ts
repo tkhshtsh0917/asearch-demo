@@ -152,3 +152,19 @@ test("search page has no serious accessibility violations", async ({
     ),
   ).toEqual([]);
 });
+
+test("redistributed code carries its own and dependency license notices", async ({
+  request,
+}) => {
+  for (const name of [
+    "demo-MIT.txt",
+    "vite-LICENSE.md",
+    "LICENSE-MIT",
+    "LICENSE-APACHE",
+    "NOTICE",
+  ]) {
+    const response = await request.get(`licenses/${name}`);
+    expect(response.status()).toBe(200);
+    expect((await response.text()).length).toBeGreaterThan(30);
+  }
+});

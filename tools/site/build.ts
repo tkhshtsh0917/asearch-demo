@@ -49,3 +49,10 @@ await cp(
   new URL("third-party/", licenseRoot),
   { recursive: true },
 );
+
+await cp(new URL("LICENSE", root), new URL("demo-MIT.txt", licenseRoot));
+// The production bundle includes Vite's modulepreload polyfill.
+await cp(
+  new URL("node_modules/vite/LICENSE.md", root),
+  new URL("vite-LICENSE.md", licenseRoot),
+);
