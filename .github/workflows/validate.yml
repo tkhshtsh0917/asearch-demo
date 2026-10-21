@@ -1,0 +1,75 @@
+name: Validate release assets
+on:
+  workflow_call:
+    inputs:
+      release_tag:
+        type: string
+        default: latest
+      upload_pages:
+        type: boolean
+        default: false
+    outputs:
+      tag:
+        description: Exact Rust release tag used by the validated build
+        value: ${{ jobs.build.outputs.tag }}
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.pin.outputs.tag }}
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 24.22.0
+      - run: npm install --global pnpm@12.14.0
+      - run: rustup toolchain install 1.97.0 --profile minimal
+      - run: cargo +1.97.0 install wasm-bindgen-cli --version 0.2.129 --locked
+      - run: pnpm --dir integration install --frozen-lockfile
+      - name: Resolve release identity and checksums
+        id: pin
+        run: node tools/engine/select.ts "$RELEASE_TAG"
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+      - run: node tools/engine/build.ts
+      - run: pnpm install --lockfile-only --update-checksums --ignore-scripts
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir integration fixtures:check
+      - run: pnpm --dir integration docs:check
+      - run: pnpm --dir integration test:bench
+      - run: pnpm --dir integration typecheck
+      - run: pnpm --dir integration lint
+      - run: pnpm --dir integration test
+      - run: pnpm check
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22.22.0
+      - run: pnpm --dir integration test
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.22.0
+      - run: pnpm data:prepare
+      - run: pnpm build
+        env:
+          BASE_PATH: /asearch-demo/
+      - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm --dir integration test:browser
+      - run: pnpm test:dev
+      - run: pnpm test:e2e
+      - run: node tools/engine/provenance.ts
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-inputs
+          path: |
+            release.lock.json
+            pnpm-lock.yaml
+            dist/release.json
+      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+        if: inputs.upload_pages
+        with:
+          path: dist
