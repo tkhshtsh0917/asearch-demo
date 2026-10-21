@@ -4,13 +4,15 @@ Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/J
 
 ## セットアップ
 
-Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。現在のnullは初回リリース待ちを示し、検証を無効化して進める値ではありません。
+Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。現在のnullは初回リリース待ちを示し、検証を無効化して進める値ではありません。
 
 ```sh
 mise install
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 mise exec -- pnpm --dir integration install --frozen-lockfile
+mise exec -- node tools/engine/select.ts v0.1.0
 mise exec -- node tools/engine/build.ts
+mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- pnpm check
 mise exec -- pnpm data:prepare
@@ -31,7 +33,7 @@ mise exec -- pnpm test:dev
 mise exec -- pnpm test:e2e
 ```
 
-Playwrightコマンドは出力先の衝突を避けて直列実行してください。GitHub Actionsは固定Assetsからビルドし、ライブラリ回帰テスト・画面E2E通過後だけPagesへ反映します。Settings → PagesのSourceをGitHub Actionsに設定してください。実機は保証範囲外です。初回のRustタグ公開とrelease.lock.jsonの実際のAssetハッシュ設定が、公開CI実行前のゲートです。
+Playwrightコマンドは出力先の衝突を避けて直列実行してください。GitHub Actionsは実行開始時にReleaseのタグとSHAを固定してビルドします。Rust Release連動または手動指定の実行では、ライブラリ回帰テスト・画面E2E通過後だけPagesへ反映します。push/PRは検証のみです。Settings → PagesのSourceをGitHub Actionsに設定してください。実機は保証範囲外です。初回のRustタグ公開とrepo間起動用Appの設定が必要です。[配信と手動バージョン指定](docs/deployment.md)を参照してください。
 
 ## 責務
 

@@ -1,0 +1,46 @@
+name: Deploy validated Pages artifact
+on:
+  workflow_call:
+    inputs:
+      tag:
+        type: string
+        required: true
+      require_latest:
+        type: boolean
+        default: false
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check latest release before automatic deployment
+        id: current
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUIRE_LATEST: ${{ inputs.require_latest }}
+          RELEASE_TAG: ${{ inputs.tag }}
+        run: |
+          if [ "$REQUIRE_LATEST" = "true" ]; then
+            latest=$(gh api repos/tkhshtsh0917/asearch/releases/latest --jq .tag_name)
+            if [ "$latest" != "$RELEASE_TAG" ] || [[ "$RELEASE_TAG" == *-* ]]; then
+              echo "deploy=false" >> "$GITHUB_OUTPUT"
+              echo "Skipping superseded release $RELEASE_TAG" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          fi
+          echo "deploy=true" >> "$GITHUB_OUTPUT"
+      - name: Deploy
+        if: steps.current.outputs.deploy == 'true'
+        id: deployment
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4

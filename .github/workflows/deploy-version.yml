@@ -1,0 +1,31 @@
+name: Deploy a selected Rust version
+run-name: Deploy a selected Rust version ${{ inputs.tag }}
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Published Rust release tag (for example v0.1.0)
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: pages-production
+  cancel-in-progress: false
+jobs:
+  validate:
+    if: github.ref == 'refs/heads/main'
+    uses: ./.github/workflows/validate.yml
+    with:
+      release_tag: ${{ inputs.tag }}
+      upload_pages: true
+  deploy:
+    needs: validate
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/deploy-pages.yml
+    with:
+      tag: ${{ needs.validate.outputs.tag }}
+      require_latest: false
