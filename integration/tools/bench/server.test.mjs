@@ -53,3 +53,40 @@ test("benchmark transport accepts the default 10000-document fixture", async () 
     await server.close();
   }
 });
+
+test("fixture errors are isolated and later requests still work", async () => {
+  const server = await startServer();
+  try {
+    for (const [body, status] of [
+      ["{", 400],
+      [JSON.stringify({ command: "invalid" }), 400],
+      [JSON.stringify({ command: "compact", input: ["missing"] }), 422],
+    ]) {
+      const response = await fetch(new URL("/__fixture", server.url), {
+        method: "POST",
+        body,
+      });
+      assert.equal(response.status, status);
+      await response.text();
+      assert.equal((await fetch(server.url)).status, 200);
+    }
+  } finally {
+    await server.close();
+  }
+});
+
+test("oversized fixture requests stay bounded without stopping the server", async () => {
+  const { serveFixture } = await import("../../tests/fixtures/http.mjs");
+  const server = createServer((req, res) => void serveFixture(req, res, 32));
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  const url = `http://127.0.0.1:${server.address().port}`;
+  try {
+    assert.equal(
+      (await fetch(url, { method: "POST", body: "x".repeat(1024) })).status,
+      413,
+    );
+    assert.equal((await fetch(url, { method: "POST", body: "{" })).status, 400);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+});
