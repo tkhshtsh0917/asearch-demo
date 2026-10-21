@@ -16,6 +16,7 @@
     "tools/**/*.ts",
     "vite.config.ts",
     "playwright.config.ts",
-    "tests/**/*.ts"
+    "tests/**/*.ts",
+    "playwright.dev.config.ts"
   ]
 }

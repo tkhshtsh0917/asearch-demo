@@ -45,6 +45,7 @@ GitHub Pagesの配置先で検証する場合は、ビルドとpreviewの両方�
 ```sh
 BASE_PATH=/asearch-demo/ mise exec -- pnpm build
 mise exec -- pnpm exec playwright install chromium firefox webkit
+mise exec -- pnpm test:dev
 mise exec -- pnpm test:e2e
 # 手動で表示する場合
 mise exec -- pnpm preview --base /asearch-demo/
