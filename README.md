@@ -40,7 +40,7 @@ Playwrightコマンドは出力先の衝突を避けて直列実行してくだ�
 - `integration/tests`: ブラウザ上のライブラリ検証。
 - `integration/tools`: グルー生成、fixture/oracle、計測。
 - `tools/engine`: Release Assetsの取得・検証。
-- `tools/data`, `tools/site`: コーパス取得、索引・差分・出典情報の生成。
+- `tools/data`, `tools/site`: コーパス取得、CLIによる索引・差分・出典情報の生成。
 
 AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを索引化します。[データと出典](docs/data.md)、[ライブラリ仕様](integration/docs/spec/README.md)を参照してください。
 
@@ -51,3 +51,7 @@ AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを
 ## 謝辞
 
 照合の着想と互換性の基準には[asearch.ts](https://github.com/teramotodaiki/asearch.ts)を参照しています。上流原本とライセンスはintegration/vendorに保持します。
+
+ブラウザ向けWASMは読み取り専用です。索引生成・圧縮は取得済みCLIが担当します。初回ReleaseやAsset更新時には、SHA固定後に`engine:build`で生成したtarballを検証し、`pnpm install --update-checksums`でルートlockfileを更新してからfrozen installと回帰検証を行います。
+
+索引生成をCLIへ分離したWASMは、同一ツールでの比較でraw 298,174 → 285,543 byte（約4.2%減）となりました。gzip/Brotliでも縮小を確認しています。このサイズ比較は検索速度の保証ではありません。

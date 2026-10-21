@@ -1,17 +1,11 @@
 import { createHash } from "node:crypto";
-import {
-  AsearchIndex,
-  buildDelta,
-  buildIndex,
-  type Doc,
-  type Manifest,
-  ready,
-} from "asearch-wasm";
+import type { Doc, Manifest } from "asearch-wasm";
 import {
   catalog,
   type Question,
   type Release,
 } from "../../src/shared/catalog.ts";
+import { buildSegments } from "./segments.ts";
 
 export const digest = (bytes: Uint8Array | string) =>
   createHash("sha256").update(bytes).digest("hex");
@@ -19,7 +13,6 @@ export async function publish(
   input: Question[],
   attribution: Release["attribution"],
 ): Promise<Map<string, Uint8Array>> {
-  await ready;
   const questions = catalog(input);
   if (questions.length < 4)
     throw new Error("At least four questions are required");
@@ -43,18 +36,12 @@ export async function publish(
   ]);
   const docs = (rows: Question[]): Doc[] =>
     rows.map(({ key, text }) => ({ key, order: key, texts: [text] }));
-  const options = { profile: "ideal", normalizer: "ja-basic-v1" } as const;
-  const base = buildIndex(docs(questions), options);
-  const delta = buildDelta(docs([...changed, added]), [...dead], options);
-  const compact = buildIndex(docs(updated), options);
-  const root = AsearchIndex.fromBytes(base, options);
-  try {
-    await root.addSegment(delta);
-    if (!Buffer.from(root.toBytes()).equals(Buffer.from(compact)))
-      throw new Error("Compaction differs from effective documents");
-  } finally {
-    root.free();
-  }
+  const { base, delta, compact } = await buildSegments(
+    docs(questions),
+    docs([...changed, added]),
+    [...dead],
+    docs(updated),
+  );
 
   const files = new Map<string, Uint8Array>(),
     encode = (v: unknown) => new TextEncoder().encode(`${JSON.stringify(v)}\n`);

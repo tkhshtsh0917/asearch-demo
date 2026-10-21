@@ -43,7 +43,17 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
     await root.addSegment(data, delta);
     const compact = c.segments[0];
     assert.ok(compact);
-    assert.deepEqual(root.toBytes(), files.get(compact.url));
+    const compactBytes = files.get(compact.url);
+    assert.ok(compactBytes);
+    const rebuilt = AsearchIndex.fromBytes(compactBytes, { expected: compact });
+    try {
+      assert.deepEqual(
+        [...root.search("更新例").ids],
+        [...rebuilt.search("更新例").ids],
+      );
+    } finally {
+      rebuilt.free();
+    }
     assert.equal(root.search("更新例", { countTotal: true }).length, 4);
     for (const stage of info.stages) {
       const data = files.get(stage.catalog);
