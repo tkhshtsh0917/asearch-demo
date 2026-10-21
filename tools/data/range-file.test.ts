@@ -47,3 +47,28 @@ test("full responses, wrong offsets, truncation and overflow are rejected", asyn
   ])
     await assert.rejects(async () => file.slice(start as number, end));
 });
+
+test("failed reads release locks even if cancellation never settles", async () => {
+  let cancelled = false;
+  const body = new ReadableStream<Uint8Array>({
+    start(controller) {
+      controller.enqueue(new Uint8Array(5));
+    },
+    cancel() {
+      cancelled = true;
+      return new Promise<void>(() => {});
+    },
+  });
+  const file = rangeFile(
+    url,
+    100,
+    async () =>
+      new Response(body, {
+        status: 206,
+        headers: { "Content-Range": "bytes 4-7/100" },
+      }),
+  );
+  await assert.rejects(file.slice(4, 8), /Oversized/);
+  assert.equal(cancelled, true);
+  assert.equal(body.locked, false);
+});

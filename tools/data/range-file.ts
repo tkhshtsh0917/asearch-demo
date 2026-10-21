@@ -40,7 +40,7 @@ export function rangeFile(
         (response.headers.get("content-encoding") &&
           response.headers.get("content-encoding") !== "identity")
       ) {
-        await response.body?.cancel();
+        void response.body?.cancel().catch(() => {});
         throw new Error(
           "Server did not return the exact uncompressed byte range",
         );
@@ -61,7 +61,7 @@ export function rangeFile(
         if (offset !== size) throw new Error("Truncated range body");
         return result.buffer;
       } finally {
-        await reader.cancel().catch(() => {});
+        void reader.cancel().catch(() => {});
         reader.releaseLock();
       }
     },
