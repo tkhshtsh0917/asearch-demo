@@ -20,7 +20,8 @@
     "build": "pnpm data:index && vite build",
     "dev": "vite",
     "preview": "vite preview",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:dev": "playwright test --config playwright.dev.config.ts"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",
