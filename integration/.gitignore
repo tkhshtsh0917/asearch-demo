@@ -1,0 +1,6 @@
+node_modules/
+.engine/
+packages/asearch-wasm/dist/
+test-results/
+*.tgz
+__pycache__/

@@ -15,7 +15,14 @@
     }
   },
   "files": {
-    "includes": ["**", "!public/data", "!vendor", "!dist", "!public/site"]
+    "includes": [
+      "**",
+      "!public/data",
+      "!vendor",
+      "!dist",
+      "!public/site",
+      "!!integration"
+    ]
   },
   "vcs": {
     "enabled": true,
