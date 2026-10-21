@@ -20,17 +20,28 @@ jobs:
         with:
           node-version: 24.22.0
       - run: npm install --global pnpm@12.14.0
-      - run: rustup toolchain install 1.97.0 --profile minimal --target wasm32-unknown-unknown
+      - run: rustup toolchain install 1.97.0 --profile minimal
       - run: cargo +1.97.0 install wasm-bindgen-cli --version 0.2.129 --locked
-      # Standard-library-only preparation runs before the local tarball dependency exists.
+      - run: pnpm --dir integration install --frozen-lockfile
       - run: node tools/engine/build.ts
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir integration typecheck
+      - run: pnpm --dir integration lint
+      - run: pnpm --dir integration test
       - run: pnpm check
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 22.22.0
+      - run: pnpm --dir integration test
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.22.0
       - run: pnpm data:prepare
       - run: pnpm build
         env:
           BASE_PATH: /asearch-demo/
       - run: pnpm exec playwright install --with-deps chromium firefox webkit
+      - run: pnpm --dir integration test:browser
       - run: pnpm test:dev
       - run: pnpm test:e2e
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4

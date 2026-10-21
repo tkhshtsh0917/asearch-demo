@@ -509,7 +509,7 @@ packages:
     os: [win32]
 
   asearch-wasm@file:vendor/asearch-wasm-0.1.0.tgz:
-    resolution: {integrity: sha512-PG0eprJ5Ae+DQLjGxy14bfD5ecGuCY7nhTdQM0TCEOQ7IPtRND99V/5a/cwHxHpr2ocmFd2j9jB6t8fC0abNXg==, tarball: file:vendor/asearch-wasm-0.1.0.tgz}
+    resolution: {integrity: sha512-PtzCKbeIeeLhezAVhXUY1GAxMAMuzIdtlbhT19vrngjLyK7VUYdHo0vlHJ9aM15FxJMmjvAX+HZHr3S7Sa5J7g==, tarball: file:vendor/asearch-wasm-0.1.0.tgz}
     version: 0.1.0
 
   axe-core@4.14.0:

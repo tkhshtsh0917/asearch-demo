@@ -1,0 +1,9 @@
+{
+  "repository": "https://github.com/tkhshtsh0917/asearch",
+  "tag": "v0.1.0",
+  "assets": {
+    "linux-x86_64": null,
+    "macos-aarch64": null,
+    "windows-x86_64": null
+  }
+}

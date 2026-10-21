@@ -1,0 +1,138 @@
+import { spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import {
+  chmod,
+  cp,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
+export function releasePin(value: unknown, platform: string) {
+  const pin = value as {
+    repository?: unknown;
+    tag?: unknown;
+    assets?: Record<string, unknown>;
+  };
+  if (
+    !pin ||
+    typeof pin.repository !== "string" ||
+    !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(pin.repository) ||
+    typeof pin.tag !== "string" ||
+    !/^v\d+\.\d+\.\d+$/.test(pin.tag)
+  )
+    throw new Error("Invalid release identity");
+  const sha256 = pin.assets?.[platform];
+  if (typeof sha256 !== "string" || !/^[a-f0-9]{64}$/.test(sha256))
+    throw new Error(
+      `Release checksum is not configured for ${platform}; pin a published asset first`,
+    );
+  return {
+    repository: pin.repository,
+    tag: pin.tag,
+    sha256,
+    archive: `asearch-assets-${platform}.tar.gz`,
+  };
+}
+export async function prepareRelease(
+  root: URL,
+  localDirectory?: string,
+): Promise<void> {
+  const platform = `${process.platform === "darwin" ? "macos" : process.platform === "win32" ? "windows" : process.platform}-${process.arch === "arm64" ? "aarch64" : process.arch === "x64" ? "x86_64" : process.arch}`;
+  const pin = releasePin(
+    JSON.parse(await readFile(new URL("release.lock.json", root), "utf8")),
+    platform,
+  );
+  let bytes: Uint8Array;
+  if (localDirectory) {
+    const path = join(localDirectory, pin.archive);
+    if ((await stat(path)).size > 64 * 1024 * 1024)
+      throw new Error("Release asset exceeds 64 MiB");
+    bytes = await readFile(path);
+  } else {
+    const response = await fetch(
+      `${pin.repository}/releases/download/${pin.tag}/${pin.archive}`,
+      { signal: AbortSignal.timeout(120_000) },
+    );
+    if (!response.ok || !response.body)
+      throw new Error(`Release asset unavailable (${response.status})`);
+    const chunks: Uint8Array[] = [];
+    let length = 0;
+    const reader = response.body.getReader();
+    try {
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        length += value.length;
+        if (length > 64 * 1024 * 1024)
+          throw new Error("Release asset exceeds 64 MiB");
+        chunks.push(value);
+      }
+    } finally {
+      void reader.cancel().catch(() => {});
+      reader.releaseLock();
+    }
+    bytes = Buffer.concat(chunks);
+  }
+  if (
+    bytes.length > 64 * 1024 * 1024 ||
+    createHash("sha256").update(bytes).digest("hex") !== pin.sha256
+  )
+    throw new Error("Release asset SHA-256 mismatch");
+  const temporary = await mkdtemp(join(tmpdir(), "asearch-release-"));
+  try {
+    const archive = join(temporary, "asset.tgz");
+    await writeFile(archive, bytes);
+    const list = spawnSync("tar", ["-tzf", archive], { encoding: "utf8" });
+    if (
+      list.status !== 0 ||
+      list.stdout
+        .split("\n")
+        .some(
+          (name) =>
+            name.startsWith("/") ||
+            name.includes("\\") ||
+            name.split("/").includes(".."),
+        )
+    )
+      throw new Error("Invalid release archive paths");
+    const kinds = spawnSync("tar", ["-tvzf", archive], { encoding: "utf8" });
+    if (
+      kinds.status !== 0 ||
+      kinds.stdout
+        .split("\n")
+        .filter(Boolean)
+        .some((line) => !["-", "d"].includes(line[0] ?? ""))
+    )
+      throw new Error(
+        "Release archive must contain regular files and directories only",
+      );
+    const unpack = join(temporary, "unpack");
+    await mkdir(unpack);
+    const result = spawnSync("tar", ["-xzf", archive, "-C", unpack]);
+    if (result.status !== 0) throw new Error("Cannot unpack release asset");
+    const cli =
+      process.platform === "win32" ? "asearch-cli.exe" : "asearch-cli";
+    for (const name of [
+      cli,
+      "asearch_wasm.wasm",
+      "NOTICE",
+      "LICENSE-MIT",
+      "LICENSE-APACHE",
+    ])
+      await readFile(join(unpack, name));
+    const destination = new URL("integration/.engine/release/", root);
+    await rm(destination, { recursive: true, force: true });
+    await mkdir(destination, { recursive: true });
+    await cp(unpack, destination, { recursive: true });
+    if (process.platform !== "win32")
+      await chmod(new URL(cli, destination), 0o755);
+  } finally {
+    await rm(temporary, { recursive: true, force: true });
+  }
+}

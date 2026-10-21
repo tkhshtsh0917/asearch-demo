@@ -1,7 +1,7 @@
 node_modules/
 dist/
 public/data/
-vendor/
+/vendor/
 playwright-report/
 test-results/
 .env

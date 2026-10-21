@@ -1,73 +1,51 @@
 # asearch-demo
 
-[asearch](https://github.com/tkhshtsh0917/asearch)のRust/WASM検索を、専用Workerで実行する静的デモです。TypeScript・Viteを使い、GitHub Pagesのサブパスから配信できます。質問入力をサーバーへ送信しません。
+Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/JS API、グルー生成、ブラウザ回帰テストは`integration/`で管理し、画面・データ配信はこのrepoルートで管理します。検索・正規化アルゴリズムは[Rust repo](https://github.com/tkhshtsh0917/asearch)にあります。
 
-- AutoWikiQAの先頭1万件の質問文を逐次検索し、一致範囲とWikipediaの出典を表示します。
-- 意図表現では、選択肢を全展開せずDAGで検索する3件の例を試せます。
-- 「差分を適用」で3件の変更・1件の削除・1件の追加、「圧縮版へ切替」で同じ内容の単一索引を読み込みます。固定の更新シナリオであり、ライブのWikipedia更新を監視する機能ではありません。
-- 更新中は旧索引で検索でき、取得・整合性検証に失敗した場合も旧状態を維持します。再読み込みで初期世代へ戻ります。
+## セットアップ
 
-## 準備・ビルド
-
-[mise](https://mise.jdx.dev/)でNodeとpnpmを用意します。ツール版・依存は固定されています。WASMパッケージはnpmへ公開せず、`engine.lock.json`でソースのコミットとtarballのSHA-256を固定しています。生成物はGitへ含めません。
+Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。現在のnullは初回リリース待ちを示し、検証を無効化して進める値ではありません。
 
 ```sh
-mise trust
 mise install
-```
-
-最初にWASM配布物を用意します。Rust 1.97.0・`wasm32-unknown-unknown` target・wasm-bindgen-cli 0.2.129を利用できる環境では、次のコマンドで固定コミットから独立した一時ディレクトリにビルドできます。Node標準APIだけで動くため、依存のインストール前に実行できます。ネットワーク接続が必要です。
-
-```sh
+cargo install wasm-bindgen-cli --version 0.2.129 --locked
+mise exec -- pnpm --dir integration install --frozen-lockfile
 mise exec -- node tools/engine/build.ts
-```
-
-または、本体repoの[ビルド手順](https://github.com/tkhshtsh0917/asearch#ビルド)で生成した、ハッシュが一致するtarballを明示して取り込めます。隣接checkoutには依存しません。
-
-```sh
-mise exec -- node tools/engine/prepare.ts PATH_TO_ARCHIVE
-```
-
-その後、次を実行します。
-
-```sh
 mise exec -- pnpm install --frozen-lockfile
 mise exec -- pnpm check
 mise exec -- pnpm data:prepare
-mise exec -- pnpm build
-mise exec -- pnpm preview
-```
-
-表示URLはコマンド出力を参照してください。`data:prepare`は固定データをネットワークから取得し、質問文のSHA-256を照合します。`build`は索引・差分・出典カタログ・manifestを生成し、配布物を`dist/`へ出力します。開発中は初回の`build`後に`pnpm dev`を使えます。HTTPSまたはlocalhostが必要です。
-
-GitHub Pagesの配置先で検証する場合は、ビルドとpreviewの両方に同じbaseを指定します。
-
-```sh
 BASE_PATH=/asearch-demo/ mise exec -- pnpm build
-mise exec -- pnpm exec playwright install chromium firefox webkit
-mise exec -- pnpm test:dev
-mise exec -- pnpm test:e2e
-# 手動で表示する場合
 mise exec -- pnpm preview --base /asearch-demo/
 ```
 
-E2EはChromium・Firefox・WebKitとAndroid/iPhoneのモバイルプロファイルで、本番ビルドの検索・説明・IME・更新中検索・破損差分の拒否・再試行・レイアウト・重大なアクセシビリティ違反を検証します。端末実機やクラウドのブラウザ検証には依存しません。画面の時間はWorker内の検索と説明の所要時間で、ネットワーク・描画を含む性能保証ではありません。
+`engine:build`はbundleのSHA-256を検査し、WASMからJSグルーとTS APIを生成・packします。意図的に版やラッパを更新した場合は、検証後にルートのpnpm-lock.yamlも更新します。通常のCIはfrozen lockfileで実行します。ローカルで同じAssetsを用意した場合は`node tools/engine/build.ts PATH_TO_ASSET_DIRECTORY`を使えます。隣接Rust checkoutは暗黙に参照しません。
 
-## GitHub Pages
+## 検証と配信
 
-ローカルでの検証とGitHub上のCI/Pages成功は別です。新しい環境でtarballが再現しない場合は、検証を無効化せず、差分を調べてエンジンの版とpinを一緒に更新してください。`engine:build`は公開済みの固定コミットを必要とします。
+```sh
+mise exec -- pnpm --dir integration typecheck
+mise exec -- pnpm --dir integration lint
+mise exec -- pnpm --dir integration test
+mise exec -- pnpm --dir integration test:browser
+mise exec -- pnpm test:dev
+mise exec -- pnpm test:e2e
+```
 
-## 構成と境界
+## 責務
 
-- `src/`: 検索画面、Worker、受信データ検証。検索・正規化アルゴリズムは実装しません。
-- `tools/engine/`: 版固定したWASM配布物の検証・準備。
-- `tools/data/`: コーパスの取得・抽出・検証。
-- `tools/site/`: ASIX・差分・圧縮版・manifest・出典カタログの生成。
-- `public/data/`: 取得済みのビルド入力。`public/site/`: 生成した配信用データとライセンス。いずれも追跡対象外。
-- `tests/`: Playwrightによる本番ビルドの検証。
+- `src/`: Worker、IME、検索画面、描画。
+- `integration/packages/asearch-wasm`: TS APIと生成配布物。
+- `integration/tests`: ブラウザ上のライブラリ検証。
+- `integration/tools`: グルー生成、fixture/oracle、計測。
+- `tools/engine`: Release Assetsの取得・検証。
+- `tools/data`, `tools/site`: コーパス取得、索引・差分・出典情報の生成。
 
-データのrevision・抽出範囲・ハッシュは`dataset.lock.json`、出典と制約は[データの扱い](docs/data.md)を参照してください。
+AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを索引化します。[データと出典](docs/data.md)、[ライブラリ仕様](integration/docs/spec/README.md)を参照してください。
 
 ## ライセンス
 
-デモのコードは[MIT](LICENSE)。AutoWikiQAと抽出・改変データには[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)を適用します。回答を生成するアプリではありません。先頭1万件は無作為抽出でも全体の代表標本でもありません。配布物には出典カタログ・変更内容とライブラリのライセンスを同梱します。
+デモはMIT。ラッパはMIT OR Apache-2.0、上流由来の原本・NOTICEは各ライセンスを保持します。AutoWikiQA由来データはCC BY-SA 4.0です。
+
+## 謝辞
+
+照合の着想と互換性の基準には[asearch.ts](https://github.com/teramotodaiki/asearch.ts)を参照しています。上流原本とライセンスはintegration/vendorに保持します。
