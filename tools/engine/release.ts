@@ -13,6 +13,16 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
+/** Accepts versioned Release tags without paths or control characters. */
+export function isReleaseTag(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    /^v(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(
+      value,
+    )
+  );
+}
+
 export function releasePin(value: unknown, platform: string) {
   const pin = value as {
     repository?: unknown;
@@ -23,8 +33,7 @@ export function releasePin(value: unknown, platform: string) {
     !pin ||
     typeof pin.repository !== "string" ||
     !/^https:\/\/github\.com\/[\w.-]+\/[\w.-]+$/.test(pin.repository) ||
-    typeof pin.tag !== "string" ||
-    !/^v\d+\.\d+\.\d+$/.test(pin.tag)
+    !isReleaseTag(pin.tag)
   )
     throw new Error("Invalid release identity");
   const sha256 = pin.assets?.[platform];
