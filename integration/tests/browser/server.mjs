@@ -53,7 +53,7 @@ const server = createServer(async (req, res) => {
       let body = "";
       for await (const chunk of req) {
         body += chunk;
-        if (body.length > 1024 * 1024) {
+        if (Buffer.byteLength(body) > 64 * 1024 * 1024) {
           res.writeHead(413).end();
           return;
         }
