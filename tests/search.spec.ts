@@ -168,3 +168,28 @@ test("redistributed code carries its own and dependency license notices", async 
     expect((await response.text()).length).toBeGreaterThan(30);
   }
 });
+
+test("valid manifests are independent of JSON property ordering", async ({
+  page,
+}) => {
+  await page.route("**/manifest.*.json", async (route) => {
+    const response = await route.fetch();
+    const manifest = await response.json();
+    const index = manifest.index;
+    manifest.index = {
+      normalizer: {
+        options: index.normalizer.options,
+        version: index.normalizer.version,
+        id: index.normalizer.id,
+      },
+      symbol_unit: index.symbol_unit,
+      minor: index.minor,
+      major: index.major,
+    };
+    await route.fulfill({ response, json: manifest });
+  });
+  await open(page);
+  await page.locator("#advance").click();
+  await expect(page.locator("#status")).toContainText("世代 2");
+  await expect(page.locator("#error")).toBeEmpty();
+});
