@@ -68,7 +68,7 @@ test("failed reads release locks even if cancellation never settles", async () =
         headers: { "Content-Range": "bytes 4-7/100" },
       }),
   );
-  await assert.rejects(file.slice(4, 8), /Oversized/);
+  await assert.rejects(async () => file.slice(4, 8), /Oversized/);
   assert.equal(cancelled, true);
   assert.equal(body.locked, false);
 });
