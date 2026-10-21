@@ -14,14 +14,17 @@ function run(command, args) {
   if (result.error) throw result.error;
   if (result.status !== 0) throw new Error(`${command} failed`);
 }
-const crate = resolve(source, "asearch_wasm.wasm");
+
 const dist = "packages/asearch-wasm/dist";
 // Never ship files left behind by a previous build.
 await rm(dist, { recursive: true, force: true });
 
-for (const target of ["web", "nodejs"]) {
-  const directory = target === "web" ? "web" : "node";
+for (const directory of ["web", "node"]) {
+  const target = directory === "node" ? "nodejs" : "web";
+  const crate = resolve(source, "asearch_wasm.wasm");
   run("wasm-bindgen", [
+    "--out-name",
+    "asearch_wasm",
     "--target",
     target,
     "--out-dir",
@@ -94,3 +97,31 @@ await cp(
   `${dist}/licenses/rust-dependencies`,
   { recursive: true },
 );
+
+await build({
+  entryPoints: ["tests/fixtures/index-builders.ts"],
+  outfile: "tests/fixtures/builders.mjs",
+  bundle: true,
+  platform: "node",
+  format: "esm",
+  external: ["./server.mjs"],
+});
+
+await build({
+  entryPoints: ["tests/fixtures/index-builders.ts"],
+  outfile: "tests/fixtures/browser-builders.mjs",
+  bundle: true,
+  platform: "browser",
+  format: "esm",
+  plugins: [
+    {
+      name: "fixture-transport",
+      setup(plugin) {
+        plugin.onResolve({ filter: /^\.\/server\.mjs$/ }, () => ({
+          path: "./browser-transport.mjs",
+          external: true,
+        }));
+      },
+    },
+  ],
+});

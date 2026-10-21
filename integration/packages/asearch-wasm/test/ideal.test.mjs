@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { Asearch, MatchMode } from "../dist/node.mjs";
+import { Asearch, MatchMode } from "../../../tests/fixtures/api.mjs";
 
 test("Ideal minimum levels agree with all source-profile fixtures", () => {
   const fixture = JSON.parse(

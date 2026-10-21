@@ -1,7 +1,5 @@
 import {
   AsearchIndex,
-  buildDelta,
-  buildIndex,
   byLength,
   type Doc,
   fixed,
@@ -9,7 +7,7 @@ import {
 } from "../../dist/index.js";
 
 const docs: Doc[] = [{ key: 1, texts: ["質問です"] }];
-using index = AsearchIndex.fromDocs(docs, {
+using index = AsearchIndex.fromBytes(new Uint8Array(), {
   normalizer: "ja-basic-v1",
   limits: { maxPatternUnits: 128 },
 });
@@ -17,7 +15,7 @@ const result: SearchResult = index.search("質問", {
   maxAmbig: byLength({ every: 4, max: 3 }),
   countTotal: true,
 });
-const bytes: Uint8Array = buildIndex(docs);
+const bytes: Uint8Array = new Uint8Array();
 AsearchIndex.fromBytes(bytes)
   .search("質問", { maxAmbig: fixed(1) })
   .copy();
@@ -48,7 +46,7 @@ declare const next: Manifest;
 const change = diffManifest(current, next);
 if (change.kind === "append") change.add.map((segment) => segment.integrity);
 
-const delta: Uint8Array = buildDelta(docs, [1]);
+const delta: Uint8Array = new Uint8Array();
 void delta;
 
 import { type MergePart, mergeResults } from "../../dist/index.js";
@@ -80,3 +78,8 @@ const explanation = intent.explain(
 void explanation;
 // @ts-expect-error IntentIndex does not expose blocked corpus search.
 intent.search("a", { engine: "transposed-blocked" });
+
+// @ts-expect-error Server construction is not part of the runtime API.
+AsearchIndex.fromDocs(docs);
+// @ts-expect-error Serialization belongs to the server.
+index.toBytes();

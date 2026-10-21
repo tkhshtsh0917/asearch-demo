@@ -2,22 +2,15 @@ import { type IndexHandle, requireBinding } from "./index-bindings.js";
 import { inputTypeError } from "./index-validation.js";
 
 export { installIndexConstructor } from "./index-bindings.js";
-export { buildDelta, buildIndex } from "./index-builders.js";
 
 import { type Explanation, explainSearch } from "./index-explain.js";
 
 export type { Explanation } from "./index-explain.js";
 
 import { byteView } from "./index-bytes.js";
-import { indexConfig, loadConfig, searchConfig } from "./index-config.js";
+import { loadConfig, searchConfig } from "./index-config.js";
 import { expectedWire } from "./index-expected.js";
-import { flatten } from "./index-input.js";
-import type {
-  Doc,
-  IndexOptions,
-  LoadOptions,
-  SearchOptions,
-} from "./index-options.js";
+import type { LoadOptions, SearchOptions } from "./index-options.js";
 import type { SearchResult } from "./index-result.js";
 import { nativeCall as call, executeSearch } from "./index-search.js";
 import { SearchSession } from "./index-session.js";
@@ -99,31 +92,6 @@ export class AsearchIndex {
       profile === 0 ? "asearch.ts" : profile === 1 ? "asearch.ts-lib" : "ideal",
     );
     finalizer.register(this, handle, this);
-  }
-
-  static fromDocs(docs: Iterable<Doc>, options?: IndexOptions): AsearchIndex {
-    const handleFactory = requireBinding();
-    const config = indexConfig(options);
-    const { units, lengths, keys, orders } = flatten(docs, config);
-    return new AsearchIndex(
-      call(() => handleFactory.from_flat(units, lengths, keys, orders, config)),
-      secret,
-      config[10],
-      config[0],
-    );
-  }
-
-  static fromStrings(
-    texts: readonly string[],
-    options?: IndexOptions,
-  ): AsearchIndex {
-    requireBinding();
-    if (!Array.isArray(texts)) throw inputTypeError("texts must be an array");
-    const count = integer(texts.length, "texts.length", 0, 0xffffffff);
-    function* docs(): Iterable<Doc> {
-      for (let key = 0; key < count; key++) yield { key, texts: [texts[key]] };
-    }
-    return AsearchIndex.fromDocs(docs(), options);
   }
 
   static fromBytes(bytes: Uint8Array, options?: LoadOptions): AsearchIndex {
@@ -371,11 +339,6 @@ export class AsearchIndex {
     } finally {
       updates.delete(this);
     }
-  }
-
-  toBytes(): Uint8Array {
-    const handle = requireHandle(this);
-    return call(() => handle.to_bytes());
   }
 
   free(): void {

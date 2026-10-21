@@ -6,9 +6,10 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
-const cjs = createRequire(import.meta.url)("../dist/node.cjs");
+const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 function tombstones(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);

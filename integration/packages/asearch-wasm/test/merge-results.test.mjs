@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
-import { mergeResults } from "../dist/node.mjs";
+import { mergeResults, withFixtures } from "../../../tests/fixtures/api.mjs";
 
 function part(rows) {
   return {
@@ -121,7 +121,11 @@ test("part arrays snapshot their bounded length once and ignore custom iterators
 
 for (const [name, merge] of [
   ["ESM", mergeResults],
-  ["CJS", createRequire(import.meta.url)("../dist/node.cjs").mergeResults],
+  [
+    "CJS",
+    withFixtures(createRequire(import.meta.url)("../dist/node.cjs"))
+      .mergeResults,
+  ],
 ]) {
   test(`${name}: result arrays use intrinsic lengths despite own getters and subclasses`, () => {
     let reads = 0;
@@ -157,7 +161,11 @@ for (const [name, merge] of [
 
 for (const [name, merge] of [
   ["ESM", mergeResults],
-  ["CJS", createRequire(import.meta.url)("../dist/node.cjs").mergeResults],
+  [
+    "CJS",
+    withFixtures(createRequire(import.meta.url)("../dist/node.cjs"))
+      .mergeResults,
+  ],
 ]) {
   test(`${name}: later getters cannot invalidate earlier validation`, () => {
     for (const detach of [false, true]) {

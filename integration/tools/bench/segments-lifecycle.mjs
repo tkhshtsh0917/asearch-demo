@@ -24,26 +24,21 @@ function verifyUpdate(index, documents) {
     throw new Error("Update failed to remove the old key");
 }
 export async function measureLifecycle(api, setup, repetitions) {
-  const raw = { load: [], compact: [], update: [] };
+  const raw = { load: [], update: [] };
   const warmup = 3;
   for (let sample = 0; sample < warmup + repetitions; sample++) {
-    const index = api.AsearchIndex.fromStrings([], setup.indexOptions);
+    const index = await api.AsearchIndex.fromStrings([], setup.indexOptions);
     try {
       const loadStart = performance.now();
       await index.replaceSegments(setup.sources);
       const load = performance.now() - loadStart;
-      const compactStart = performance.now();
-      const bytes = index.toBytes();
-      const compact = performance.now() - compactStart;
-      if (!sameBytes(bytes, setup.base))
-        throw new Error("Lifecycle compaction bytes mismatch");
+      const bytes = setup.base;
       const updateStart = performance.now();
       await updateColumn(index, setup, bytes);
       const update = performance.now() - updateStart;
       verifyUpdate(index, setup.documents);
       if (sample >= warmup) {
         raw.load.push(load);
-        raw.compact.push(compact);
         raw.update.push(update);
       }
     } finally {

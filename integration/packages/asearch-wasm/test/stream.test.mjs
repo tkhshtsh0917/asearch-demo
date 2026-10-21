@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
 const require = createRequire(import.meta.url);
-const cjs = require("../dist/node.cjs");
+const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 const memory = require("../dist/node/asearch_wasm.js").index_memory();
 
 function stream(bytes, size) {

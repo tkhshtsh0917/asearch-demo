@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AsearchIndex, byLength } from "../dist/node.mjs";
+import { AsearchIndex, byLength } from "../../../tests/fixtures/api.mjs";
 
 test("explicit null and object coercions cannot silently select defaults", () => {
   const index = AsearchIndex.fromStrings(["a"]);

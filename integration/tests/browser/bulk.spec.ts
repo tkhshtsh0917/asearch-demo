@@ -1,13 +1,13 @@
 import { expect, test } from "@playwright/test";
 
-test("bulk index builds, loads and searches without Node globals", async ({
+test("CLI-built bulk index loads and searches without Node globals", async ({
   page,
 }) => {
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
-    const index = api.AsearchIndex.fromDocs(
+    const api = await import("/tests/fixtures/browser-api.mjs");
+    const index = await api.AsearchIndex.fromDocs(
       [
         { key: 5, texts: ["ｶﾞの使い方"] },
         { key: 2, texts: ["ガの使い方", "別の質問"] },
@@ -18,7 +18,7 @@ test("bulk index builds, loads and searches without Node globals", async ({
       const found = index
         .search("がの使い方", { countTotal: true, maxAmbig: api.fixed(0) })
         .copy();
-      const bytes = index.toBytes();
+      const bytes = await index.toBytes();
       let position = 0;
       const body = new ReadableStream({
         pull(controller) {
@@ -59,7 +59,7 @@ test("bulk profiles preserve host-locale casing and UTF-16 text differences", as
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
+    const api = await import("/tests/fixtures/browser-api.mjs");
     const lower = String.prototype.toLocaleLowerCase;
     const rows = [];
     try {
@@ -67,10 +67,13 @@ test("bulk profiles preserve host-locale casing and UTF-16 text differences", as
         return lower.call(this, "tr");
       };
       for (const profile of ["ideal", "asearch.ts", "asearch.ts-lib"]) {
-        const index = api.AsearchIndex.fromStrings(["I", "i", "ı", "😀"], {
-          profile,
-          normalizer: "none",
-        });
+        const index = await api.AsearchIndex.fromStrings(
+          ["I", "i", "ı", "😀"],
+          {
+            profile,
+            normalizer: "none",
+          },
+        );
         try {
           rows.push({
             profile,
@@ -99,10 +102,13 @@ test("sessions reuse normalized prefixes and release with the parent index", asy
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
-    const index = api.AsearchIndex.fromStrings(["abcdef", "がく", "😀abcd"], {
-      limits: { maxPatternUnits: 64 },
-    });
+    const api = await import("/tests/fixtures/browser-api.mjs");
+    const index = await api.AsearchIndex.fromStrings(
+      ["abcdef", "がく", "😀abcd"],
+      {
+        limits: { maxPatternUnits: 64 },
+      },
+    );
     const session = index.session({ countTotal: true });
     const rows = [];
     try {
@@ -162,8 +168,8 @@ test("trusted manifest hashes protect byte and stream loads", async ({
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
-    const bytes = api.buildDelta([{ key: 1, texts: ["検索"] }], [1]);
+    const api = await import("/tests/fixtures/browser-api.mjs");
+    const bytes = await api.buildDelta([{ key: 1, texts: ["検索"] }], [1]);
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-384", bytes));
     const expected = {
       id: new DataView(bytes.buffer, bytes.byteOffset)
@@ -224,10 +230,10 @@ test("streamed segment adoption remains atomic with active sessions", async ({
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
-    const index = api.AsearchIndex.fromStrings(["old"]),
+    const api = await import("/tests/fixtures/browser-api.mjs");
+    const index = await api.AsearchIndex.fromStrings(["old"]),
       session = index.session();
-    const delta = api.buildDelta([{ key: 0, texts: ["new"] }], [0]);
+    const delta = await api.buildDelta([{ key: 0, texts: ["new"] }], [0]);
     const view = new DataView(delta.buffer, delta.byteOffset, delta.byteLength);
     const digest = new Uint8Array(await crypto.subtle.digest("SHA-384", delta));
     const expected = {
@@ -245,7 +251,7 @@ test("streamed segment adoption remains atomic with active sessions", async ({
       },
     });
     try {
-      const before = index.toBytes(),
+      const before = await index.toBytes(),
         ref = index.search("old").refs[0];
       const pending = index.addSegment(body, expected);
       await Promise.resolve();
@@ -266,8 +272,8 @@ test("streamed segment adoption remains atomic with active sessions", async ({
       } catch (error) {
         failure = (error as { code: string }).code;
       }
-      const compact = index.toBytes(),
-        canonical = api.buildIndex([{ key: 0, texts: ["new"] }]);
+      const compact = await index.toBytes(),
+        canonical = await api.buildIndex([{ key: 0, texts: ["new"] }]);
       await index.replaceSegments([{ source: before }]);
       return {
         old,
@@ -304,12 +310,14 @@ test("explain maps composed kana and expires copied refs on successful updates",
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
-    const index = api.AsearchIndex.fromStrings(["ｶﾞ😀"]);
+    const api = await import("/tests/fixtures/browser-api.mjs");
+    const index = await api.AsearchIndex.fromStrings(["ｶﾞ😀"]);
     try {
       const found = index.search("が😀", { maxAmbig: 0 }).copy();
       const explained = index.explain(found.refs[0], "が😀", { maxAmbig: 0 });
-      await index.addSegment(api.buildDelta([{ key: 0, texts: ["new"] }], [0]));
+      await index.addSegment(
+        await api.buildDelta([{ key: 0, texts: ["new"] }], [0]),
+      );
       let stale = "";
       try {
         index.explain(found.refs[0], "が😀");
@@ -338,7 +346,7 @@ test("intent DAG searches choices without expansion and explains original text",
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
+    const api = await import("/tests/fixtures/browser-api.mjs");
     const index = api.IntentIndex.fromEntries([
       { key: 1, expr: "(ｶ|ﾊ)ﾞ😀?" },
       { key: 2, expr: "(a|b)".repeat(50) },

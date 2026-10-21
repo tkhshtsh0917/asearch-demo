@@ -10,7 +10,7 @@
     "build": "node tools/build/build.mjs",
     "test": "pnpm --filter asearch-wasm test",
     "typecheck": "tsc -p packages/asearch-wasm/tsconfig.json --noEmit && tsc -p packages/asearch-wasm/test/types/tsconfig.json && tsc -p packages/asearch-wasm/test/types/tsconfig.worker.json",
-    "lint": "biome check package.json biome.json packages/asearch-wasm/package.json packages/asearch-wasm/tsconfig.json packages/asearch-wasm/src packages/asearch-wasm/test tests/browser tools/bench tools/build tools/fixtures tools/docs tools/reference .vscode",
+    "lint": "biome check package.json biome.json packages/asearch-wasm/package.json packages/asearch-wasm/tsconfig.json packages/asearch-wasm/src packages/asearch-wasm/test tests/browser tests/fixtures tools/bench tools/build tools/fixtures tools/docs tools/reference .vscode",
     "fmt": "pnpm lint --write",
     "fixtures": "node tools/fixtures/gen.mjs",
     "fixtures:check": "node tools/fixtures/gen.mjs --check",

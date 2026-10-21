@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Asearch } from "../dist/node.mjs";
+import { Asearch } from "../../../tests/fixtures/api.mjs";
 
 test("matching revalidates handles after caller-controlled conversions", () => {
   for (const phase of ["valueOf", "toString", "query", "levelQuery"]) {

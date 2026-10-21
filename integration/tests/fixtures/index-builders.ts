@@ -1,9 +1,18 @@
-import { requireBinding } from "./index-bindings.js";
-import { indexConfig } from "./index-config.js";
-import { flatten } from "./index-input.js";
-import type { Doc, IndexOptions } from "./index-options.js";
-import { nativeCall as call } from "./index-search.js";
-import { fail, inputTypeError, integer } from "./index-validation.js";
+import { indexConfig } from "../../packages/asearch-wasm/src/index-config.js";
+import { flatten } from "../../packages/asearch-wasm/src/index-input.js";
+import type {
+  Doc,
+  IndexOptions,
+} from "../../packages/asearch-wasm/src/index-options.js";
+import { buildFlat } from "./server.mjs";
+
+const call = <T>(callback: () => T): T => callback();
+
+import {
+  fail,
+  inputTypeError,
+  integer,
+} from "../../packages/asearch-wasm/src/index-validation.js";
 
 /** Server-side builder without active-index query or reference allocations. */
 export function buildIndex(
@@ -19,7 +28,6 @@ export function buildDelta(
   tombstones: readonly number[],
   options?: IndexOptions,
 ): Uint8Array {
-  const factory = requireBinding();
   const config = indexConfig(options);
   if (!Array.isArray(tombstones))
     throw inputTypeError("tombstones must be an array");
@@ -31,13 +39,6 @@ export function buildDelta(
     keys[i] = integer(tombstones[i], "tombstone key", 0, 0xffffffff);
   const flat = flatten(docs, config, keys.byteLength);
   return call(() =>
-    factory.build_delta_flat(
-      flat.units,
-      flat.lengths,
-      flat.keys,
-      flat.orders,
-      keys,
-      config,
-    ),
+    buildFlat(flat.units, flat.lengths, flat.keys, flat.orders, keys, config),
   );
 }

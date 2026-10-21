@@ -60,7 +60,7 @@ export async function measureSegments(
     key,
     texts: [`質問 ${key} 日本の歴史と地理の使い方`, `question ${key} abcdef`],
   }));
-  const base = api.buildIndex(docs),
+  const base = await api.buildIndex(docs),
     baseExpected = await descriptor(base);
   const indexOptions = { limits: { maxPatternUnits: 64 } };
   const baseline = api.AsearchIndex.fromBytes(base, {
@@ -94,10 +94,12 @@ export async function measureSegments(
         const bytes =
           segments === 1
             ? base
-            : api.buildIndex(docs.filter(({ key }) => key % segments === part));
+            : await api.buildIndex(
+                docs.filter(({ key }) => key % segments === part),
+              );
         sources.push({ source: bytes, expected: await descriptor(bytes) });
       }
-      const candidate = api.AsearchIndex.fromStrings([], indexOptions);
+      const candidate = await api.AsearchIndex.fromStrings([], indexOptions);
       try {
         const memoryBeforeLoad = memoryBytes();
         const begin = performance.now();
@@ -137,12 +139,10 @@ export async function measureSegments(
           }
           pairedRuns.push({ baseline: full, candidate: column });
         }
-        const start = performance.now(),
-          compact = candidate.toBytes(),
-          compactMs = performance.now() - start;
+        const compact = await candidate.toBytes();
         if (!sameBytes(compact, base))
-          throw new Error("Compaction bytes mismatch");
-        const delta = api.buildDelta(
+          throw new Error("Server compaction bytes mismatch");
+        const delta = await api.buildDelta(
           [{ key: documents + 1, texts: ["new question"] }],
           [0],
         );
@@ -170,7 +170,6 @@ export async function measureSegments(
         reports.push({
           segments,
           loadMs,
-          compactMs,
           updateMs,
           updateKind:
             segments < 8 ? "append" : "replace compacted base plus delta",
@@ -189,7 +188,6 @@ export async function measureSegments(
           lifecycle: {
             ...lifecycle,
             load: summary(lifecycle.raw.load),
-            compact: summary(lifecycle.raw.compact),
             update: summary(lifecycle.raw.update),
           },
           pairedRuns,
@@ -219,7 +217,7 @@ export async function measureSegments(
       correctness:
         "ids/levels/orders/exact totals verified outside timers; compact bytes equal fresh base",
       caveat:
-        "Lifecycle distributions use fresh roots, three warmups and the recorded repetitions. The first load/compact/update fields are diagnostic observations. Transfers use in-memory bytes, not HTTP network latency. Lifecycle samples are not paired engine comparisons. Timers may quantize to zero. Source byte counts describe serialized payload, not peak heap memory. WASM page sizes are non-shrinking high-water observations for the whole instance, including prior scenarios; they are not live allocation counts. No relevance or device guarantee.",
+        "Lifecycle distributions use fresh roots, three warmups and the recorded repetitions. The first load/update fields are diagnostic observations. Transfers use in-memory bytes, not HTTP network latency. Lifecycle samples are not paired engine comparisons. Timers may quantize to zero. Source byte counts describe serialized payload, not peak heap memory. WASM page sizes are non-shrinking high-water observations for the whole instance, including prior scenarios; they are not live allocation counts. No relevance or device guarantee.",
       reports,
     };
   } finally {
