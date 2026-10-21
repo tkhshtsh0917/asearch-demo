@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
 for (const [name, api] of [
   ["ESM", esm],
-  ["CJS", createRequire(import.meta.url)("../dist/node.cjs")],
+  ["CJS", withFixtures(createRequire(import.meta.url)("../dist/node.cjs"))],
 ]) {
   test(`${name}: owned results outlive APIs and disposal but refs expire on adoption`, async () => {
     const index = api.AsearchIndex.fromStrings(["old"]);

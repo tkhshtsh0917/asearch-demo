@@ -14,8 +14,6 @@ import { installStreamBindings } from "./index-stream.js";
 
 export {
   AsearchIndex,
-  buildDelta,
-  buildIndex,
   byLength,
   fixed,
   SearchSession,

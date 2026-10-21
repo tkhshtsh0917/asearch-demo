@@ -27,7 +27,7 @@ function run(command, args, cwd) {
   return p.stdout;
 }
 function checkConsumerTypes(directory) {
-  const source = `import { Asearch, AsearchIndex, buildIndex, fixed, MatchMode, init, ready, type Options, type SearchResult } from "asearch-wasm";
+  const source = `import { Asearch, AsearchIndex, fixed, MatchMode, init, ready, type Options, type SearchResult } from "asearch-wasm";
 const options: Options = { profile: "asearch.ts-lib" };
 const pattern = new Asearch("hello", MatchMode.Include, options);
 const result: boolean = pattern.match("helo", 1);
@@ -39,9 +39,9 @@ const initialized: Promise<void> = ready;
 // @ts-expect-error A missing or any-typed declaration must not silently pass.
 new Asearch(123);
 void [result, pending, initialized, level];
-const index = AsearchIndex.fromStrings(["質問です"]);
+const index = AsearchIndex.fromBytes(new Uint8Array());
 const bulk: SearchResult = index.search("質問", { maxAmbig: fixed(1) });
-const data: Uint8Array = buildIndex([{ key: 1, texts: ["質問です"] }]);
+const data: Uint8Array = new Uint8Array();
 const copy: Uint32Array = bulk.copy().ids;
 // @ts-expect-error A primitive string is required.
 index.search(123);
@@ -117,11 +117,11 @@ test("packed distribution works alone, with both Node export conditions", () => 
       [
         "--input-type=module",
         "-e",
-        "import {AsearchIndex} from 'asearch-wasm'; const i=AsearchIndex.fromStrings(['ｶﾞ']); const j=AsearchIndex.fromBytes(i.toBytes()); console.log(j.search('が').ids[0]===0); i.free(); j.free();",
+        "import {AsearchIndex} from 'asearch-wasm'; console.log(typeof AsearchIndex.fromBytes === 'function' && !('fromDocs' in AsearchIndex));",
       ],
       [
         "-e",
-        "const {AsearchIndex}=require('asearch-wasm'); const i=AsearchIndex.fromStrings(['ｶﾞ']); console.log(i.search('が').ids[0]===0); i.free();",
+        "const {AsearchIndex}=require('asearch-wasm'); console.log(typeof AsearchIndex.fromStream === 'function');",
       ],
     ])
       assert.equal(run(process.execPath, args, temp).trim(), "true");

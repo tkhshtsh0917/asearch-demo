@@ -6,7 +6,7 @@ test("byte loaders ignore own getters and subclass hooks before WASM transport",
   await page.goto("/tests/browser/fixtures/index.html");
   const result = await page.evaluate(async () => {
     // @ts-expect-error Browser-only absolute module URL.
-    const api = await import("/packages/asearch-wasm/dist/web.mjs");
+    const api = await import("/tests/fixtures/browser-api.mjs");
     function unexpected(): never {
       throw new Error("Caller-owned byte hooks must not run");
     }
@@ -32,8 +32,8 @@ test("byte loaders ignore own getters and subclass hooks before WASM transport",
         },
       });
     }
-    const base = api.buildIndex([{ key: 0, texts: ["old"] }]);
-    const delta = api.buildDelta([{ key: 0, texts: ["new"] }], [0]);
+    const base = await api.buildIndex([{ key: 0, texts: ["old"] }]);
+    const delta = await api.buildDelta([{ key: 0, texts: ["new"] }], [0]);
     const ids = [];
     for (const subclass of [false, true]) {
       const index = api.AsearchIndex.fromBytes(hostile(base, subclass));

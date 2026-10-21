@@ -7,8 +7,9 @@
 このintegration workspaceの配置は以下のとおりです。
 
 - `packages/asearch-wasm/src`: TS APIと環境別初期化。
-- `packages/asearch-wasm/test`: API・型・配布物の回帰テスト。nativeとの比較には取得したCLIを使用。
+- `packages/asearch-wasm/test`: API・型・配布物の回帰テスト。nativeとの比較とfixture生成には取得したCLIを使用。
 - `tests/browser`: WASM/Worker/ブラウザ境界の検証。
+- `tests/fixtures`: CLIによるNode/ブラウザ回帰用のASIX準備。配布物には含めない。
 - `tools/build`: wasm-bindgenと最適化・JS配布物の生成。
 - `tools/fixtures`, `tools/reference`, `vendor/upstream`: 独立oracleと互換fixture生成。原本のライセンス・ハッシュを保持。
 - `tools/bench`: ネイティブCLI・Node・ブラウザの計測。

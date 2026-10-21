@@ -6,10 +6,11 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
-const require = createRequire(import.meta.url);
-const cjs = require("../dist/node.cjs");
+const _require = createRequire(import.meta.url);
+const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 const root = fileURLToPath(new URL("../../../", import.meta.url));
 
 for (const [name, api] of [
@@ -289,7 +290,7 @@ for (const [name, api] of [
   });
 }
 
-test("native CLI and WASM builder produce identical ASIX bytes", async () => {
+test("CLI JSONL and UTF-16 imports produce identical ASIX v1 bytes", async () => {
   const directory = await mkdtemp(join(tmpdir(), "asearch-index-"));
   try {
     const docs = [

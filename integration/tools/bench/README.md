@@ -16,7 +16,7 @@ OUTPUT_JSONは測定ログの保存先。UNITSは10,000〜10,000,000で、seed�
 
 計測前にpatternごとに全text・level 0〜3の真偽が一致することを確認する。patternは3/7/15/31記号。構築時間を除外し、各sampleは全候補へのmatchの平均時間。タイマー分解能を超えるようバッチ反復数を自動調整する。5 paired runs、各30標本をAB/BA交互に測り、runごとの中央値比をbootstrapする。出力のp50/p95は**バッチ平均の分布**で、個別の打鍵レイテンシではない。
 
-raw標本、seed、コーパス・上流・WASM・JSラッパ・lockfileのSHA256、HEAD、日時UTC、Node/V8/Rust/OS/CPUをJSONへ保存する。Nodeの上流はVM context、ブラウザの上流は専用のCommonJS/verbose shimを渡したFunctionで実行し、製品はNodeエントリから呼ぶ。比較はこの呼出し経路を含む。コアだけの性能とは区別する。
+raw標本、seed、コーパス・上流・WASM・JSラッパ・lockfileのSHA256、HEAD、日時UTC、Node/V8/OS/CPUをJSONへ保存する。Nodeの上流はVM context、ブラウザの上流は専用のCommonJS/verbose shimを渡したFunctionで実行し、製品はNodeエントリから呼ぶ。比較はこの呼出し経路を含む。コアだけの性能とは区別する。
 
 各runnerは未コミット変更の有無もbooleanで保存する。dirtyの場合、HEADだけでは実測ソースを特定できないので、artifact/runnerのhashと測定時の差分を合わせて記録する。端末の変更ファイル名はJSONへ保存しない。
 
@@ -52,6 +52,6 @@ mise exec -- pnpm bench:segments OUTPUT_JSON node
 mise exec -- pnpm bench:segments OUTPUT_JSON browser
 ```
 
-固定の合成1万文書・2万textを1〜8segmentへ分割し、同じフル索引とAB/BA順で照合します。各segment数・各経路1,300回（13入力×5run×20round）のsearch呼出時間を保存し、ids/levels/orders/exact totalsとcompaction bytesを照合します。ロード・圧縮・更新は新しいrootで3回のウォームアップ後に各30回計測します。取得元はメモリ上のbytesで、HTTP通信時間ではありません。先頭の単独観測値は診断用で、30標本の分布とは区別します。ロードと更新にはexpectedのSHA-384検査を含みます。8segment後の更新は圧縮base＋deltaへの全量置換なので、他のappendと処理量が異なります。
+固定の合成1万文書・2万textを1〜8segmentへ分割し、同じフル索引とAB/BA順で照合します。各segment数・各経路1,300回（13入力×5run×20round）のsearch呼出時間を保存し、ids/levels/orders/exact totalsとcompaction bytesを照合します。現行のクライアント計測はロード・更新のみ。索引準備とCLI圧縮は計時外で行う。以下は移行前の計測記録である。ロード・圧縮・更新は新しいrootで3回のウォームアップ後に各30回計測します。取得元はメモリ上のbytesで、HTTP通信時間ではありません。先頭の単独観測値は診断用で、30標本の分布とは区別します。ロードと更新にはexpectedのSHA-384検査を含みます。8segment後の更新は圧縮base＋deltaへの全量置換なので、他のappendと処理量が異なります。
 
 WASM memoryのbyteLengthは縮まないページ数の観測です。同じinstanceで先行シナリオも実行するため、現在のlive allocationや厳密な操作別ピークと同一視しません。合成データの結果を実データの検索品質・端末性能へ一般化しません。小さなdeltaと定期圧縮を組み合わせる方針を維持し、既定の圧縮目安を全用途の最適閾値として保証しません。

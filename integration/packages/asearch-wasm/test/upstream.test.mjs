@@ -2,7 +2,7 @@
 
 import assert from "node:assert/strict";
 import test from "node:test";
-import { Asearch, MatchMode } from "../dist/node.mjs";
+import { Asearch, MatchMode } from "../../../tests/fixtures/api.mjs";
 
 function upstream(name, callback) {
   test(name, () =>

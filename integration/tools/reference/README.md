@@ -1,6 +1,6 @@
 # 実行可能な参照モデル
 
-製品から独立したPython/Nodeのモデルです。意味論・アルゴリズムの検証に使い、速度比較の対象にはしません。現在のRust製品テストは`crates/asearch-rs/tests`、JS製品テストは`packages/asearch-wasm/test`です。
+製品から独立したPython/Nodeのモデルです。意味論・アルゴリズムの検証に使い、速度比較の対象にはしません。現在のRust製品テストは`crates/asearch-engine/tests`、JS製品テストは`packages/asearch-wasm/test`です。
 
 | ファイル                         | 責務                                         |
 | -------------------------------- | -------------------------------------------- |

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as api from "../../packages/asearch-wasm/dist/node.mjs";
+import * as api from "../../tests/fixtures/api.mjs";
 import { measureSegments } from "./segments-measure.mjs";
 
 test("segment benchmark checks every column against the same flat index", async () => {
@@ -15,7 +15,6 @@ test("segment benchmark checks every column against the same flat index", async 
   for (const [i, entry] of report.reports.entries()) {
     assert.equal(entry.segments, i + 1);
     assert.equal(entry.lifecycle.load.samples, 3);
-    assert.equal(entry.lifecycle.compact.samples, 3);
     assert.equal(entry.lifecycle.update.samples, 3);
     assert.equal(entry.baseline.samples, report.options.inputs.length);
     assert.equal(entry.candidate.samples, report.options.inputs.length);

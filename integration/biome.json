@@ -1,6 +1,28 @@
 {
   "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
-  "formatter": { "indentStyle": "space" },
-  "javascript": { "formatter": { "quoteStyle": "double" } },
-  "linter": { "enabled": true, "rules": { "preset": "recommended" } }
+  "formatter": {
+    "indentStyle": "space"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double"
+    }
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "files": {
+    "includes": [
+      "**",
+      "!tests/fixtures/builders.mjs",
+      "!tests/fixtures/browser-builders.mjs",
+      "!vendor",
+      "!packages/asearch-wasm/dist",
+      "!.engine",
+      "!node_modules"
+    ]
+  }
 }

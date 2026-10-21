@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import test from "node:test";
-import { Asearch } from "../dist/node.mjs";
+import { Asearch } from "../../../tests/fixtures/api.mjs";
 
 const fixture = JSON.parse(
   readFileSync(

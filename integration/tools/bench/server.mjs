@@ -2,10 +2,31 @@
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
+import { invoke } from "../../tests/fixtures/server.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const server = createServer(async (req, res) => {
   const path = new URL(req.url, "http://127.0.0.1").pathname;
+  if (path === "/__fixture" && req.method === "POST") {
+    let body = "";
+    for await (const chunk of req) {
+      body += chunk;
+      if (body.length > 1024 * 1024) {
+        res.writeHead(413).end();
+        return;
+      }
+    }
+    const { command, input } = JSON.parse(body);
+    if (!["build-flat", "compact"].includes(command)) {
+      res.writeHead(400).end();
+      return;
+    }
+    res
+      .writeHead(200, { "Content-Type": "application/octet-stream" })
+      .end(invoke(command, input));
+    return;
+  }
+
   if (path === "/") {
     res
       .writeHead(200, { "Content-Type": "text/html" })
@@ -32,7 +53,7 @@ const server = createServer(async (req, res) => {
     return;
   }
   if (
-    !/^\/(tools\/bench\/[a-z-]+\.mjs|packages\/asearch-wasm\/dist\/[a-zA-Z0-9_/.]+|vendor\/upstream\/asearch.ts\/lib\/index.js)$/.test(
+    !/^\/(tests\/fixtures\/browser-(?:api|builders|transport)\.mjs|tools\/bench\/[a-z-]+\.mjs|packages\/asearch-wasm\/dist\/[a-zA-Z0-9_/.]+|vendor\/upstream\/asearch.ts\/lib\/index.js)$/.test(
       path,
     ) ||
     path.includes("..") ||

@@ -1,10 +1,7 @@
-import {
-  Asearch,
-  AsearchIndex,
-} from "../../../packages/asearch-wasm/dist/web.mjs";
+import { Asearch, AsearchIndex } from "../../fixtures/browser-api.mjs";
 
 const matcher = new Asearch("猫である", 1);
-const index = AsearchIndex.fromStrings(["abcdef", "がく", "😀abc"]);
+const index = await AsearchIndex.fromStrings(["abcdef", "がく", "😀abc"]);
 const session = index.session({ countTotal: true });
 try {
   session.update("a");

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
-const cjs = createRequire(import.meta.url)("../dist/node.cjs");
+const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 for (const [name, api] of [
   ["ESM", esm],
   ["CJS", cjs],

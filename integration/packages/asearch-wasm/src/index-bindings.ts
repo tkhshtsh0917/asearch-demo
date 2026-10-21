@@ -11,7 +11,6 @@ export interface IndexHandle {
     original: Uint16Array,
     supplied: boolean,
   ): Uint32Array;
-  to_bytes(): Uint8Array;
   fork_session(maxCacheBytes: number, maxAmbig: number): IndexHandle;
   reset_session(): void;
   select_level(level: number): void;
@@ -23,21 +22,6 @@ export interface IndexHandle {
   ): Uint32Array;
 }
 export interface IndexConstructor {
-  from_flat(
-    units: Uint16Array,
-    lengths: Uint32Array,
-    keys: Uint32Array,
-    orders: Uint32Array,
-    config: Uint32Array,
-  ): IndexHandle;
-  build_delta_flat(
-    units: Uint16Array,
-    lengths: Uint32Array,
-    keys: Uint32Array,
-    orders: Uint32Array,
-    tombstones: Uint32Array,
-    config: Uint32Array,
-  ): Uint8Array;
   from_bytes(
     bytes: Uint8Array,
     config: Uint32Array,

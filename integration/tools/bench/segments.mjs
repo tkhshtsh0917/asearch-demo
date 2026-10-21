@@ -17,7 +17,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const sha = (data) => createHash("sha256").update(data).digest("hex");
 const results = [];
 if (mode === "node") {
-  const api = await import("../../packages/asearch-wasm/dist/node.mjs");
+  const api = await import("../../tests/fixtures/api.mjs");
   const { default: bindings } = await import(
     "../../packages/asearch-wasm/dist/node/asearch_wasm.js"
   );
@@ -39,7 +39,7 @@ if (mode === "node") {
         const page = await browser.newPage();
         await page.goto(server.url);
         const report = await page.evaluate(async () => {
-          const api = await import("/packages/asearch-wasm/dist/web.mjs");
+          const api = await import("/tests/fixtures/browser-api.mjs");
           const { measureSegments } = await import(
             "/tools/bench/segments-measure.mjs"
           );
@@ -108,7 +108,6 @@ console.log(
         candidate,
         lifecycle: {
           load: lifecycle.load,
-          compact: lifecycle.compact,
           update: lifecycle.update,
         },
       })),

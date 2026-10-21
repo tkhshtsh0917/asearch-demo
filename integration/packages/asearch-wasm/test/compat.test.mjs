@@ -3,7 +3,13 @@ import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import test from "node:test";
 import vm from "node:vm";
-import { Asearch, init, MatchMode, ready } from "../dist/node.mjs";
+import {
+  Asearch,
+  init,
+  MatchMode,
+  ready,
+  withFixtures,
+} from "../../../tests/fixtures/api.mjs";
 
 const fixture = JSON.parse(
   readFileSync(new URL("../../../fixtures/compat.json", import.meta.url)),
@@ -212,7 +218,7 @@ test("Node ESM and CJS initialize synchronously", async () => {
   await ready;
   assert.equal(init(), ready);
   await init(new Uint8Array());
-  const cjs = createRequire(import.meta.url)("../dist/node.cjs");
+  const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
   assert.equal(new cjs.Asearch("a").match("A"), true);
 });
 

@@ -1,9 +1,10 @@
 import assert from "node:assert/strict";
 import { createRequire } from "node:module";
 import test from "node:test";
-import * as esm from "../dist/node.mjs";
+import * as esm from "../../../tests/fixtures/api.mjs";
+import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
-const cjs = createRequire(import.meta.url)("../dist/node.cjs");
+const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 function unexpected() {
   throw new Error("Caller-owned TypedArray hooks must not run");
 }

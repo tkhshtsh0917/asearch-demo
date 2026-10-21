@@ -4,3 +4,5 @@ packages/asearch-wasm/dist/
 test-results/
 *.tgz
 __pycache__/
+tests/fixtures/builders.mjs
+tests/fixtures/browser-builders.mjs
