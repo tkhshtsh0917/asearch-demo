@@ -12,6 +12,7 @@ function fingerprint(result) {
     ]),
   );
 }
+
 function summary(raw) {
   const sorted = [...raw].sort((a, b) => a - b);
   return {
@@ -22,6 +23,7 @@ function summary(raw) {
     p99Ms: sorted[Math.floor((sorted.length - 1) * 0.99)],
   };
 }
+
 async function descriptor(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-384", bytes));
@@ -33,6 +35,7 @@ async function descriptor(bytes) {
     integrity: `sha384-${btoa(String.fromCharCode(...digest))}`,
   };
 }
+
 export async function measureSegments(
   api,
   {

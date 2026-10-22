@@ -21,6 +21,7 @@ for (const line of (await readFile(resolve(upstream, "SHA256SUMS"), "utf8"))
 const locale = Intl.DateTimeFormat().resolvedOptions().locale;
 if (locale !== "en-US")
   throw new Error(`Fixtures require en-US; got ${locale}`);
+
 function execute(code) {
   const module = { exports: {} };
   vm.runInNewContext(code, {
@@ -53,6 +54,7 @@ const units = (text) =>
 const ambigs = [0, 1, 2, 3, 4, 5, 31, 32, 33];
 const nodeAmbigs = [0, 1, 2, 3];
 const cases = [];
+
 function add(pattern, modeValue, texts) {
   const mode =
     modeValue === undefined
@@ -111,10 +113,12 @@ const alphabet = [
   "\udc00",
 ];
 let seed = 31;
+
 function random(max) {
   seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
   return seed % max;
 }
+
 function string(max, chars = alphabet) {
   return Array.from(
     { length: random(max + 1) },

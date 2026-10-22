@@ -9,6 +9,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 // All tools and filesystem operations must use this repository, not the caller's cwd.
 process.chdir(root);
 const source = resolve(root, ".engine/release");
+
 function run(command, args) {
   const result = spawnSync(command, args, { cwd: root, stdio: "inherit" });
   if (result.error) throw result.error;

@@ -6,6 +6,7 @@ import * as esm from "../../../tests/fixtures/api.mjs";
 import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
 const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
+
 function descriptor(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   return {
@@ -16,6 +17,7 @@ function descriptor(bytes) {
     integrity: `sha384-${createHash("sha384").update(bytes).digest("base64")}`,
   };
 }
+
 function chunks(bytes, size = 3) {
   let offset = 0;
   return new ReadableStream({

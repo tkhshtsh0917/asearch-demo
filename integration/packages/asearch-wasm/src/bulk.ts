@@ -38,6 +38,7 @@ const handles = new WeakMap<AsearchIndex, IndexHandle | null>();
 const searching = new WeakSet<AsearchIndex>();
 const updates = new WeakMap<AsearchIndex, AbortController>();
 const activeSearches = new WeakMap<AsearchIndex, number>();
+
 function duringSearch<T>(index: AsearchIndex, operation: () => T): T {
   activeSearches.set(index, (activeSearches.get(index) ?? 0) + 1);
   try {
@@ -76,6 +77,7 @@ function requireHandle(receiver: AsearchIndex): IndexHandle {
   if (!handle) throw inputTypeError("Invalid AsearchIndex receiver");
   return handle;
 }
+
 export class AsearchIndex {
   private constructor(
     handle: IndexHandle,
@@ -94,6 +96,7 @@ export class AsearchIndex {
     finalizer.register(this, handle, this);
   }
 
+  /** Loads a validated immutable ASIX segment using the requested descriptors and limits. */
   static fromBytes(bytes: Uint8Array, options?: LoadOptions): AsearchIndex {
     const handleFactory = requireBinding();
     if (!(bytes instanceof Uint8Array))
@@ -123,6 +126,7 @@ export class AsearchIndex {
     );
   }
 
+  /** Stages a bounded byte stream and exposes the index only after validation succeeds. */
   static async fromStream(
     body: ReadableStream<Uint8Array>,
     options?: LoadOptions,
@@ -143,6 +147,7 @@ export class AsearchIndex {
     }
   }
 
+  /** Snapshots query options and guards reentry before invoking the native search path. */
   search(pattern: string, options?: SearchOptions): SearchResult {
     requireHandle(this);
     if (searching.has(this))
@@ -261,6 +266,7 @@ export class AsearchIndex {
     }
   }
 
+  /** Returns copied descriptors for the current immutable server segments. */
   segments(): SegmentInfo[] {
     const packed = call(() => requireHandle(this).segments_packed());
     const parts: SegmentInfo[] = [];
@@ -341,6 +347,7 @@ export class AsearchIndex {
     }
   }
 
+  /** Releases the shared native index and invalidates dependent session operations. */
   free(): void {
     const handle = handles.get(this);
     if (handle === undefined)

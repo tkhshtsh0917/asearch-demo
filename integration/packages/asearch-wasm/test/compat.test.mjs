@@ -27,6 +27,7 @@ vm.runInNewContext(
   { module: mod, exports: mod.exports, process: { env: {} } },
 );
 const Up = mod.exports;
+
 function outcome(fn) {
   try {
     return { value: fn() };

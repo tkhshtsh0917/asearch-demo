@@ -3,6 +3,7 @@ export function sameBytes(left, right) {
   for (let i = 0; i < left.length; i++) if (left[i] !== right[i]) return false;
   return true;
 }
+
 export async function updateColumn(
   index,
   { segments, delta, deltaExpected, baseExpected },
@@ -15,6 +16,7 @@ export async function updateColumn(
       { source: delta, expected: deltaExpected },
     ]);
 }
+
 function verifyUpdate(index, documents) {
   const options = { mode: 0, maxAmbig: 0 };
   const added = index.search("new question", options);
@@ -23,6 +25,7 @@ function verifyUpdate(index, documents) {
   if (index.search("質問 0 日本の歴史と地理の使い方", options).length !== 0)
     throw new Error("Update failed to remove the old key");
 }
+
 export async function measureLifecycle(api, setup, repetitions) {
   const raw = { load: [], update: [] };
   const warmup = 3;

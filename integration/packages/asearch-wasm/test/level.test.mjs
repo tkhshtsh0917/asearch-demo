@@ -41,6 +41,7 @@ for (const [profile, key] of [
     }
   });
 }
+
 test("matchLevel validates strict bounds and lifecycle", () => {
   const a = new Asearch("a");
   assert.equal(a.matchLevel(""), 1);

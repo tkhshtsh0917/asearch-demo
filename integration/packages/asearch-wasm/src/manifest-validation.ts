@@ -4,6 +4,7 @@ import type { Manifest, ManifestSegment } from "./manifest-types.js";
 function invalid(message: string): never {
   return fail("INVALID_MANIFEST", message);
 }
+
 function fields(
   value: unknown,
   allowed: readonly string[],
@@ -19,6 +20,7 @@ function fields(
     invalid("Invalid manifest object fields");
   return value as Record<string, unknown>;
 }
+
 function integer(value: unknown, min: number, max: number): number {
   if (
     typeof value !== "number" ||
@@ -29,11 +31,13 @@ function integer(value: unknown, min: number, max: number): number {
     invalid("Invalid manifest integer");
   return value;
 }
+
 function string(value: unknown, pattern: RegExp): string {
   if (typeof value !== "string" || !pattern.test(value))
     invalid("Invalid manifest string");
   return value;
 }
+
 function unsafeUrl(value: string): boolean {
   for (let i = 0; i < value.length; i++) {
     const code = value.charCodeAt(i);
@@ -41,6 +45,7 @@ function unsafeUrl(value: string): boolean {
   }
   return /\s/u.test(value);
 }
+
 export function segmentSnapshot(value: unknown): ManifestSegment {
   const source = fields(value, ["id", "url", "bytes", "texts", "integrity"]);
   const id = string(source.id, /^[0-9a-f]{16}$/);

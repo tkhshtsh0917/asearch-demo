@@ -5,10 +5,12 @@ async function open(page: Page) {
   await page.goto("./");
   await expect(page.locator("#status")).toContainText("検索できます");
 }
+
 async function query(page: Page, text: string) {
   await page.locator("#query").fill(text);
   await expect(page.locator("#metrics")).toContainText("件一致");
 }
+
 test("WASM search, explanations, intent DAG and attribution run without console errors", async ({
   page,
 }, testInfo) => {
@@ -45,6 +47,7 @@ test("WASM search, explanations, intent DAG and attribution run without console 
     ),
   ).toBe(true);
 });
+
 test("delta and compacted snapshots preserve effective results, reset starts a fresh root", async ({
   page,
 }) => {
@@ -62,6 +65,7 @@ test("delta and compacted snapshots preserve effective results, reset starts a f
   await expect(page.locator("#status")).toContainText("世代 1");
   await expect(page.locator("#metrics")).toContainText("0件一致");
 });
+
 test("failed integrity leaves old search usable and can be retried", async ({
   page,
 }) => {
@@ -83,6 +87,7 @@ test("failed integrity leaves old search usable and can be retried", async ({
   await expect(page.locator("#status")).toContainText("世代 2");
   await expect(page.locator("#error")).toBeEmpty();
 });
+
 test("search continues during a delayed update and latest input survives adoption", async ({
   page,
 }) => {
@@ -111,6 +116,7 @@ test("search continues during a delayed update and latest input survives adoptio
   await expect(page.locator("#results li")).toHaveCount(4);
   await expect(page.locator("#query")).toHaveValue("更新例");
 });
+
 test("composition suppresses intermediate requests and subsequent typing wins", async ({
   page,
 }) => {
@@ -140,6 +146,7 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
   await expect(page.locator("#metrics")).toContainText("0件一致");
   await expect(page.locator("#results li")).toHaveCount(0);
 });
+
 test("search page has no serious accessibility violations", async ({
   page,
 }) => {

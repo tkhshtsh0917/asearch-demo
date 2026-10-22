@@ -67,6 +67,7 @@ export interface SearchOptions {
 export function fixed(k: number): AmbigDescriptor {
   return Object.freeze({ kind: "fixed", value: integer(k, "K", 0, 7) });
 }
+
 export function byLength(
   options: {
     every?: number;

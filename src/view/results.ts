@@ -1,5 +1,7 @@
+/** Renders safe result text and highlight ranges without interpreting content as HTML. */
 import { sourceUrl } from "../shared/catalog.ts";
 import type { Row } from "../shared/protocol.ts";
+
 export function renderRows(target: HTMLElement, rows: Row[]): void {
   const fragment = document.createDocumentFragment();
   for (const row of rows) {

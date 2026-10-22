@@ -6,6 +6,7 @@ export interface SearchStats {
   reusedRows: number;
   narrowedTexts?: number;
 }
+
 /** Current bulk results are JS-owned copies, not views over WASM memory. */
 export interface SearchResult {
   ids: Uint32Array;

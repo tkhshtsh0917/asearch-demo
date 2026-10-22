@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import {
   chmod,
@@ -12,6 +11,8 @@ import {
 } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { unpackRelease } from "./archive.ts";
+import { readBody } from "./http.ts";
 
 /** Accepts versioned Release tags without paths or control characters. */
 export function isReleaseTag(value: unknown): value is string {
@@ -48,6 +49,8 @@ export function releasePin(value: unknown, platform: string) {
     archive: `asearch-assets-${platform}.tar.gz`,
   };
 }
+
+/** Verifies a pinned bundle before replacing the prepared CLI, WASM and notices. */
 export async function prepareRelease(
   root: URL,
   localDirectory?: string,
@@ -57,6 +60,7 @@ export async function prepareRelease(
     JSON.parse(await readFile(new URL("release.lock.json", root), "utf8")),
     platform,
   );
+
   let bytes: Uint8Array;
   if (localDirectory) {
     const path = join(localDirectory, pin.archive);
@@ -68,74 +72,22 @@ export async function prepareRelease(
       `${pin.repository}/releases/download/${pin.tag}/${pin.archive}`,
       { signal: AbortSignal.timeout(120_000) },
     );
-    if (!response.ok || !response.body)
-      throw new Error(`Release asset unavailable (${response.status})`);
-    const chunks: Uint8Array[] = [];
-    let length = 0;
-    const reader = response.body.getReader();
-    try {
-      for (;;) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        length += value.length;
-        if (length > 64 * 1024 * 1024)
-          throw new Error("Release asset exceeds 64 MiB");
-        chunks.push(value);
-      }
-    } finally {
-      void reader.cancel().catch(() => {});
-      reader.releaseLock();
-    }
-    bytes = Buffer.concat(chunks);
+    bytes = await readBody(response, 64 * 1024 * 1024, "Release asset");
   }
   if (
     bytes.length > 64 * 1024 * 1024 ||
     createHash("sha256").update(bytes).digest("hex") !== pin.sha256
   )
     throw new Error("Release asset SHA-256 mismatch");
+
   const temporary = await mkdtemp(join(tmpdir(), "asearch-release-"));
   try {
     const archive = join(temporary, "asset.tgz");
     await writeFile(archive, bytes);
-    const list = spawnSync("tar", ["-tzf", archive], { encoding: "utf8" });
-    if (
-      list.status !== 0 ||
-      list.stdout
-        .split("\n")
-        .some(
-          (name) =>
-            name.startsWith("/") ||
-            name.includes("\\") ||
-            name.split("/").includes(".."),
-        )
-    )
-      throw new Error("Invalid release archive paths");
-    const kinds = spawnSync("tar", ["-tvzf", archive], { encoding: "utf8" });
-    if (
-      kinds.status !== 0 ||
-      kinds.stdout
-        .split("\n")
-        .filter(Boolean)
-        .some((line) => !["-", "d"].includes(line[0] ?? ""))
-    )
-      throw new Error(
-        "Release archive must contain regular files and directories only",
-      );
-    const unpack = join(temporary, "unpack");
-    await mkdir(unpack);
-    const result = spawnSync("tar", ["-xzf", archive, "-C", unpack]);
-    if (result.status !== 0) throw new Error("Cannot unpack release asset");
-    const cli =
-      process.platform === "win32" ? "asearch-cli.exe" : "asearch-cli";
-    for (const name of [
-      cli,
-      "asearch_wasm.wasm",
-      "NOTICE",
-      "LICENSE-MIT",
-      "LICENSE-APACHE",
-    ])
-      await readFile(join(unpack, name));
+    const { unpack, cli } = await unpackRelease(archive, temporary);
+
     const destination = new URL("integration/.engine/release/", root);
+
     await rm(destination, { recursive: true, force: true });
     await mkdir(destination, { recursive: true });
     await cp(unpack, destination, { recursive: true });

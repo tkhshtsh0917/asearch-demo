@@ -27,9 +27,11 @@ export { Asearch, MatchMode } from "./core.js";
 let state: "uninitialized" | "initializing" | "ready" | "failed" =
   "uninitialized";
 export let ready: Promise<void>;
+
 function failure(code: string, message: string, cause?: unknown): Error {
   return Object.assign(new Error(message, { cause }), { code });
 }
+
 export function init(input?: InitInput): Promise<void> {
   if (state === "initializing" || state === "ready") {
     if (input !== undefined) {

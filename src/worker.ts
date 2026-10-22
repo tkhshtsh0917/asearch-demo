@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+/** Owns search handles and serializes publication-stage transitions off the UI thread. */
 import {
   AsearchIndex,
   diffManifest,
@@ -7,32 +8,33 @@ import {
   ready,
   type SearchSession,
 } from "asearch-wasm";
-import {
-  assetName,
-  catalog,
-  type Question,
-  type Release,
-  release,
-} from "./shared/catalog.ts";
+import { type Question, type Release, release } from "./shared/catalog.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
 import { intents, search, searchOptions } from "./worker/search.ts";
+import { candidate } from "./worker/stage.ts";
 
 const scope = self as DedicatedWorkerGlobalScope;
 const post = (message: Response) => scope.postMessage(message);
+
 let base: URL,
   info: Release,
   root: AsearchIndex,
   session: SearchSession,
   intent: IntentIndex,
   current: Manifest;
+
 let questions = new Map<number, Question>(),
   stage = 0,
   epoch = 0,
   busy = false,
   initialized = false;
+
 let last: Extract<Request, { kind: "query" }> | undefined;
+
 const limits = { maxPatternUnits: 128, maxWorkingBytes: 64 * 1024 * 1024 };
+
+/** Publishes metadata only for the currently adopted index and catalog. */
 function state() {
   post({
     kind: "state",
@@ -43,33 +45,8 @@ function state() {
     changes: info.attribution.changes,
   });
 }
-async function candidate(index: number) {
-  const descriptor = info.stages[index];
-  if (!descriptor) throw new Error("Missing stage");
-  const manifest = (await jsonAsset(base, descriptor.manifest)) as Manifest;
-  diffManifest(undefined, manifest);
-  if (
-    manifest.indexId !== "auto-wiki-qa-questions" ||
-    manifest.generation !== index + 1 ||
-    manifest.index.major !== 1 ||
-    manifest.index.minor !== 0 ||
-    manifest.index.symbol_unit !== "code-point" ||
-    manifest.index.normalizer.id !== "ja-basic" ||
-    manifest.index.normalizer.version !== 1 ||
-    manifest.index.normalizer.options !== 31
-  )
-    throw new Error("Unexpected index definition");
-  for (const part of manifest.segments) assetName(part.url);
-  const rows = catalog(
-    await jsonAsset(
-      base,
-      descriptor.catalog,
-      8 * 1024 * 1024,
-      descriptor.catalogSha256,
-    ),
-  );
-  return { manifest, questions: new Map(rows.map((row) => [row.key, row])) };
-}
+
+/** Replays the latest validated query after initialization or an atomic update. */
 function run() {
   if (last && initialized)
     post(
@@ -85,15 +62,18 @@ function run() {
       ),
     );
 }
+
+/** Loads the initial segment and creates query handles before exposing readiness. */
 async function init(url: string) {
   if (initialized || busy) throw new Error("Already initialized");
   busy = true;
   base = new URL(url);
   if (base.origin !== scope.location.origin)
     throw new Error("Cross-origin release rejected");
+
   await ready;
   info = release(await jsonAsset(base, "release.json"));
-  const next = await candidate(0),
+  const next = await candidate(base, info, 0),
     descriptor = next.manifest.segments[0];
   if (!descriptor || next.manifest.segments.length !== 1)
     throw new Error("Invalid initial manifest");
@@ -106,6 +86,7 @@ async function init(url: string) {
       limits,
     },
   );
+
   try {
     session = root.session({
       ...searchOptions,
@@ -120,6 +101,7 @@ async function init(url: string) {
     root.free();
     throw error;
   }
+
   current = next.manifest;
   questions = next.questions;
   initialized = true;
@@ -127,12 +109,15 @@ async function init(url: string) {
   state();
   run();
 }
+
+/** Adopts the next stage and publishes its catalog only after the index update succeeds. */
 async function advance() {
   if (!initialized || busy || stage >= 2) return;
   busy = true;
   state();
+
   try {
-    const next = await candidate(stage + 1),
+    const next = await candidate(base, info, stage + 1),
       change = diffManifest(current, next.manifest);
     if (change.kind === "append" && change.add.length === 1) {
       const part = change.add[0];
@@ -147,6 +132,7 @@ async function advance() {
       ];
       await root.replaceSegments(sources);
     } else if (change.kind === "stale") throw new Error("Stale manifest");
+
     current = next.manifest;
     questions = next.questions;
     stage++;
@@ -157,6 +143,7 @@ async function advance() {
   }
   run();
 }
+
 scope.onmessage = (event: MessageEvent<Request>) => {
   const request = event.data;
   void (async () => {
@@ -187,4 +174,5 @@ scope.onmessage = (event: MessageEvent<Request>) => {
     }),
   );
 };
+
 post({ kind: "boot" });

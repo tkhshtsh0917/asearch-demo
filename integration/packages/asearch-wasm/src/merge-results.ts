@@ -1,3 +1,4 @@
+/** Validates compatible result sources and deduplicates ranked document keys. */
 import { typedArrayKind, typedArrayLength } from "./index-bytes.js";
 import type { SearchResult } from "./index-result.js";
 import { fail, integer } from "./index-validation.js";
@@ -14,6 +15,7 @@ export interface MergedResults {
   parts: Uint8Array;
   refs: Uint32Array;
 }
+
 function before(a: MergePart, i: number, b: MergePart, j: number): boolean {
   return (
     a.levels[i] < b.levels[j] ||
@@ -22,6 +24,7 @@ function before(a: MergePart, i: number, b: MergePart, j: number): boolean {
         (a.orders[i] === b.orders[j] && a.ids[i] < b.ids[j])))
   );
 }
+
 function snapshot(value: MergePart): MergePart {
   if (typeof value !== "object" || value === null)
     fail("INVALID_INPUT", "Expected result part");

@@ -35,6 +35,7 @@ if (
 ) {
   throw new Error("Invalid dataset pin or bounded row selection");
 }
+
 const sourceUrl = `https://huggingface.co/datasets/${source.dataset}/resolve/${source.revision}/${source.file}`;
 const rows = await parquetReadObjects({
   file: rangeFile(sourceUrl, source.fileBytes),
@@ -43,12 +44,14 @@ const rows = await parquetReadObjects({
   rowEnd: source.rowStart + source.rows,
 });
 if (rows.length !== source.rows) throw new Error("Dataset row count changed");
+
 const questions = questionsFromRows(rows, source.rowStart);
 const content = serializeQuestions(questions);
 const sha256 = createHash("sha256").update(content).digest("hex");
 if (source.outputSha256 !== sha256) {
   throw new Error("Prepared questions do not match the pinned SHA-256");
 }
+
 const output = new URL("public/data/", root);
 await mkdir(output, { recursive: true });
 const temporary = new URL("questions.jsonl.tmp", output);
@@ -75,4 +78,5 @@ await writeFile(
     2,
   )}\n`,
 );
+
 console.log(JSON.stringify({ rows: rows.length, sha256 }));

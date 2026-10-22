@@ -30,6 +30,7 @@ export interface IndexConstructor {
 }
 
 let binding: IndexConstructor | undefined;
+
 export function installIndexConstructor(value: IndexConstructor): void {
   binding = value;
 }

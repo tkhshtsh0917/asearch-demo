@@ -23,6 +23,7 @@ test("coarse clocks calibrate batches without reporting zero durations", () => {
     ),
   );
 });
+
 test("a frozen clock and unequal semantics cannot produce a benchmark", () => {
   class Yes {
     match() {

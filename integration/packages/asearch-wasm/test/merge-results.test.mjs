@@ -12,6 +12,7 @@ function part(rows) {
     refs: Uint32Array.from(rows, (r) => r[3]),
   };
 }
+
 test("static parts merge by rank with key deduplication and shard-owned references", () => {
   const inputs = [
     part([
@@ -36,6 +37,7 @@ test("static parts merge by rank with key deduplication and shard-owned referenc
   result.ids[0] = 99;
   assert.equal(inputs[1].ids[0], 2);
 });
+
 test("merge rejects malformed or unsorted parts without summing incomplete totals", () => {
   for (const input of [
     null,
@@ -60,6 +62,7 @@ test("merge rejects malformed or unsorted parts without summing incomplete total
     undefined,
   );
 });
+
 test("k-way merging matches a flat independent rank/dedup oracle", () => {
   let seed = 31;
   const random = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0);

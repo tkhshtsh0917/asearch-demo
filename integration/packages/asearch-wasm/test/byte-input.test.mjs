@@ -5,9 +5,11 @@ import * as esm from "../../../tests/fixtures/api.mjs";
 import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
 const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
+
 function unexpected() {
   throw new Error("Caller-owned TypedArray hooks must not run");
 }
+
 class HostileBytes extends Uint8Array {
   get length() {
     return unexpected();
@@ -34,6 +36,7 @@ class HostileBytes extends Uint8Array {
     return unexpected();
   }
 }
+
 function hostile(bytes, subclass) {
   // Nonzero offsets catch accidental reads of the complete backing buffer.
   const buffer = new ArrayBuffer(bytes.length + 12);
@@ -55,6 +58,7 @@ function hostile(bytes, subclass) {
   }
   return value;
 }
+
 function stream(...values) {
   return new ReadableStream({
     start(controller) {

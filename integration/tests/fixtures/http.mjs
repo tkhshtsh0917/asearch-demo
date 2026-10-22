@@ -1,3 +1,4 @@
+/** Isolates loopback fixture errors and enforces the CLI-compatible request ceiling. */
 import { invoke } from "./server.mjs";
 
 // Match the CLI JSON input ceiling while keeping loopback requests bounded.
@@ -6,6 +7,7 @@ export const MAX_FIXTURE_BYTES = 64 * 1024 * 1024;
 /** Handles one fixture request without propagating input or CLI failures. */
 export async function serveFixture(req, res, maxBytes = MAX_FIXTURE_BYTES) {
   let status = 400;
+
   try {
     const chunks = [];
     let length = 0;
@@ -14,10 +16,12 @@ export async function serveFixture(req, res, maxBytes = MAX_FIXTURE_BYTES) {
       if (length <= maxBytes) chunks.push(chunk);
       else chunks.length = 0;
     }
+
     if (length > maxBytes) {
       res.writeHead(413).end();
       return;
     }
+
     const { command, input } = JSON.parse(
       Buffer.concat(chunks).toString("utf8"),
     );
@@ -25,7 +29,9 @@ export async function serveFixture(req, res, maxBytes = MAX_FIXTURE_BYTES) {
       res.writeHead(400).end();
       return;
     }
+
     status = 422;
+
     const bytes = invoke(command, input);
     res
       .writeHead(200, { "Content-Type": "application/octet-stream" })

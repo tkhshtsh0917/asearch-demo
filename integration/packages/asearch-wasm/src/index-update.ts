@@ -1,3 +1,4 @@
+/** Stages segment sources and preserves the active generation until atomic adoption. */
 import { byteView } from "./index-bytes.js";
 import { indexMemory } from "./index-stream.js";
 import { fail } from "./index-validation.js";

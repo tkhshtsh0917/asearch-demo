@@ -1,3 +1,5 @@
+/** Resolves published identities and complete per-platform checksums. */
+import { readBody } from "./http.ts";
 import { isReleaseTag, releasePin } from "./release.ts";
 
 export const RELEASE_REPOSITORY = "https://github.com/tkhshtsh0917/asearch";
@@ -20,30 +22,6 @@ export function checksumPin(tag: string, text: string) {
   return pin;
 }
 
-async function boundedText(response: Response) {
-  if (!response.ok || !response.body) {
-    void response.body?.cancel().catch(() => {});
-    throw new Error(`Release request failed (${response.status})`);
-  }
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let length = 0;
-  try {
-    for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      length += value.length;
-      if (length > 1024 * 1024)
-        throw new Error("Release metadata exceeds limit");
-      chunks.push(value);
-    }
-    return Buffer.concat(chunks).toString("utf8");
-  } finally {
-    void reader.cancel().catch(() => {});
-    reader.releaseLock();
-  }
-}
-
 /** Freezes latest or an explicit tag to verified per-platform bundle hashes. */
 export async function resolveRelease(selector: string, request = fetch) {
   if (selector !== "latest" && !isReleaseTag(selector))
@@ -51,7 +29,7 @@ export async function resolveRelease(selector: string, request = fetch) {
   const path =
     selector === "latest" ? "latest" : `tags/${encodeURIComponent(selector)}`;
   const metadata = JSON.parse(
-    await boundedText(
+    await metadataText(
       await request(
         `https://api.github.com/repos/tkhshtsh0917/asearch/releases/${path}`,
         {
@@ -72,11 +50,18 @@ export async function resolveRelease(selector: string, request = fetch) {
   if (!isReleaseTag(metadata.tag_name)) throw new Error("Invalid release tag");
   return checksumPin(
     metadata.tag_name,
-    await boundedText(
+    await metadataText(
       await request(
         `${RELEASE_REPOSITORY}/releases/download/${encodeURIComponent(metadata.tag_name)}/SHA256SUMS`,
         { signal: AbortSignal.timeout(120000) },
       ),
     ),
+  );
+}
+
+/** Decodes small API/checksum responses with a stricter limit than binary assets. */
+async function metadataText(response: Response) {
+  return (await readBody(response, 1024 * 1024, "Release metadata")).toString(
+    "utf8",
   );
 }

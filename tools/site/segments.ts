@@ -1,3 +1,4 @@
+/** Runs the verified CLI in disposable directories and checks compaction determinism. */
 import { spawnSync } from "node:child_process";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
@@ -19,7 +20,9 @@ export async function buildSegments(
       import.meta.url,
     ),
   );
+
   const file = (name: string) => join(directory, name);
+
   const run = (args: string[]) => {
     const result = spawnSync(binary, args, {
       encoding: "utf8",
@@ -29,8 +32,10 @@ export async function buildSegments(
     if (result.status !== 0)
       throw new Error(`Index CLI failed: ${result.stderr}`);
   };
+
   const jsonl = (rows: unknown[]) =>
     `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`;
+
   try {
     await writeFile(file("base.jsonl"), jsonl(base));
     await writeFile(
@@ -43,6 +48,7 @@ export async function buildSegments(
       ]),
     );
     await writeFile(file("effective.jsonl"), jsonl(effective));
+
     run(["build", file("base.jsonl"), file("base.asix")]);
     run(["delta", file("delta.jsonl"), file("delta.asix")]);
     run([
@@ -51,15 +57,19 @@ export async function buildSegments(
       file("base.asix"),
       file("delta.asix"),
     ]);
+
     run(["build", file("effective.jsonl"), file("effective.asix")]);
+
     const [baseBytes, delta, compact, expected] = await Promise.all([
       readFile(file("base.asix")),
       readFile(file("delta.asix")),
       readFile(file("compact.asix")),
       readFile(file("effective.asix")),
     ]);
+
     if (!compact.equals(expected))
       throw new Error("CLI compaction differs from effective documents");
+
     return { base: baseBytes, delta, compact };
   } finally {
     await rm(directory, { recursive: true, force: true });

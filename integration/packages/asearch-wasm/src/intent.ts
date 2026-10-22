@@ -1,3 +1,4 @@
+/** Owns intent handle lifetimes and validates host inputs before DAG operations. */
 import { indexConfig, searchConfig } from "./index-config.js";
 import { type Explanation, explainSearch } from "./index-explain.js";
 import { flatten } from "./index-input.js";
@@ -25,6 +26,7 @@ export type IntentSearchOptions = Omit<SearchOptions, "engine"> & {
   engine?: "auto" | "dag";
 };
 interface Handle extends SearchHandle {
+  /** Releases the native intent handle and makes subsequent operations fail as disposed. */
   free(): void;
   explain_prepared(
     ref: number,
@@ -43,6 +45,7 @@ interface Constructor {
   ): Handle;
 }
 let binding: Constructor | undefined;
+
 export function installIntentConstructor(value: Constructor): void {
   binding = value;
 }
@@ -55,12 +58,14 @@ interface State {
 const states = new WeakMap<IntentIndex, State | null>();
 const finalizer = new FinalizationRegistry<Handle>((handle) => handle.free());
 const secret = Symbol("IntentIndex factory");
+
 function state(receiver: IntentIndex): State {
   const value = states.get(receiver);
   if (value === null) fail("DISPOSED", "IntentIndex has been disposed");
   if (!value) throw inputTypeError("Invalid IntentIndex receiver");
   return value;
 }
+
 function optionsSnapshot(options: IntentSearchOptions = {}): SearchOptions {
   checkKeys(
     options,
@@ -72,6 +77,7 @@ function optionsSnapshot(options: IntentSearchOptions = {}): SearchOptions {
     fail("UNSUPPORTED_OPTION", "IntentIndex requires the DAG engine");
   return { mode, wrap, maxAmbig, limit, countTotal, engine: "auto" };
 }
+
 /** Immutable bounded intent expressions. Choices are searched without expansion. */
 export class IntentIndex {
   private constructor(handle: Handle, config: Uint32Array, token: symbol) {
@@ -89,6 +95,8 @@ export class IntentIndex {
     });
     finalizer.register(this, handle, this);
   }
+
+  /** Compiles immutable intent entries after validating UTF-16 input and resource limits. */
   static fromEntries(
     entries: readonly IntentEntry[],
     options?: IndexOptions,
@@ -125,6 +133,8 @@ export class IntentIndex {
       secret,
     );
   }
+
+  /** Runs a bounded DAG search and returns JS-owned result arrays. */
   search(pattern: string, options?: IntentSearchOptions): SearchResult {
     const value = state(this);
     if (value.busy)
@@ -143,6 +153,8 @@ export class IntentIndex {
       value.busy = false;
     }
   }
+
+  /** Validates a live result reference and reconstructs its original expansion. */
   explain(
     reference: number,
     pattern: string,
@@ -165,6 +177,8 @@ export class IntentIndex {
       value.busy = false;
     }
   }
+
+  /** Releases the native intent handle and makes subsequent operations fail as disposed. */
   free(): void {
     const value = states.get(this);
     if (value === undefined)

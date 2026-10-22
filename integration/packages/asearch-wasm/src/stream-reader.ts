@@ -1,4 +1,5 @@
 import { inputTypeError } from "./index-validation.js";
+
 /** Use the branded stream operation, not an input object's overridable reader
  * factory. Underlying pull/cancel callbacks still follow native stream rules. */
 export function readerFor(

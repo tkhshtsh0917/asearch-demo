@@ -1,3 +1,4 @@
+/** Builds a deterministic base/delta/compacted publication and matching catalogs. */
 import { createHash } from "node:crypto";
 import type { Doc, Manifest } from "asearch-wasm";
 import {
@@ -9,6 +10,7 @@ import { buildSegments } from "./segments.ts";
 
 export const digest = (bytes: Uint8Array | string) =>
   createHash("sha256").update(bytes).digest("hex");
+
 export async function publish(
   input: Question[],
   attribution: Release["attribution"],
