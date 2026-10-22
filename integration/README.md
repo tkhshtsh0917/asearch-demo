@@ -1,5 +1,7 @@
 # WASM integration workspace
 
+[日本語版](README.ja.md)
+
 このworkspaceはTS/JS API、wasm-bindgenグルー生成、ブラウザ回帰テスト、互換oracle、計測ツールを管理します。Rustのビルド元は[asearch](https://github.com/tkhshtsh0917/asearch)です。
 
 ルートの`release.lock.json`に公開済みタグとOS別Release AssetのSHA-256を記録してから、デモrepoルートで`pnpm engine:build`を実行してください。Rustソースの取得やCargoビルドは行いません。

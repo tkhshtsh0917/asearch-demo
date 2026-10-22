@@ -1,9 +1,13 @@
 import assert from "node:assert/strict";
 import { readdir, readFile, stat } from "node:fs/promises";
-import { dirname, resolve } from "node:path";
+import { dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const root = fileURLToPath(new URL("../../", import.meta.url));
+// Checks both source and Japanese documentation without depending on the cwd.
+const integration = fileURLToPath(new URL("../../", import.meta.url));
+const demo = process.argv[2] === "--demo";
+const root = demo ? resolve(integration, "..") : integration;
+
 async function documents(directory) {
   const paths = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
@@ -19,17 +23,33 @@ async function documents(directory) {
 
 const files = [
   ...(await documents(resolve(root, "docs"))),
-  ...[
-    "README.md",
-    "AGENTS.md",
-    "tools/reference/README.md",
-    "tools/bench/README.md",
-    "tests/browser/README.md",
-    "vendor/README.md",
-    "vendor/unicode/README.md",
-    "packages/asearch-wasm/README.md",
-  ].map((path) => resolve(root, path)),
+  ...(demo
+    ? ["README.md", "README.ja.md", "AGENTS.md"]
+    : [
+        "README.md",
+        "README.ja.md",
+        "AGENTS.md",
+        "tools/reference/README.md",
+        "tools/bench/README.md",
+        "tests/browser/README.md",
+        "vendor/README.md",
+        "vendor/unicode/README.md",
+        "packages/asearch-wasm/README.md",
+      ]
+  ).map((path) => resolve(root, path)),
 ];
+// Each source document has a complete Japanese counterpart, not a redirect.
+for (const file of files) {
+  const prefix = `${resolve(root, "docs")}${sep}`;
+  if (!file.startsWith(prefix)) continue;
+  const relative = file.slice(prefix.length);
+  if (relative.startsWith(`ja${sep}`)) continue;
+  assert.ok(
+    (await stat(resolve(root, "docs/ja", relative))).isFile(),
+    `Missing Japanese document: ${relative}`,
+  );
+}
+
 let links = 0;
 for (const file of files) {
   const text = (await readFile(file, "utf8")).replace(

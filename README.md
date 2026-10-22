@@ -1,5 +1,7 @@
 # asearch-demo
 
+[日本語版](README.ja.md)
+
 Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/JS API、グルー生成、ブラウザ回帰テストは`integration/`で管理し、画面・データ配信はこのrepoルートで管理します。検索・正規化アルゴリズムは[Rust repo](https://github.com/tkhshtsh0917/asearch)にあります。
 
 ## セットアップ
