@@ -6,6 +6,8 @@
 
 現行のAPIと責務は[ランタイム契約](runtime.md)を優先する。生成APIを含む過去の案は設計記録として参照する。
 
+Rust本体の[アーキテクチャ図](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/architecture.md)、[Bitapの動画解説](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/algorithm.md)、[ASIXのバイト配置](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/asix-format.md)はRust repoで管理する。
+
 M0の互換照合では§19を優先し、§2の意味論に従う。一括索引・逐次入力・サーバー更新も実装している。説明・DAGも実装済み。任意の未採用engine等は実装と区別し、受入の範囲は[開発計画](../PLAN.md)を参照する。
 
 | 節                 | 文書                                       |

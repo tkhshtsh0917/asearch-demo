@@ -8,6 +8,8 @@ M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)�
 
 ## 11. 索引バイナリ形式（v1）と CDN 配信
 
+バイト位置ごとの現行仕様と配置図、CLIで再現できる実例は、Rust repoの[ASIX v1 byte layout](https://github.com/tkhshtsh0917/asearch/blob/main/docs/asix-format.md)を参照する。この文書は配信・更新の契約と過去の設計経緯も含む。
+
 Rustの単一base APIは`AsearchIndex::to_bytes/from_bytes`で実装済み。writerはTEXT/TLEN/KEYS/ORDRと、原文があればOLEN/OTXTを出力する。loaderはセクションを範囲・tagで検証し、長さ/配置順/descriptor/XXH3/原文正規化との一致を調べてから採用する。未知の非criticalセクションは検証後に読み飛ばし、再保存では引き継がない。from_bytesの入力slice自体は呼出側所有で、内部decode/stagingと完成索引の容量を予算へ含める。原文のないファイルから原文を捏造しない。Rustのfrom_deltaは昇順・重複なしTOMBを持つ不変segmentを生成し、loader/writerはTOMBを検証・保持する。TOMBは同じsegmentのtextを無効にしない。複数segmentへはIndexSetのlive maskとatomic更新で適用する。fromStreamと所有輸送バッファの容量合算、およびnative/WASMの同一文書からのバイト一致も検証した。expected descriptorのbytes/texts/id/SHA-384検証はRustのExpectedSegmentとJS LoadOptions.expectedで実装し、Node cryptoおよびWeb Cryptoとの一致を検査する。複数segment採用を含むM4全体の受入とは分ける。
 
 <a id="section-11-1"></a>
@@ -29,41 +31,9 @@ Rustの単一base APIは`AsearchIndex::to_bytes/from_bytes`で実装済み。wri
 
 ### 11.2 レイアウト
 
-```text
-ファイル = Header（64 B）| セクション表（16 B × section_count）| セクション（各 16 B 境界、隙間は 0 埋め）
-Header（little-endian）:
-   0  [4]  magic "ASIX"
-   4  u16  major = 1
-   6  u16  minor = 0
-   8  u32  header_len = 64 + 16 × section_count
-  12  u32  section_count
-  16  u64  file_len               ファイル全体のバイト数（切り詰めの検出）
-  24  u64  file_xxh3              ファイル全体の XXH3-64（seed 0）。計算時はこの 8 バイトを 0 とみなす（ヘッダとセクション表も守る）
-  32  u8   symbol_unit            0 = code point（AsearchTs／Ideal）、1 = UTF-16 code unit（AsearchTsLib）
-  33  u8   reserved = 0
-  34  u16  flags = 0（予約）
-  36  u32  n_texts
-  40  u32  n_units                TEXT の code unit 数
-  44  u32  n_tombstones
-  48  u16  normalizer_id          0 = none、1 = ja-basic
-  50  u16  normalizer_version     1
-  52  u32  normalizer_options     bit i = 項目 i+1 が有効（ja-basic-v1 の一括 API 既定は 0b11111 = 31）
-  56  u64  reserved = 0
-セクション表の項目: u32 tag（ASCII 4 文字）| u32 flags（bit0 = critical）| u32 offset | u32 len
-```
+バイト位置ごとの形式定義は、Rust repoの[ASIX v1 byte layout](https://github.com/tkhshtsh0917/asearch/blob/main/docs/asix-format.md)で管理する。固定ヘッダ64バイト、セクション表の各16バイト、各payloadの型・flags・境界・checksum、CLIで再現できる256バイトの実例を図と表で説明している。
 
-| tag            | 種別              | 内容                                                                                                                                                                                                                                 |
-| -------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `TEXT`         | critical          | u16[n_units]。正規化済みの UTF-16 code unit を配置順（§11.3）に連結                                                                                                                                                                  |
-| `TLEN`         | critical          | u16[n_texts]。各 text の code unit 数（絶対オフセットではなく長さ。§11.1 の 2）                                                                                                                                                      |
-| `KEYS`         | critical          | u32[n_texts]。各 text の key                                                                                                                                                                                                         |
-| `ORDR`         | critical・任意    | u32[n_texts]。各 text の order。無ければ order = key                                                                                                                                                                                 |
-| `TOMB`         | critical・任意    | u32[n_tombstones]。昇順・重複なしの key。このセグメントより古いセグメントにある、その key の text をすべて無効にする（§20.2）                                                                                                        |
-| `OLEN`／`OTXT` | 非 critical・任意 | 正規化前の原文（u16[n_texts] の長さと UTF-16 の連結）。`explain` の原文オフセット用。無い索引では、呼び出し側が原文を渡したときだけ原文オフセットを返し、渡さなければ正規化後の text のオフセットを返す（coordinateSpaceを明示、§9） |
-
-- 未知の critical セクションがあればロードを拒否し、未知の非 critical セクションは読み飛ばす（PNG のチャンク規則と同じ考え方）。minor を上げる変更は非 critical セクションの追加だけ。critical セクションの追加や意味の変更は major を上げる。
-- オフセットは u32 なので 1 ファイルは 4 GiB 未満。text 長は 65,535 code unit 以下（§0）。
-- 旧案（記号表・記号 ID・オフセット・EQ を保存し、block_words をヘッダに持つ）は §11.1 の理由で廃止した（§16）。
+この節のアンカーは既存リンクのために維持する。バイト配置の表は二重管理せず、形式を変更するときはRust側の日英版・図と、必要な配信契約を同じ変更で更新する。
 
 <a id="section-11-3"></a>
 
