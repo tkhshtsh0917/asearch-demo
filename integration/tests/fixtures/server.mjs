@@ -1,17 +1,22 @@
+/** Prepares ASIX fixtures with the verified native CLI and retains bytes for compaction. */
 import { spawnSync } from "node:child_process";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+
 export const sources = new Map();
+
 export function invoke(command, input) {
   const temporary = mkdtempSync(join(tmpdir(), "asearch-fixture-"));
+
   const cli = fileURLToPath(
     new URL(
       `../../.engine/release/asearch-cli${process.platform === "win32" ? ".exe" : ""}`,
       import.meta.url,
     ),
   );
+
   try {
     const output = join(temporary, "out.asix");
     let args;
@@ -32,6 +37,7 @@ export function invoke(command, input) {
         }),
       ];
     }
+
     const result = spawnSync(cli, args, {
       encoding: "utf8",
       maxBuffer: 1024 * 1024,
@@ -43,17 +49,20 @@ export function invoke(command, input) {
           ? "RESOURCE_LIMIT"
           : "INVALID_INPUT",
       });
+
     const bytes = new Uint8Array(readFileSync(output));
     const id = new DataView(bytes.buffer)
       .getBigUint64(24, true)
       .toString(16)
       .padStart(16, "0");
+
     sources.set(id, bytes);
     return bytes;
   } finally {
     rmSync(temporary, { recursive: true, force: true });
   }
 }
+
 export function buildFlat(units, lengths, keys, orders, tombstones, config) {
   return invoke(
     "build-flat",

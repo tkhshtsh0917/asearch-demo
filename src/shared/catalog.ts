@@ -1,3 +1,4 @@
+/** Validates publication metadata and safe question/source records before display. */
 export interface Question {
   key: number;
   text: string;
@@ -13,6 +14,7 @@ export interface Release {
   stages: Stage[];
   attribution: { creator: string; license: string; changes: string };
 }
+
 export function assetName(value: unknown): string {
   if (
     typeof value !== "string" ||
@@ -23,6 +25,7 @@ export function assetName(value: unknown): string {
     throw new Error("Invalid asset filename");
   return value;
 }
+
 export function sourceUrl(value: unknown): string {
   if (value === "") return "";
   if (typeof value !== "string") throw new Error("Invalid source URL");
@@ -36,6 +39,7 @@ export function sourceUrl(value: unknown): string {
     throw new Error("Invalid source URL");
   return url.href;
 }
+
 export function catalog(value: unknown): Question[] {
   if (!Array.isArray(value) || value.length > 20000)
     throw new Error("Invalid catalog size");
@@ -59,6 +63,7 @@ export function catalog(value: unknown): Question[] {
     return { key, text, title, url: sourceUrl(url) };
   });
 }
+
 export function release(value: unknown): Release {
   if (!value || typeof value !== "object") throw new Error("Invalid release");
   const { stages, attribution } = value as Release;

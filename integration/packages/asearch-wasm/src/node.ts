@@ -23,6 +23,7 @@ installIndexConstructor(bindings.IndexHandle);
 installIntentConstructor(bindings.IntentHandle);
 installStreamBindings(bindings.StreamHandle, bindings.index_memory);
 export const ready: Promise<void> = Promise.resolve();
+
 export function init(_input?: InitInput): Promise<void> {
   return ready;
 }

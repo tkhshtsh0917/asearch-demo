@@ -1,3 +1,4 @@
+/** Snapshots options and encodes validated descriptors and resource limits for WASM. */
 import { expectedWire } from "./index-expected.js";
 import {
   type AmbigCallback,
@@ -17,6 +18,7 @@ import {
   optional,
 } from "./index-validation.js";
 import { MatchMode } from "./pattern.js";
+
 export function loadConfig(options: LoadOptions = {}): {
   config: Uint32Array;
   maxBytes: number;

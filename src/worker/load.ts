@@ -1,4 +1,6 @@
+/** Fetches bounded same-origin catalog and segment assets with digest checks. */
 import { assetName } from "../shared/catalog.ts";
+
 export async function jsonAsset(
   base: URL,
   name: string,
@@ -48,6 +50,7 @@ export async function jsonAsset(
   }
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
+
 export async function segmentStream(
   base: URL,
   name: string,

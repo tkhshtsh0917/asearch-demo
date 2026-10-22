@@ -16,6 +16,7 @@ const descriptor = (bytes) => ({
   texts: 2,
   integrity: `sha384-${createHash("sha384").update(bytes).digest("base64")}`,
 });
+
 function stream(bytes) {
   let offset = 0;
   return new ReadableStream({

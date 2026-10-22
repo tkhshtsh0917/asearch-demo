@@ -7,6 +7,7 @@ export async function request(command, input) {
   if (!response.ok) throw new Error(await response.text());
   return new Uint8Array(await response.arrayBuffer());
 }
+
 export function buildFlat(units, lengths, keys, orders, tombstones, config) {
   return request(
     "build-flat",

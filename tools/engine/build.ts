@@ -5,6 +5,7 @@ import { prepareRelease } from "./release.ts";
 
 const root = new URL("../../", import.meta.url);
 await prepareRelease(root, process.argv[2]);
+
 function run(command: string, args: string[], cwd: URL): void {
   const result = spawnSync(command, args, {
     cwd,

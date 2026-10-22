@@ -18,8 +18,10 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
       changes: "Extracted questions",
     },
   );
+
   const json = (name: string) =>
     JSON.parse(new TextDecoder().decode(files.get(name)));
+
   const info = release(json("release.json"));
   const manifests = info.stages.map(
     (stage) => json(stage.manifest) as Manifest,
@@ -30,10 +32,12 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
   assert.ok(a && b && c);
   assert.equal(diffManifest(a, b).kind, "append");
   assert.equal(diffManifest(b, c).kind, "replace");
+
   const segment = a.segments[0];
   assert.ok(segment);
   const bytes = files.get(segment.url);
   assert.ok(bytes);
+
   const root = AsearchIndex.fromBytes(bytes, { expected: segment });
   try {
     const delta = b.segments[1];
@@ -41,6 +45,7 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
     const data = files.get(delta.url);
     assert.ok(data);
     await root.addSegment(data, delta);
+
     const compact = c.segments[0];
     assert.ok(compact);
     const compactBytes = files.get(compact.url);
@@ -54,7 +59,9 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
     } finally {
       rebuilt.free();
     }
+
     assert.equal(root.search("更新例", { countTotal: true }).length, 4);
+
     for (const stage of info.stages) {
       const data = files.get(stage.catalog);
       assert.ok(data);
@@ -64,7 +71,11 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
   } finally {
     root.free();
   }
+});
+
+test("catalog links reject unsafe origins and URL schemes", () => {
   assert.throws(() => sourceUrl("https://evil.test/wiki/X"));
+
   assert.throws(() =>
     catalog([{ key: 1, text: "x", title: "x", url: "javascript:alert(1)" }]),
   );

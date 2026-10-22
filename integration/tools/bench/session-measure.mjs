@@ -13,6 +13,7 @@ function snapshot(result) {
     ),
   ]);
 }
+
 function summary(raw) {
   const sorted = [...raw].sort((a, b) => a - b);
   const percentile = (q) => sorted[Math.floor((sorted.length - 1) * q)];

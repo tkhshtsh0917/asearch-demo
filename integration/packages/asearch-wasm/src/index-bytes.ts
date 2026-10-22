@@ -1,6 +1,7 @@
 import { inputTypeError } from "./index-validation.js";
 
 const typedArrayPrototype = Object.getPrototypeOf(Uint8Array.prototype);
+
 function accessor(name: string) {
   const getter = Object.getOwnPropertyDescriptor(
     typedArrayPrototype,
@@ -37,6 +38,7 @@ export function typedArrayLength(value: Uint8Array | Uint32Array): number {
 }
 
 const getKind = accessorForTag();
+
 function accessorForTag() {
   const getter = Object.getOwnPropertyDescriptor(
     typedArrayPrototype,
@@ -45,6 +47,7 @@ function accessorForTag() {
   if (!getter) throw inputTypeError("Missing TypedArray type accessor");
   return getter;
 }
+
 export function typedArrayKind(value: unknown): string | undefined {
   return getKind.call(value);
 }

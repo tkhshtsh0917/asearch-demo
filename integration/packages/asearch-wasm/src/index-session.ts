@@ -2,8 +2,11 @@ import type { SearchResult } from "./index-result.js";
 import { fail, inputTypeError } from "./index-validation.js";
 
 export interface SessionBackend {
+  /** Updates the normalized query while preserving the last successful state on failure. */
   update(pattern: string): SearchResult;
+  /** Clears reusable query checkpoints without replacing the parent index. */
   reset(): void;
+  /** Releases this session query state while leaving the parent index usable. */
   free(): void;
 }
 interface State {
@@ -34,6 +37,8 @@ export class SearchSession {
   static create(backend: SessionBackend): SearchSession {
     return new SearchSession(backend, secret);
   }
+
+  /** Updates the normalized query while preserving the last successful state on failure. */
   update(pattern: string): SearchResult {
     const value = state(this);
     if (value.busy)
@@ -45,12 +50,16 @@ export class SearchSession {
       value.busy = false;
     }
   }
+
+  /** Clears reusable query checkpoints without replacing the parent index. */
   reset(): void {
     const value = state(this);
     if (value.busy)
       fail("CONFLICT", "SearchSession update is already in progress");
     value.backend.reset();
   }
+
+  /** Releases this session query state while leaving the parent index usable. */
   free(): void {
     const value = states.get(this);
     if (value === undefined)

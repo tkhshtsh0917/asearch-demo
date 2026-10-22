@@ -14,6 +14,7 @@ import test from "node:test";
 import { fileURLToPath } from "node:url";
 
 const root = fileURLToPath(new URL("../../../", import.meta.url));
+
 function run(command, args, cwd) {
   const p = spawnSync(command, args, {
     cwd,
@@ -26,6 +27,7 @@ function run(command, args, cwd) {
   assert.equal(p.status, 0, p.stderr || p.stdout);
   return p.stdout;
 }
+
 function checkConsumerTypes(directory) {
   const source = `import { Asearch, AsearchIndex, fixed, MatchMode, init, ready, type Options, type SearchResult } from "asearch-wasm";
 const options: Options = { profile: "asearch.ts-lib" };

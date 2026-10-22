@@ -41,6 +41,7 @@ function fixture({ mismatch = false } = {}) {
     },
   };
 }
+
 test("individual session samples retain timer zeros and both paired paths", () => {
   const { api, released } = fixture();
   const result = measureSessions(
@@ -55,6 +56,7 @@ test("individual session samples retain timer zeros and both paired paths", () =
   assert.equal(result.engines.incremental, 20);
   assert.deepEqual(released, ["candidate", "baseline", "index"]);
 });
+
 test("a result mismatch or invalid workload cannot produce timing evidence", () => {
   const { api, released } = fixture({ mismatch: true });
   assert.throws(

@@ -4,6 +4,7 @@ import test from "node:test";
 import { jsonAsset, segmentStream } from "../../src/worker/load.ts";
 
 const base = new URL("https://example.test/data/");
+
 test("metadata loading checks digest, byte limits and releases failed readers", async (t) => {
   const data = new TextEncoder().encode('{"ok":true}');
   t.mock.method(globalThis, "fetch", async () => new Response(data));
@@ -30,6 +31,7 @@ test("metadata loading checks digest, byte limits and releases failed readers", 
   assert.equal(stream.locked, false);
   await assert.rejects(jsonAsset(base, "../private.json"), /filename/);
 });
+
 test("HTTP failures cancel unread segment bodies and fetches carry bounded deadlines", async (t) => {
   let cancelled = false,
     signal: AbortSignal | undefined | null;

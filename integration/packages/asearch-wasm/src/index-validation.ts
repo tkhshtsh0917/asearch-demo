@@ -33,6 +33,7 @@ export function integer(
     fail("INVALID_INPUT", `${name} must be an integer in ${min}..${max}`);
   return value;
 }
+
 export function boolean(value: unknown, name: string): boolean {
   if (typeof value !== "boolean")
     throw inputTypeError(`${name} must be a boolean`);

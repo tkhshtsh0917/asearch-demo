@@ -1,3 +1,4 @@
+/** Extracts stable question records and serializes only the fields used by the demo. */
 export interface Question {
   key: number;
   text: string;

@@ -24,6 +24,7 @@ export interface HandleConstructor {
 
 let handleConstructor: HandleConstructor | undefined;
 const handles = new WeakMap<Asearch, Handle | null>();
+
 export function installConstructor(value: HandleConstructor): void {
   handleConstructor = value;
 }

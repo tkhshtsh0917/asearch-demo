@@ -42,36 +42,39 @@ test("explicit tags and latest resolve once to an exact published identity", asy
   }
 });
 
-test("invalid, missing, mismatched and oversized releases fail closed", async () => {
+test("invalid selectors fail before issuing HTTP requests", async () => {
   const invalid: typeof fetch = async () => {
     throw new Error("must not fetch");
   };
+
   await assert.rejects(resolveRelease("main", invalid), /Invalid release/);
+});
+
+test("unpublished and mismatched identities are rejected", async () => {
   for (const metadata of [
     { tag_name: "v9.0.0", draft: false },
     { tag_name: "v0.2.0", draft: true },
     { tag_name: "../main", draft: false },
   ]) {
-    await assert.rejects(
-      resolveRelease(
-        "v0.2.0",
-        async () => new Response(JSON.stringify(metadata)),
-      ),
-    );
+    const response = () =>
+      Promise.resolve(new Response(JSON.stringify(metadata)));
+
+    await assert.rejects(resolveRelease("v0.2.0", response));
   }
+});
+
+test("latest rejects prereleases", async () => {
+  const metadata = { tag_name: "v0.2.0-rc.1", draft: false, prerelease: true };
+
   await assert.rejects(
     resolveRelease(
       "latest",
-      async () =>
-        new Response(
-          JSON.stringify({
-            tag_name: "v0.2.0-rc.1",
-            draft: false,
-            prerelease: true,
-          }),
-        ),
+      async () => new Response(JSON.stringify(metadata)),
     ),
   );
+});
+
+test("missing and oversized metadata responses are rejected", async () => {
   await assert.rejects(
     resolveRelease(
       "latest",

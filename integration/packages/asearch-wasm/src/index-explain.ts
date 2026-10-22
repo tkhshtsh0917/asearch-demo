@@ -28,6 +28,7 @@ interface ExplainHandle extends SearchHandle {
     supplied: boolean,
   ): Uint32Array;
 }
+
 export function explainSearch(
   handle: () => ExplainHandle,
   reference: number,

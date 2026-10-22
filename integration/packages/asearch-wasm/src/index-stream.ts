@@ -1,3 +1,4 @@
+/** Copies bounded stream chunks into reserved WASM transport and releases failed readers. */
 import type { IndexHandle } from "./index-bindings.js";
 import { byteView } from "./index-bytes.js";
 import { fail } from "./index-validation.js";
@@ -14,6 +15,7 @@ export interface StreamConstructor {
 
 let streamConstructor: StreamConstructor | undefined;
 let memory: (() => WebAssembly.Memory) | undefined;
+
 export function installStreamBindings(
   factory: StreamConstructor,
   getMemory: () => WebAssembly.Memory,

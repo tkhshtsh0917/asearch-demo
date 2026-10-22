@@ -28,6 +28,7 @@ if (
   );
 
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
+
 async function load(directory, commit) {
   const root = pathToFileURL(`${resolve(directory)}/`);
   const artifacts = {};

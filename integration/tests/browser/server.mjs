@@ -12,6 +12,7 @@ import { fileURLToPath } from "node:url";
 const root = fileURLToPath(new URL("../../", import.meta.url));
 // Serve a freshly packed distribution independently of the source dist tree.
 const packed = mkdtempSync(join(tmpdir(), "asearch-browser-pack-"));
+
 function run(command, args) {
   const result = spawnSync(command, args, {
     cwd: root,

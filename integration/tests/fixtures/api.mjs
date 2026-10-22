@@ -4,6 +4,7 @@ import { invoke } from "./server.mjs";
 
 export * from "../../packages/asearch-wasm/dist/node.mjs";
 export { buildDelta, buildIndex };
+
 export function withFixtures(api) {
   const AsearchIndex = api.AsearchIndex;
   AsearchIndex.fromDocs = (docs, options) =>

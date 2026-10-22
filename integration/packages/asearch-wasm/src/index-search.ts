@@ -14,6 +14,7 @@ export interface SearchHandle {
     countTotal: boolean,
   ): Uint32Array;
 }
+
 export function nativeCall<T>(operation: () => T): T {
   try {
     return operation();

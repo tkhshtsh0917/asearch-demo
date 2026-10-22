@@ -11,6 +11,7 @@ import { withFixtures } from "../../../tests/fixtures/api.mjs";
 
 const cjs = withFixtures(createRequire(import.meta.url)("../dist/node.cjs"));
 const root = fileURLToPath(new URL("../../../", import.meta.url));
+
 function tombstones(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
   for (let i = 0; i < view.getUint32(12, true); i++) {
@@ -51,6 +52,7 @@ for (const [name, api] of [
     );
   });
 }
+
 test("CLI delta, compaction and manifest agree with WASM and trusted loaders", async (t) => {
   const temporary = await mkdtemp(join(tmpdir(), "asearch-delta-"));
   t.after(() => rm(temporary, { recursive: true, force: true }));

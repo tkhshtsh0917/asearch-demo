@@ -1,3 +1,4 @@
+/** Defines typed commands and responses exchanged by the UI and search Worker. */
 import type { SearchStats } from "asearch-wasm";
 export type Mode = "corpus" | "intent";
 export type Request =

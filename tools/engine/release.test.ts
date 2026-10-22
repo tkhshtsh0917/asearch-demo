@@ -25,6 +25,7 @@ test("release identity requires a version tag and an actual platform checksum", 
   ])
     assert.throws(() => releasePin(candidate, "linux-x86_64"));
 });
+
 test("local release bundles are verified before replacing prepared artifacts", async (t) => {
   const temp = await mkdtemp(join(tmpdir(), "asearch-release-test-"));
   t.after(() => rm(temp, { recursive: true, force: true }));
