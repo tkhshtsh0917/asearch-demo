@@ -9,6 +9,7 @@ export async function compareBrowserSessions(
   indexPath,
   expectedSha,
   engine,
+  measurement = {},
 ) {
   const server = await startServer({
     indexPath: resolve(indexPath),
@@ -25,7 +26,7 @@ export async function compareBrowserSessions(
         const page = await browser.newPage();
         await page.goto(server.url);
         const result = await page.evaluate(
-          async ({ expectedSha, engine }) => {
+          async ({ expectedSha, engine, measurement }) => {
             const baseline = await import("/__dist/baseline/web.mjs");
             const candidate = await import("/__dist/candidate/web.mjs");
             await baseline.init();
@@ -45,12 +46,13 @@ export async function compareBrowserSessions(
             if (actualSha !== expectedSha)
               throw new Error("Fixture digest mismatch");
             return measureSessions(baseline, bytes, {
+              ...measurement,
               candidateApi: candidate,
               baselineEngine: engine,
               candidateEngine: engine,
             });
           },
-          { expectedSha, engine },
+          { expectedSha, engine, measurement },
         );
         results.push({ name, version: browser.version(), ...result });
       } finally {

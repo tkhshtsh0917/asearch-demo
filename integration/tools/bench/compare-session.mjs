@@ -17,6 +17,7 @@ const [
   candidateCommit,
   engine = "auto",
   mode = "node",
+  workloadPath,
 ] = process.argv.slice(2);
 if (
   !["node", "browser"].includes(mode) ||
@@ -27,7 +28,7 @@ if (
   !["auto", "transposed-blocked"].includes(engine)
 )
   throw new Error(
-    "Usage: compare-session.mjs BASELINE_DIST CANDIDATE_DIST INPUT_ASIX OUTPUT_JSON BASELINE_COMMIT CANDIDATE_COMMIT [auto|transposed-blocked] [node|browser]",
+    "Usage: compare-session.mjs BASELINE_DIST CANDIDATE_DIST INPUT_ASIX OUTPUT_JSON BASELINE_COMMIT CANDIDATE_COMMIT [auto|transposed-blocked] [node|browser] [WORKLOAD_JSON]",
   );
 
 const sha = (bytes) => createHash("sha256").update(bytes).digest("hex");
@@ -53,6 +54,22 @@ async function load(directory, commit) {
 if ((await stat(indexPath)).size > 256 * 1024 * 1024)
   throw new RangeError("Index exceeds 256 MiB");
 const bytes = await readFile(indexPath);
+let measurement = {};
+let workloadHash;
+if (workloadPath) {
+  if ((await stat(workloadPath)).size > 1024 * 1024)
+    throw new RangeError("Workload exceeds 1 MiB");
+  const workloadBytes = await readFile(workloadPath);
+  workloadHash = sha(workloadBytes);
+  const { inputs, runs, rounds, warmup, kind } = JSON.parse(
+    workloadBytes.toString("utf8"),
+  );
+  measurement = Object.fromEntries(
+    Object.entries({ inputs, runs, rounds, warmup, kind }).filter(
+      ([, value]) => value !== undefined,
+    ),
+  );
+}
 const baseline = await load(baselineDist, baselineCommit);
 const candidate = await load(candidateDist, candidateCommit);
 const root = fileURLToPath(new URL("../../", import.meta.url));
@@ -87,6 +104,7 @@ const report = {
   baseline: baseline.identity,
   candidate: candidate.identity,
   corpusSha256: sha(bytes),
+  workloadSha256: workloadHash ?? sha(JSON.stringify(measurement)),
   result:
     mode === "browser"
       ? await compareBrowserSessions(
@@ -95,8 +113,10 @@ const report = {
           indexPath,
           sha(bytes),
           engine,
+          measurement,
         )
       : measureSessions(baseline.api, bytes, {
+          ...measurement,
           candidateApi: candidate.api,
           baselineEngine: engine,
           candidateEngine: engine,

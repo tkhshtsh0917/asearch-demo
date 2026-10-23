@@ -15,3 +15,5 @@ integration workspaceから実行します。配布物のディレクトリに�
 時計による0ms標本は保持します。時計の有効分解能より小さい分位点は判定不能です。このrunnerは観測値を出し、自動的な採用判定は行いません。独立した再計測で改善を確認し、中央値とtailの悪化も調べてください。内蔵の短い入力系列は回帰用であり、すべての検索語を代表しません。既存の`session.mjs`は同じ配布物のblockedとautoを比較するため、目的が異なります。
 
 末尾の`node`を`browser`へ変えると、Chromium・Firefox・WebKitを順に測定します。両配布物は別々のlocalhostモジュールURLで配信し、指定したwebエントリー・生成グルー・WASMのファイル名だけを公開します。取得したASIXのdigestを計測前に照合します。
+
+任意の末尾引数`WORKLOAD_JSON`には、`inputs`（検索語文字列の配列を並べた系列）、`kind`（`session`または`search`）、`runs`、`rounds`、`warmup`を指定できます。両版へ同じ設定を渡します。`kind: "search"`はsession cacheを使わない独立したindex.searchを測ります。ファイルは1 MiB以下に制限しhashを記録します。`tools/bench/query-sequences.mjs`の`querySequences(texts, seed, count)`は、接頭辞・削除・置換・resetとUnicode・wildcardの固定系列を生成します。調整用と確認用で異なるseedを固定し、コーパスの識別情報も別途記録してください。同じ系列の反復数を、独立した検索語の網羅数とは数えません。
