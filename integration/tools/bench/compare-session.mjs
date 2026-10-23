@@ -61,8 +61,17 @@ if (workloadPath) {
     throw new RangeError("Workload exceeds 1 MiB");
   const workloadBytes = await readFile(workloadPath);
   workloadHash = sha(workloadBytes);
-  const { inputs, runs, rounds, warmup, kind, primer, pattern, iterations } =
-    JSON.parse(workloadBytes.toString("utf8"));
+  const {
+    inputs,
+    runs,
+    rounds,
+    warmup,
+    kind,
+    primer,
+    pattern,
+    iterations,
+    count,
+  } = JSON.parse(workloadBytes.toString("utf8"));
   measurement = Object.fromEntries(
     Object.entries({
       inputs,
@@ -73,6 +82,7 @@ if (workloadPath) {
       primer,
       pattern,
       iterations,
+      count,
     }).filter(([, value]) => value !== undefined),
   );
 }
@@ -84,6 +94,8 @@ for (const name of [
   "compare-session.mjs",
   "session-measure.mjs",
   "operation-measure.mjs",
+  "operation-pairs.mjs",
+  "explain-measure.mjs",
   "timing-summary.mjs",
   "browser-session.mjs",
   "server.mjs",
