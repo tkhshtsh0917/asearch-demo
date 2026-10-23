@@ -1,6 +1,7 @@
 // Benchmark-only loopback server. No application or deployment responsibilities.
 import { readFile, stat } from "node:fs/promises";
 import { createServer } from "node:http";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serveFixture } from "../../tests/fixtures/http.mjs";
 
@@ -29,6 +30,33 @@ const server = createServer(async (req, res) => {
       res
         .writeHead(200, {
           "Content-Type": "application/octet-stream",
+          "Cache-Control": "no-store",
+        })
+        .end(body);
+    } catch {
+      res.writeHead(404).end();
+    }
+    return;
+  }
+  if (path.startsWith("/__dist/")) {
+    const match =
+      /^\/__dist\/(baseline|candidate)\/(web\.mjs|web\/asearch_wasm\.(?:js|wasm)|web\/asearch_wasm_bg\.wasm)$/.exec(
+        path,
+      );
+    const directory =
+      match &&
+      JSON.parse(process.env.ASEARCH_BENCH_DISTRIBUTIONS ?? "{}")[match[1]];
+    if (!directory) {
+      res.writeHead(404).end();
+      return;
+    }
+    try {
+      const body = await readFile(join(directory, match[2]));
+      res
+        .writeHead(200, {
+          "Content-Type": path.endsWith(".wasm")
+            ? "application/wasm"
+            : "text/javascript",
           "Cache-Control": "no-store",
         })
         .end(body);
