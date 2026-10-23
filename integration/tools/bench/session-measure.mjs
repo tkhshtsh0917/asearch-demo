@@ -29,10 +29,21 @@ function summary(raw) {
 export function measureSessions(
   api,
   bytes,
-  { runs = 5, rounds = 50, warmup = 10, inputs = sequences } = {},
+  {
+    runs = 5,
+    rounds = 50,
+    warmup = 10,
+    inputs = sequences,
+    candidateApi = api,
+    baselineEngine = "transposed-blocked",
+    candidateEngine = "auto",
+  } = {},
   now = () => performance.now(),
 ) {
   if (
+    ![baselineEngine, candidateEngine].every((engine) =>
+      ["auto", "transposed-blocked"].includes(engine),
+    ) ||
     ![runs, rounds, warmup].every(
       (n) => Number.isInteger(n) && n > 0 && n <= 1000,
     ) ||
@@ -51,11 +62,18 @@ export function measureSessions(
   )
     throw new RangeError("Invalid session benchmark workload");
   const index = api.AsearchIndex.fromBytes(bytes);
+  let candidateIndex;
   let blocked;
   let candidate;
   try {
-    blocked = index.session({ engine: "transposed-blocked", countTotal: true });
-    candidate = index.session({ countTotal: true });
+    candidateIndex =
+      candidateApi === api ? index : candidateApi.AsearchIndex.fromBytes(bytes);
+    const options = (engine) => ({
+      ...(engine === "auto" ? {} : { engine }),
+      countTotal: true,
+    });
+    blocked = index.session(options(baselineEngine));
+    candidate = candidateIndex.session(options(candidateEngine));
     const expected = inputs.map((sequence) => {
       blocked.reset();
       return sequence.map((pattern) => snapshot(blocked.update(pattern)));
@@ -103,6 +121,11 @@ export function measureSessions(
         "Individual session.update latency, JS/WASM and copied results included; reset excluded",
       correctness:
         "ids/levels/orders/exact totals checked outside each timing interval",
+      comparison: {
+        baselineEngine,
+        candidateEngine,
+        separateArtifacts: candidateApi !== api,
+      },
       options: {
         countTotal: true,
         limit: 30,
@@ -124,6 +147,7 @@ export function measureSessions(
   } finally {
     candidate?.free();
     blocked?.free();
+    if (candidateIndex && candidateIndex !== index) candidateIndex.free();
     index.free();
   }
 }
