@@ -142,3 +142,46 @@ test("version mismatch releases both indexes and invalid engines are rejected", 
     RangeError,
   );
 });
+
+test("bulk mode calls search without creating sessions", () => {
+  let searches = 0,
+    released = 0;
+  const api = {
+    AsearchIndex: {
+      fromBytes() {
+        return {
+          session() {
+            throw new Error("session must not be created");
+          },
+          free() {
+            released++;
+          },
+          search(pattern) {
+            searches++;
+            return {
+              ids: [pattern.length],
+              levels: [0],
+              orders: [0],
+              totals: [1],
+              stats: { engine: "transposed-blocked" },
+            };
+          },
+        };
+      },
+    },
+  };
+  const report = measureSessions(
+    api,
+    new Uint8Array(),
+    { kind: "search", runs: 1, rounds: 1, warmup: 1, inputs: [["a", "ab"]] },
+    () => 0,
+  );
+  assert.equal(report.kind, "search");
+  assert.equal(report.baseline.samples, 2);
+  assert.equal(searches, 10);
+  assert.equal(released, 1);
+  assert.throws(
+    () => measureSessions(api, new Uint8Array(), { kind: "unknown" }),
+    RangeError,
+  );
+});

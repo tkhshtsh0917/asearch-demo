@@ -34,6 +34,7 @@ export function measureSessions(
     rounds = 50,
     warmup = 10,
     inputs = sequences,
+    kind = "session",
     candidateApi = api,
     baselineEngine = "transposed-blocked",
     candidateEngine = "auto",
@@ -41,6 +42,7 @@ export function measureSessions(
   now = () => performance.now(),
 ) {
   if (
+    !["session", "search"].includes(kind) ||
     ![baselineEngine, candidateEngine].every((engine) =>
       ["auto", "transposed-blocked"].includes(engine),
     ) ||
@@ -72,8 +74,18 @@ export function measureSessions(
       ...(engine === "auto" ? {} : { engine }),
       countTotal: true,
     });
-    blocked = index.session(options(baselineEngine));
-    candidate = candidateIndex.session(options(candidateEngine));
+    const prepare = (index, engine) =>
+      kind === "session"
+        ? index.session(options(engine))
+        : {
+            reset() {},
+            free() {},
+            update(pattern) {
+              return index.search(pattern, options(engine));
+            },
+          };
+    blocked = prepare(index, baselineEngine);
+    candidate = prepare(candidateIndex, candidateEngine);
     const expected = inputs.map((sequence) => {
       blocked.reset();
       return sequence.map((pattern) => snapshot(blocked.update(pattern)));
@@ -117,10 +129,10 @@ export function measureSessions(
       pairedRuns.push({ baseline, candidate: optimized });
     }
     return {
-      category:
-        "Individual session.update latency, JS/WASM and copied results included; reset excluded",
+      category: `Individual ${kind === "session" ? "session.update" : "index.search"} latency, JS/WASM and copied results included; reset excluded`,
       correctness:
         "ids/levels/orders/exact totals checked outside each timing interval",
+      kind,
       comparison: {
         baselineEngine,
         candidateEngine,
