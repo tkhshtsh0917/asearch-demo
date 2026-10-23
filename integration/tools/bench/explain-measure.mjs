@@ -1,5 +1,7 @@
 // Compare explanations of equivalent ranked results without comparing opaque refs.
+
 import { pairedOperations } from "./operation-pairs.mjs";
+import { comparisonSettings } from "./search-settings.mjs";
 
 export function measureExplanations(apis, bytes, options, now) {
   const { pattern = "日本", count = 20, iterations = 32 } = options;
@@ -12,11 +14,12 @@ export function measureExplanations(apis, bytes, options, now) {
   )
     throw new RangeError("Invalid explanation workload");
   const indexes = [];
-  const searchOptions = { countTotal: true, limit: count };
+  const searchOptions = comparisonSettings(options, count);
+  const settings = Object.values(searchOptions);
   try {
     for (const api of apis) indexes.push(api.AsearchIndex.fromBytes(bytes));
-    const results = indexes.map((index) =>
-      index.search(pattern, searchOptions),
+    const results = indexes.map((index, side) =>
+      index.search(pattern, settings[side]),
     );
     const snapshot = (r) =>
       JSON.stringify([r.ids, r.levels, r.orders, r.totals].map((v) => [...v]));
@@ -24,7 +27,7 @@ export function measureExplanations(apis, bytes, options, now) {
       throw new Error("Explanation search mismatch or empty workload");
     const explain = (side) =>
       [...results[side].refs].map((ref) =>
-        indexes[side].explain(ref, pattern, searchOptions),
+        indexes[side].explain(ref, pattern, settings[side]),
       );
     const reference = JSON.stringify(explain(0));
     const verify = (value) => {
@@ -42,6 +45,7 @@ export function measureExplanations(apis, bytes, options, now) {
     }, options);
     return {
       ...report,
+      searchOptions,
       pattern,
       count: results[0].length,
       iterations,

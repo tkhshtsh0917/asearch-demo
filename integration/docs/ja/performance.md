@@ -20,6 +20,14 @@ integration workspaceから実行します。配布物のディレクトリに�
 
 回帰テストでは、Node ESM/CJSと3ブラウザで実際のNarrowingを31/32・63/64/65個のリテラル位置にまたがって実行します。ids・最小level・order・厳密totalsを全量検索と照合し、スカラーkernelと長い検索語のfallbackを確認します。
 
+## 適用条件と記録
+
+すべての比較で`mode: 2`（WildcardSpace）、`wrap: true`、`countTotal: true`、`limit: 30`、`maxAmbig: { kind: "by-length", every: 4, max: 3, unit: "profile", includeWildcards: false }`を明示します。説明比較だけは`limit`を指定した`count`へ変えます。両側へ`auto`を含む選択engineも明示するため、配布物の検索の既定値に計測条件を任せません。ロード検証の検索と説明対象の準備にも、計時外で同じ固定条件を使います。
+
+`searchOptions.baseline`と`searchOptions.candidate`は公開APIに渡した設定そのものを保存し、session runnerの従来の説明用`options`フィールドを置き換えます。load/batchの`options`は反復回数を、`iterations`はバッチ内の呼出回数を引き続き記録します。設定helperもハーネスhashの対象です。異なるengine名は意図的な実行戦略の比較であり、版間比較では同じengineを選んでください。固定条件を扱えない版では、暗黙のfallbackをせず失敗させます。
+
+採用したチューニングの測定では、両配布物の既定値がこの固定条件と一致していました。既報の効果は条件付きの過去の観測であり、今回のrunner修正は今後の条件を明示するものです。同一成果物同士の検証実行はハーネスの確認であり、コード変更の高速化を示す測定ではありません。
+
 ## ロードと短時間操作の比較
 
 同じrunnerで`kind: "load"`を指定すると、expectedのSHA-384検査を含むメモリ上の`fromBytes`を計時する。指定ASIXからdescriptorを作り、検索結果の照合と解放は計時外で行う。検証と派生構造構築の費用を測り、モジュール初期化・HTTP通信・描画は含めない。指定例：

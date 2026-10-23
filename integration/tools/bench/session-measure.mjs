@@ -1,3 +1,4 @@
+import { comparisonSettings } from "./search-settings.mjs";
 import { timingSummary as summary } from "./timing-summary.mjs";
 // Complete update calls, including JS/WASM transfers and result copies.
 export const sequences = [
@@ -59,22 +60,22 @@ export function measureSessions(
   try {
     candidateIndex =
       candidateApi === api ? index : candidateApi.AsearchIndex.fromBytes(bytes);
-    const options = (engine) => ({
-      ...(engine === "auto" ? {} : { engine }),
-      countTotal: true,
+    const searchOptions = comparisonSettings({
+      baselineEngine,
+      candidateEngine,
     });
-    const prepare = (index, engine) =>
+    const prepare = (index, settings) =>
       kind === "session"
-        ? index.session(options(engine))
+        ? index.session(settings)
         : {
             reset() {},
             free() {},
             update(pattern) {
-              return index.search(pattern, options(engine));
+              return index.search(pattern, settings);
             },
           };
-    blocked = prepare(index, baselineEngine);
-    candidate = prepare(candidateIndex, candidateEngine);
+    blocked = prepare(index, searchOptions.baseline);
+    candidate = prepare(candidateIndex, searchOptions.candidate);
     const expected = inputs.map((sequence) => {
       blocked.reset();
       return sequence.map((pattern) => snapshot(blocked.update(pattern)));
@@ -127,13 +128,7 @@ export function measureSessions(
         candidateEngine,
         separateArtifacts: candidateApi !== api,
       },
-      options: {
-        countTotal: true,
-        limit: 30,
-        maxAmbig: "default byLength",
-        mode: "WildcardSpace",
-        wrap: true,
-      },
+      searchOptions,
       inputs,
       runs,
       rounds,

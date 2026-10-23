@@ -69,6 +69,8 @@ for (const path of [
   "packages/asearch-wasm/dist/node.mjs",
   "tools/bench/session.mjs",
   "tools/bench/session-measure.mjs",
+  "tools/bench/search-settings.mjs",
+  "tools/bench/timing-summary.mjs",
   "pnpm-lock.yaml",
 ])
   artifacts[path] = sha(await readFile(resolve(root, path)));
