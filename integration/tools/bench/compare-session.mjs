@@ -6,7 +6,7 @@ import { arch, cpus, platform } from "node:os";
 import { resolve } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { compareBrowserSessions } from "./browser-session.mjs";
-import { measureSessions } from "./session-measure.mjs";
+import { measureComparison } from "./operation-measure.mjs";
 
 const [
   baselineDist,
@@ -61,13 +61,19 @@ if (workloadPath) {
     throw new RangeError("Workload exceeds 1 MiB");
   const workloadBytes = await readFile(workloadPath);
   workloadHash = sha(workloadBytes);
-  const { inputs, runs, rounds, warmup, kind } = JSON.parse(
-    workloadBytes.toString("utf8"),
-  );
+  const { inputs, runs, rounds, warmup, kind, primer, pattern, iterations } =
+    JSON.parse(workloadBytes.toString("utf8"));
   measurement = Object.fromEntries(
-    Object.entries({ inputs, runs, rounds, warmup, kind }).filter(
-      ([, value]) => value !== undefined,
-    ),
+    Object.entries({
+      inputs,
+      runs,
+      rounds,
+      warmup,
+      kind,
+      primer,
+      pattern,
+      iterations,
+    }).filter(([, value]) => value !== undefined),
   );
 }
 const baseline = await load(baselineDist, baselineCommit);
@@ -77,6 +83,7 @@ const harness = {};
 for (const name of [
   "compare-session.mjs",
   "session-measure.mjs",
+  "operation-measure.mjs",
   "browser-session.mjs",
   "server.mjs",
   "start-server.mjs",
@@ -104,6 +111,9 @@ const report = {
   baseline: baseline.identity,
   candidate: candidate.identity,
   corpusSha256: sha(bytes),
+  lockSha256: sha(
+    await readFile(new URL("../../pnpm-lock.yaml", import.meta.url)),
+  ),
   workloadSha256: workloadHash ?? sha(JSON.stringify(measurement)),
   result:
     mode === "browser"
@@ -115,7 +125,7 @@ const report = {
           engine,
           measurement,
         )
-      : measureSessions(baseline.api, bytes, {
+      : await measureComparison(baseline.api, bytes, {
           ...measurement,
           candidateApi: candidate.api,
           baselineEngine: engine,

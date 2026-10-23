@@ -31,8 +31,8 @@ export async function compareBrowserSessions(
             const candidate = await import("/__dist/candidate/web.mjs");
             await baseline.init();
             await candidate.init();
-            const { measureSessions } = await import(
-              "/tools/bench/session-measure.mjs"
+            const { measureComparison } = await import(
+              "/tools/bench/operation-measure.mjs"
             );
             const response = await fetch("/fixture.asix");
             if (!response.ok) throw new Error("Fixture unavailable");
@@ -45,7 +45,7 @@ export async function compareBrowserSessions(
               .join("");
             if (actualSha !== expectedSha)
               throw new Error("Fixture digest mismatch");
-            return measureSessions(baseline, bytes, {
+            return measureComparison(baseline, bytes, {
               ...measurement,
               candidateApi: candidate,
               baselineEngine: engine,

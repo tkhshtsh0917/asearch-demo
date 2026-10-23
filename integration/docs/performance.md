@@ -19,3 +19,15 @@ Use `browser` instead of `node` as the final argument to run Chromium, Firefox a
 The optional final `WORKLOAD_JSON` argument accepts `inputs` (arrays of query strings), `kind` (`session` or `search`), `runs`, `rounds` and `warmup`. Both versions receive the same options. `kind: "search"` measures independent index.search calls without session caching. Workload files are bounded to 1 MiB and their hash is recorded. `querySequences(texts, seed, count)` from `tools/bench/query-sequences.mjs` creates deterministic prefix, deletion, replacement and reset traces plus Unicode/wildcard cases. Use different frozen seeds for tuning and confirmation; record the corpus identity separately. Repeated traces do not constitute independent query coverage.
 
 Regression tests also force real narrowing through 31/32 and 63/64/65 literal positions in Node ESM/CJS and all three browser engines. They compare ids, minimum levels, order and exact totals against full search, covering the scalar kernel and its long-pattern fallback.
+
+## Load and short-operation comparisons
+
+The same runner accepts `kind: "load"` to time in-memory `fromBytes` including expected SHA-384 verification. It builds the descriptor from the supplied ASIX, then checks search results and frees each index outside the timer. This measures validation and derived-structure construction, excluding module initialization, HTTP transfer and rendering. For example:
+
+```json
+{ "kind": "load", "runs": 5, "rounds": 10, "warmup": 3 }
+```
+
+For operations shorter than browser clock resolution, `kind: "narrow-batch"` measures repeated public session updates after an untimed reset and prime. Supply `primer`, `pattern` and `iterations` (default 512). Both the prime and final result must agree across versions and select the narrowing engine; an unsuitable corpus or K-policy transition fails the measurement. This deliberately measures a warmed repeated query, not a typing trace. Report its samples as **batch mean milliseconds per update**, never individual keystroke percentiles.
+
+All operation modes retain zero samples, raw paired runs and AB/BA order. Load/batch summaries omit p95 below 100 samples and p99 below 1,000. Bootstrap whole paired runs with `pairedInterval` from `statistics.mjs` only when their medians are positive. Repeat in an independent process; do not infer tail confidence from a small number of batches. Artifact hashes identify the measured bytes; source commit labels alone do not prove provenance.
