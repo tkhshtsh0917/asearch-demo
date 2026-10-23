@@ -75,3 +75,70 @@ test("a result mismatch or invalid workload cannot produce timing evidence", () 
     RangeError,
   );
 });
+
+test("version comparison owns separate indexes and compares the same engine", () => {
+  const baseline = fixture();
+  const candidate = fixture();
+  const report = measureSessions(
+    baseline.api,
+    new Uint8Array(),
+    {
+      candidateApi: candidate.api,
+      baselineEngine: "auto",
+      candidateEngine: "auto",
+      runs: 1,
+      rounds: 1,
+      warmup: 1,
+      inputs: [["a", "ab"]],
+    },
+    () => 0,
+  );
+  assert.equal(report.comparison.separateArtifacts, true);
+  assert.deepEqual(baseline.released, ["candidate", "index"]);
+  assert.deepEqual(candidate.released, ["candidate", "index"]);
+});
+
+test("candidate load failure releases the baseline index", () => {
+  const baseline = fixture();
+  assert.throws(
+    () =>
+      measureSessions(baseline.api, new Uint8Array(), {
+        candidateApi: {
+          AsearchIndex: {
+            fromBytes() {
+              throw new Error("load failed");
+            },
+          },
+        },
+      }),
+    /load failed/,
+  );
+  assert.deepEqual(baseline.released, ["index"]);
+});
+
+test("version mismatch releases both indexes and invalid engines are rejected", () => {
+  const baseline = fixture();
+  const candidate = fixture({ mismatch: true });
+  assert.throws(
+    () =>
+      measureSessions(baseline.api, new Uint8Array(), {
+        candidateApi: candidate.api,
+        baselineEngine: "auto",
+        candidateEngine: "auto",
+        runs: 1,
+        rounds: 1,
+        warmup: 1,
+        inputs: [["a"]],
+      }),
+    /mismatch/,
+  );
+  assert.deepEqual(baseline.released, ["candidate", "index"]);
+  assert.deepEqual(candidate.released, ["candidate", "index"]);
+  assert.throws(
+    () =>
+      measureSessions(baseline.api, new Uint8Array(), {
+        baselineEngine: "unknown",
+      }),
+    RangeError,
+  );
+});

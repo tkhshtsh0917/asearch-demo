@@ -36,6 +36,8 @@ CLIの直接利用は`asearch-cli bench INPUT_JSON OUTPUT_JSON`。入力はworkl
 
 ## 一括索引の逐次入力
 
+変更前後の別配布物を同じengineで比較する場合は、[版間比較手順](../../docs/performance.md)を使う。以下は同一配布物内のblockedとautoの比較である。
+
 ```sh
 mise exec -- pnpm bench:session INPUT_ASIX OUTPUT_JSON node
 mise exec -- pnpm bench:session INPUT_ASIX OUTPUT_JSON browser
