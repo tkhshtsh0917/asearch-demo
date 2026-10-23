@@ -4,6 +4,7 @@ import { measureComparison } from "./operation-measure.mjs";
 
 function fixture({ id = 1, engine = "narrowing", failSession = false } = {}) {
   const events = [];
+  const settings = [];
   const result = () => ({
     ids: [id],
     levels: [0],
@@ -13,6 +14,7 @@ function fixture({ id = 1, engine = "narrowing", failSession = false } = {}) {
   });
   return {
     events,
+    settings,
     api: {
       AsearchIndex: {
         fromBytes(_bytes, options) {
@@ -20,7 +22,8 @@ function fixture({ id = 1, engine = "narrowing", failSession = false } = {}) {
           return {
             search: result,
             free: () => events.push("index free"),
-            session() {
+            session(options) {
+              settings.push(options);
               if (failSession) throw new Error("session failed");
               return {
                 reset() {},
@@ -86,6 +89,12 @@ test("narrowing batches verify selection, preserve zeros and release all handles
     },
     () => 0,
   );
+  assert.deepEqual(result.comparison, {
+    baselineEngine: "auto",
+    candidateEngine: "auto",
+  });
+  assert.deepEqual(a.settings, [{ engine: "auto", countTotal: true }]);
+  assert.deepEqual(b.settings, a.settings);
   assert.equal(result.baseline.zeroSamples, 2);
   for (const { events } of [a, b])
     assert.deepEqual(events.slice(-2), ["session free", "index free"]);
@@ -128,5 +137,27 @@ test("invalid repetition counts and batch sizes are rejected", async () => {
       }),
       RangeError,
     );
+  }
+});
+
+test("narrowing rejects incompatible requested engines before allocating either side", async () => {
+  for (const key of ["baselineEngine", "candidateEngine"]) {
+    for (const engine of ["transposed-blocked", "unknown", null]) {
+      const a = fixture(),
+        b = fixture();
+      await assert.rejects(
+        measureComparison(a.api, bytes, {
+          ...options,
+          candidateApi: b.api,
+          kind: "narrow-batch",
+          primer: "a",
+          pattern: "ab",
+          [key]: engine,
+        }),
+        /require engine auto/,
+      );
+      assert.deepEqual(a.events, []);
+      assert.deepEqual(b.events, []);
+    }
   }
 });

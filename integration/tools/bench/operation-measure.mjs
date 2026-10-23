@@ -49,7 +49,15 @@ function measureLoad(apis, bytes, expected, options, now) {
 }
 
 function measureNarrowing(apis, bytes, options, now) {
-  const { primer, pattern, iterations = 512 } = options;
+  const {
+    primer,
+    pattern,
+    iterations = 512,
+    baselineEngine = "auto",
+    candidateEngine = "auto",
+  } = options;
+  if (baselineEngine !== "auto" || candidateEngine !== "auto")
+    throw new RangeError("Narrowing batches require engine auto on both sides");
   if (
     typeof primer !== "string" ||
     typeof pattern !== "string" ||
@@ -66,7 +74,7 @@ function measureNarrowing(apis, bytes, options, now) {
     for (const api of apis) {
       const index = api.AsearchIndex.fromBytes(bytes);
       indexes.push(index);
-      sessions.push(index.session({ countTotal: true }));
+      sessions.push(index.session({ engine: "auto", countTotal: true }));
     }
     let reference;
     const verify = (result) => {
@@ -92,6 +100,7 @@ function measureNarrowing(apis, bytes, options, now) {
       primer,
       pattern,
       iterations,
+      comparison: { baselineEngine, candidateEngine },
       scope:
         "Batch mean milliseconds per repeated public session.update; reset/prime and result checks excluded; percentiles describe batch means, not individual keystrokes",
     };

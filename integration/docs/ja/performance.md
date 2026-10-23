@@ -28,7 +28,7 @@ integration workspaceから実行します。配布物のディレクトリに�
 { "kind": "load", "runs": 5, "rounds": 10, "warmup": 3 }
 ```
 
-ブラウザの時計分解能より短い操作には`kind: "narrow-batch"`を使う。計時外でresetとprimeを行った後、公開session.updateを反復する。`primer`・`pattern`・`iterations`（既定512）を指定する。primeと最後の結果は版間で一致し、narrowing経路を選択する必要がある。コーパスやKポリシーの変化が不適切なら測定を失敗させる。これはwarm状態での同一クエリ反復であり、打鍵系列ではない。標本は**update当たりのバッチ平均ms**と表記し、個別打鍵の分位点と呼ばない。
+ブラウザの時計分解能より短い操作には`kind: "narrow-batch"`を使う。計時外でresetとprimeを行った後、公開session.updateを反復する。`primer`・`pattern`・`iterations`（既定512）を指定する。prime後の最初の対象クエリと最後の結果は版間で一致し、narrowing経路を選択する必要がある。コーパスやKポリシーの変化が不適切なら測定を失敗させる。これはwarm状態での同一クエリ反復であり、打鍵系列ではない。標本は**update当たりのバッチ平均ms**と表記し、個別打鍵の分位点と呼ばない。
 
 どの操作でも0ms標本、rawのpaired runs、AB/BA順を保持する。load/batchの要約では100標本未満のp95、1,000標本未満のp99を省略する。`statistics.mjs`の`pairedInterval`でrun全体を再標本化し、中央値が正の場合だけ比率を求める。独立processで再確認し、少数バッチからtailの確実性を推論しない。成果物hashは計測bytesを識別するが、source commitラベルだけでは来歴の証明にならない。
 
@@ -41,3 +41,5 @@ session・segmentの要約でも100標本未満のp95、1,000標本未満のp99�
 合成スケーリングには`node tools/bench/corpus.mjs UNITS UINT32_SEED DOCS_JSONL WORKLOAD_JSON`を使える。3,000 BMP記号・指数1.05・10〜60単位のtextからなる決定的Zipfコーパスとseed固定の編集系列を生成する。UNITSは10,000〜10,000,000、出力先は未作成ファイルを指定する。準備済みCLIの`build DOCS_JSONL NEW_INDEX_ASIX`で別途ASIXを作り、比較runnerへASIXとworkloadを渡す。検索の計時区間でコーパス生成やCLI実行を行わない。アルゴリズム負荷の試験であり、関連度のベンチマークではない。ASIXのhashと生成器・seed・toolchainの識別情報を保持する。
 
 paired intervalは0ms観測もrun内の整列対象に残す。比率を求めるには、**両側のすべてのrunで、選択した分位点**が正である必要があり、そうでなければ時計分解能以下として失敗する。分位点が正でも量子化の不確かさは残る。従来の固定level用`quantile` helperは、正の時間になるよう較正したバッチ標本を引き続き要求する。
+
+`narrow-batch`は両側とも`auto`が必須です。blockedの強制や未知のengineは索引構築前に拒否し、sessionへ`engine: "auto"`を明示して、両側へ適用したengineを記録します。全量検索の強制比較には`kind: "search"`を使ってください。
