@@ -57,3 +57,5 @@ AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを
 ブラウザ向けWASMは読み取り専用です。索引生成・圧縮は取得済みCLIが担当します。初回ReleaseやAsset更新時には、SHA固定後に`engine:build`で生成したtarballを検証し、`pnpm install --update-checksums`でルートlockfileを更新してからfrozen installと回帰検証を行います。
 
 索引生成をCLIへ分離したWASMは、同一ツールでの比較でraw 298,174 → 285,543 byte（約4.2%減）となりました。gzip/Brotliでも縮小を確認しています。このサイズ比較は検索速度の保証ではありません。
+
+Worker往復とDOM反映の計測方法は[デモ性能ガイド](docs/performance.md)を参照してください。
