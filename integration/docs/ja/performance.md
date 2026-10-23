@@ -39,3 +39,5 @@ session・segmentの要約でも100標本未満のp95、1,000標本未満のp99�
 `pairedInterval(runs, seed, q)`は`q=0.95`等のrun内分位点にも対応する。推定値はpaired runの分位点比の幾何平均で、run全体を対応づけて再標本化する。各打鍵を独立とするbootstrapや、全標本を混ぜた分位点の信頼区間ではない。求めるtailに十分な標本を**各run内**で用意し、時計の限界を守り、別の計測組で確認する。
 
 合成スケーリングには`node tools/bench/corpus.mjs UNITS UINT32_SEED DOCS_JSONL WORKLOAD_JSON`を使える。3,000 BMP記号・指数1.05・10〜60単位のtextからなる決定的Zipfコーパスとseed固定の編集系列を生成する。UNITSは10,000〜10,000,000、出力先は未作成ファイルを指定する。準備済みCLIの`build DOCS_JSONL NEW_INDEX_ASIX`で別途ASIXを作り、比較runnerへASIXとworkloadを渡す。検索の計時区間でコーパス生成やCLI実行を行わない。アルゴリズム負荷の試験であり、関連度のベンチマークではない。ASIXのhashと生成器・seed・toolchainの識別情報を保持する。
+
+paired intervalは0ms観測もrun内の整列対象に残す。比率を求めるには、**両側のすべてのrunで、選択した分位点**が正である必要があり、そうでなければ時計分解能以下として失敗する。分位点が正でも量子化の不確かさは残る。従来の固定level用`quantile` helperは、正の時間になるよう較正したバッチ標本を引き続き要求する。

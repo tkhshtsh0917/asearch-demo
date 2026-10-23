@@ -18,8 +18,19 @@ export function seededRandom(seed = 31) {
 export function pairedInterval(runs, seed = 31, q = 0.5) {
   if (runs.length < 5)
     throw new RangeError("At least five paired runs are required");
+  const runQuantile = (values) => {
+    if (!values?.length || values.some((x) => !Number.isFinite(x) || x < 0))
+      throw new RangeError("Expected nonnegative finite timing samples");
+    if (!Number.isFinite(q) || q < 0 || q > 1)
+      throw new RangeError("Invalid quantile");
+    const sorted = [...values].sort((a, b) => a - b);
+    const value = sorted[Math.floor((sorted.length - 1) * q)];
+    if (value <= 0)
+      throw new RangeError("Run quantile is below timing resolution");
+    return value;
+  };
   const logs = runs.map(({ baseline, candidate }) =>
-    Math.log(quantile(candidate, q) / quantile(baseline, q)),
+    Math.log(runQuantile(candidate) / runQuantile(baseline)),
   );
   const random = seededRandom(seed);
   const bootstrap = Array.from({ length: 10000 }, () => {

@@ -39,3 +39,27 @@ test("tail intervals resample paired run quantiles rather than independent queri
   assert.equal(tail.upper, 0.5);
   assert.throws(() => pairedInterval(data, 31, 2), RangeError);
 });
+
+test("paired intervals preserve zeros but require positive selected run quantiles", () => {
+  const data = Array.from({ length: 5 }, () => ({
+    baseline: [0, 10, 10],
+    candidate: [0, 5, 5],
+  }));
+  assert.equal(pairedInterval(data).ratio, 0.5);
+  assert.deepEqual(data[0].baseline, [0, 10, 10]);
+  const unresolved = Array.from({ length: 5 }, () => ({
+    baseline: [0, 0, 10],
+    candidate: [0, 5, 5],
+  }));
+  assert.throws(() => pairedInterval(unresolved), /resolution/);
+  assert.equal(pairedInterval(unresolved, 31, 1).ratio, 0.5);
+  for (const bad of [[], [-1, 1, 1], [NaN, 1, 1], [Infinity, 1, 1]]) {
+    assert.throws(
+      () =>
+        pairedInterval(
+          Array.from({ length: 5 }, () => ({ baseline: bad, candidate: [1] })),
+        ),
+      RangeError,
+    );
+  }
+});
