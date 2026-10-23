@@ -51,3 +51,5 @@ session・segmentの要約でも100標本未満のp95、1,000標本未満のp99�
 paired intervalは0ms観測もrun内の整列対象に残す。比率を求めるには、**両側のすべてのrunで、選択した分位点**が正である必要があり、そうでなければ時計分解能以下として失敗する。分位点が正でも量子化の不確かさは残る。従来の固定level用`quantile` helperは、正の時間になるよう較正したバッチ標本を引き続き要求する。
 
 `narrow-batch`は両側とも`auto`が必須です。blockedの強制や未知のengineは索引構築前に拒否し、sessionへ`engine: "auto"`を明示して、両側へ適用したengineを記録します。全量検索の強制比較には`kind: "search"`を使ってください。
+
+文字値maskの回帰テストは、保存textに長い末尾を加え、短いID maskだけでなくalphabet探索を省く経路も実行します。Node ESM/CJSとChromium・Firefox・WebKitで、全3 profileのNUL・孤立surrogate・分割されたsurrogate pairを全量検索と照合します。Rust側では編集上限0〜7、変換後maskの語境界、確保ゼロも確認します。
