@@ -33,3 +33,5 @@ integration workspaceから実行します。配布物のディレクトリに�
 どの操作でも0ms標本、rawのpaired runs、AB/BA順を保持する。load/batchの要約では100標本未満のp95、1,000標本未満のp99を省略する。`statistics.mjs`の`pairedInterval`でrun全体を再標本化し、中央値が正の場合だけ比率を求める。独立processで再確認し、少数バッチからtailの確実性を推論しない。成果物hashは計測bytesを識別するが、source commitラベルだけでは来歴の証明にならない。
 
 session・segmentの要約でも100標本未満のp95、1,000標本未満のp99を省略する。この最小件数だけでtailの精度を保証せず、run間変動と時計の0ms標本を確認する。
+
+`kind: "explain"`には`pattern`・`count`（1/5/20）・`iterations`（既定32）を指定できる。両索引で同じ条件の検索を先に行い、ids/levels/orders/exact totalsを照合する。opaqueなrefは各版が自身のものを使う。その順位の結果群への公開`explain`呼出しをバッチ計時し、text/span構築と結果コピーを含み、検索・索引構築は除外する。text・座標・level・spanの一致は計時外で確認する。標本は説明結果群当たりのバッチ平均で、個別クエリではない。ヒットしないpatternは空ループを測らず失敗させる。
