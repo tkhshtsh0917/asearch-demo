@@ -90,3 +90,30 @@ test("oversized fixture requests stay bounded without stopping the server", asyn
     await new Promise((resolve) => server.close(resolve));
   }
 });
+
+test("explicit distributions expose only selected browser artifact names", async () => {
+  const { mkdtemp, writeFile, rm } = await import("node:fs/promises");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const directory = await mkdtemp(join(tmpdir(), "asearch-dist-test-"));
+  await writeFile(join(directory, "web.mjs"), "export const marker = 1;");
+  await writeFile(join(directory, "private.txt"), "hidden");
+  const server = await startServer({ distributions: { baseline: directory } });
+  try {
+    const response = await fetch(
+      new URL("/__dist/baseline/web.mjs", server.url),
+    );
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /marker/);
+    for (const path of [
+      "/__dist/candidate/web.mjs",
+      "/__dist/baseline/private.txt",
+      "/__dist/baseline/node.mjs",
+      "/__dist/baseline/web/unknown.js",
+    ])
+      assert.equal((await fetch(new URL(path, server.url))).status, 404);
+  } finally {
+    await server.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+});

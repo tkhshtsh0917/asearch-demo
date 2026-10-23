@@ -2,12 +2,16 @@ import { fork } from "node:child_process";
 import { once } from "node:events";
 import { fileURLToPath } from "node:url";
 
-export async function startServer({ indexPath } = {}) {
+export async function startServer({ indexPath, distributions } = {}) {
   const child = fork(
     fileURLToPath(new URL("./server.mjs", import.meta.url)),
     [],
     {
-      env: { ...process.env, ASEARCH_BENCH_INDEX: indexPath ?? "" },
+      env: {
+        ...process.env,
+        ASEARCH_BENCH_INDEX: indexPath ?? "",
+        ASEARCH_BENCH_DISTRIBUTIONS: JSON.stringify(distributions ?? {}),
+      },
       stdio: ["ignore", "ignore", "pipe", "ipc"],
     },
   );
