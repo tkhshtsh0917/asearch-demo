@@ -1,5 +1,9 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
+import {
+  installObservation,
+  type Observation,
+} from "../tools/bench/observe.ts";
 
 async function open(page: Page) {
   await page.goto("./");
@@ -199,4 +203,23 @@ test("valid manifests are independent of JSON property ordering", async ({
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 2");
   await expect(page.locator("#error")).toBeEmpty();
+});
+
+test("benchmark observer correlates Worker messages with accepted DOM changes", async ({
+  page,
+}) => {
+  await page.addInitScript(installObservation);
+  await open(page);
+  await expect(page.locator("#metrics")).toContainText("入力してください");
+  await query(page, "大学");
+  const observed = await page.evaluate(
+    () => (window as unknown as { __asearchBench: Observation }).__asearchBench,
+  );
+  expect(observed.readyMs).not.toBeNull();
+  expect(observed.errors).toEqual([]);
+  const sample = observed.samples.at(-1);
+  expect(sample?.pattern).toBe("大学");
+  expect(sample?.roundTripMs).toBeGreaterThanOrEqual(0);
+  expect(sample?.domMs).toBeGreaterThanOrEqual(sample?.roundTripMs ?? Infinity);
+  expect(sample?.workerMs).toBeGreaterThanOrEqual(0);
 });

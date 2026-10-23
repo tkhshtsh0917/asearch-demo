@@ -10,3 +10,5 @@
 | [deployment.md](deployment.md) | RustのReleaseからPages配信までの連携、GitHub Appの設定、手動での版指定と切り戻しを説明します。 |
 
 原文と日本語版は同じ変更で更新します。仕様の優先順位は現行契約を優先し、過去の設計記録を実装済みAPIと混同しないでください。
+
+[performance.md](performance.md)はWorker往復・DOM反映・起動計測の手順と限界を説明します。
