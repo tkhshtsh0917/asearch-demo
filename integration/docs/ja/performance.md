@@ -37,3 +37,5 @@ session・segmentの要約でも100標本未満のp95、1,000標本未満のp99�
 `kind: "explain"`には`pattern`・`count`（1/5/20）・`iterations`（既定32）を指定できる。両索引で同じ条件の検索を先に行い、ids/levels/orders/exact totalsを照合する。opaqueなrefは各版が自身のものを使う。その順位の結果群への公開`explain`呼出しをバッチ計時し、text/span構築と結果コピーを含み、検索・索引構築は除外する。text・座標・level・spanの一致は計時外で確認する。標本は説明結果群当たりのバッチ平均で、個別クエリではない。ヒットしないpatternは空ループを測らず失敗させる。
 
 `pairedInterval(runs, seed, q)`は`q=0.95`等のrun内分位点にも対応する。推定値はpaired runの分位点比の幾何平均で、run全体を対応づけて再標本化する。各打鍵を独立とするbootstrapや、全標本を混ぜた分位点の信頼区間ではない。求めるtailに十分な標本を**各run内**で用意し、時計の限界を守り、別の計測組で確認する。
+
+合成スケーリングには`node tools/bench/corpus.mjs UNITS UINT32_SEED DOCS_JSONL WORKLOAD_JSON`を使える。3,000 BMP記号・指数1.05・10〜60単位のtextからなる決定的Zipfコーパスとseed固定の編集系列を生成する。UNITSは10,000〜10,000,000、出力先は未作成ファイルを指定する。準備済みCLIの`build DOCS_JSONL NEW_INDEX_ASIX`で別途ASIXを作り、比較runnerへASIXとworkloadを渡す。検索の計時区間でコーパス生成やCLI実行を行わない。アルゴリズム負荷の試験であり、関連度のベンチマークではない。ASIXのhashと生成器・seed・toolchainの識別情報を保持する。
