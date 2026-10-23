@@ -327,7 +327,7 @@ for (const [name, api] of [
       key,
       texts: ["z".repeat(1024)],
     }));
-    docs.push({ key: 512, texts: [text] });
+    docs.push({ key: 512, texts: [text + "q".repeat(600)] });
     const index = api.AsearchIndex.fromDocs(docs, {
       limits: { maxPatternUnits: 128 },
     });
@@ -345,6 +345,45 @@ for (const [name, api] of [
     } finally {
       session.free();
       index.free();
+    }
+  });
+}
+
+for (const [name, api] of [
+  ["ESM", esm],
+  ["CJS", cjs],
+]) {
+  test(`${name}: narrowing preserves NUL and surrogate code values`, () => {
+    const text = "needle anchor\0\ud800Aa😀\udc00 b";
+    const docs = Array.from({ length: 128 }, (_, key) => ({
+      key,
+      texts: ["z".repeat(1024)],
+    }));
+    docs.push({ key: 128, texts: [text + "q".repeat(180)] });
+
+    for (const profile of ["ideal", "asearch.ts", "asearch.ts-lib"]) {
+      const index = api.AsearchIndex.fromDocs(docs, { profile });
+      const options = { maxAmbig: 3, countTotal: true };
+      const session = index.session(options);
+      let narrowed = false;
+      try {
+        for (let length = 13; length <= text.length; length++) {
+          const pattern = text.slice(0, length);
+          const actual = session.update(pattern);
+          const expected = index.search(pattern, options);
+          for (const field of ["ids", "levels", "orders", "totals"])
+            assert.deepEqual(
+              actual[field],
+              expected[field],
+              `${profile}: ${length}`,
+            );
+          narrowed ||= actual.stats.narrowedTexts === 1;
+        }
+        assert.equal(narrowed, true, `${profile}: sparse path exercised`);
+      } finally {
+        session.free();
+        index.free();
+      }
     }
   });
 }

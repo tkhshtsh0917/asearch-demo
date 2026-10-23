@@ -51,3 +51,5 @@ For synthetic scaling, `node tools/bench/corpus.mjs UNITS UINT32_SEED DOCS_JSONL
 Paired intervals keep zero observations in the sorted run samples. A ratio is available only if the **selected quantile of every run on both sides** is positive; otherwise it fails as below timing resolution. Positive quantiles alone do not remove clock quantization uncertainty. The older fixed-level `quantile` helper still requires positive calibrated batch samples.
 
 `narrow-batch` requires `auto` on both sides. Forced blocked or unknown engines are rejected before constructing indexes; sessions explicitly receive `engine: "auto"`, and the report records both applied engine settings. Use `kind: "search"` for a forced full-search comparison.
+
+Code-value-mask regressions also use longer stored tails so they exercise alphabet-lookup hoisting rather than only the short ID-mask path. NUL, lone surrogates and split surrogate pairs are compared against full search for all three profiles in Node ESM/CJS and Chromium/Firefox/WebKit. Rust additionally checks budgets 0–7, remapped mask boundaries and zero allocations.
