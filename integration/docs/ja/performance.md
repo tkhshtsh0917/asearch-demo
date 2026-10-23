@@ -17,3 +17,5 @@ integration workspaceから実行します。配布物のディレクトリに�
 末尾の`node`を`browser`へ変えると、Chromium・Firefox・WebKitを順に測定します。両配布物は別々のlocalhostモジュールURLで配信し、指定したwebエントリー・生成グルー・WASMのファイル名だけを公開します。取得したASIXのdigestを計測前に照合します。
 
 任意の末尾引数`WORKLOAD_JSON`には、`inputs`（検索語文字列の配列を並べた系列）、`kind`（`session`または`search`）、`runs`、`rounds`、`warmup`を指定できます。両版へ同じ設定を渡します。`kind: "search"`はsession cacheを使わない独立したindex.searchを測ります。ファイルは1 MiB以下に制限しhashを記録します。`tools/bench/query-sequences.mjs`の`querySequences(texts, seed, count)`は、接頭辞・削除・置換・resetとUnicode・wildcardの固定系列を生成します。調整用と確認用で異なるseedを固定し、コーパスの識別情報も別途記録してください。同じ系列の反復数を、独立した検索語の網羅数とは数えません。
+
+回帰テストでは、Node ESM/CJSと3ブラウザで実際のNarrowingを31/32・63/64/65個のリテラル位置にまたがって実行します。ids・最小level・order・厳密totalsを全量検索と照合し、スカラーkernelと長い検索語のfallbackを確認します。

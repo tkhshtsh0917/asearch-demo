@@ -316,3 +316,35 @@ test("a full session cache leaves room for query transport and the complete pack
     index.free();
   }
 });
+
+for (const [name, api] of [
+  ["ESM", esm],
+  ["CJS", cjs],
+]) {
+  test(`${name}: narrowing crosses scalar word width without losing the complete result`, () => {
+    const text = "abcdefghij".repeat(9);
+    const docs = Array.from({ length: 512 }, (_, key) => ({
+      key,
+      texts: ["z".repeat(1024)],
+    }));
+    docs.push({ key: 512, texts: [text] });
+    const index = api.AsearchIndex.fromDocs(docs, {
+      limits: { maxPatternUnits: 128 },
+    });
+    const options = { maxAmbig: 3, countTotal: true };
+    const session = index.session(options);
+    try {
+      for (const length of [30, 31, 32, 62, 63, 64, 65, 70, 90]) {
+        const pattern = text.slice(0, length);
+        const actual = session.update(pattern);
+        const expected = index.search(pattern, options);
+        for (const field of ["ids", "levels", "orders", "totals"])
+          assert.deepEqual(actual[field], expected[field]);
+        if (length !== 30) assert.equal(actual.stats.narrowedTexts, 1);
+      }
+    } finally {
+      session.free();
+      index.free();
+    }
+  });
+}
