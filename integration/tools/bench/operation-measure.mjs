@@ -1,5 +1,6 @@
 // Compare loading or repeated public updates without timing setup/result checks.
 import { measureSessions } from "./session-measure.mjs";
+import { timingSummary as summary } from "./timing-summary.mjs";
 
 function snapshot(result) {
   return JSON.stringify(
@@ -7,23 +8,6 @@ function snapshot(result) {
       ...v,
     ]),
   );
-}
-
-function summary(values) {
-  const sorted = [...values].sort((a, b) => a - b);
-  return {
-    samples: values.length,
-    zeroSamples: values.filter((v) => v === 0).length,
-    p50Ms: sorted[Math.floor((values.length - 1) * 0.5)],
-    p95Ms:
-      values.length >= 100
-        ? sorted[Math.floor((values.length - 1) * 0.95)]
-        : null,
-    p99Ms:
-      values.length >= 1000
-        ? sorted[Math.floor((values.length - 1) * 0.99)]
-        : null,
-  };
 }
 
 function paired(execute, { runs = 5, rounds = 10, warmup = 3 }) {

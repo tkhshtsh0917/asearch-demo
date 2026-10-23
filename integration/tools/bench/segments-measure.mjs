@@ -3,6 +3,7 @@ import {
   sameBytes,
   updateColumn,
 } from "./segments-lifecycle.mjs";
+import { timingSummary as summary } from "./timing-summary.mjs";
 
 // Deterministic synthetic corpus isolates segment overhead, not relevance.
 function fingerprint(result) {
@@ -11,17 +12,6 @@ function fingerprint(result) {
       ...part,
     ]),
   );
-}
-
-function summary(raw) {
-  const sorted = [...raw].sort((a, b) => a - b);
-  return {
-    samples: raw.length,
-    zeroSamples: raw.filter((n) => n === 0).length,
-    p50Ms: sorted[Math.floor((sorted.length - 1) * 0.5)],
-    p95Ms: sorted[Math.floor((sorted.length - 1) * 0.95)],
-    p99Ms: sorted[Math.floor((sorted.length - 1) * 0.99)],
-  };
 }
 
 async function descriptor(bytes) {

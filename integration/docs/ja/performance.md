@@ -31,3 +31,5 @@ integration workspaceから実行します。配布物のディレクトリに�
 ブラウザの時計分解能より短い操作には`kind: "narrow-batch"`を使う。計時外でresetとprimeを行った後、公開session.updateを反復する。`primer`・`pattern`・`iterations`（既定512）を指定する。primeと最後の結果は版間で一致し、narrowing経路を選択する必要がある。コーパスやKポリシーの変化が不適切なら測定を失敗させる。これはwarm状態での同一クエリ反復であり、打鍵系列ではない。標本は**update当たりのバッチ平均ms**と表記し、個別打鍵の分位点と呼ばない。
 
 どの操作でも0ms標本、rawのpaired runs、AB/BA順を保持する。load/batchの要約では100標本未満のp95、1,000標本未満のp99を省略する。`statistics.mjs`の`pairedInterval`でrun全体を再標本化し、中央値が正の場合だけ比率を求める。独立processで再確認し、少数バッチからtailの確実性を推論しない。成果物hashは計測bytesを識別するが、source commitラベルだけでは来歴の証明にならない。
+
+session・segmentの要約でも100標本未満のp95、1,000標本未満のp99を省略する。この最小件数だけでtailの精度を保証せず、run間変動と時計の0ms標本を確認する。
