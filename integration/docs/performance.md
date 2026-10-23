@@ -20,6 +20,14 @@ The optional final `WORKLOAD_JSON` argument accepts `inputs` (arrays of query st
 
 Regression tests also force real narrowing through 31/32 and 63/64/65 literal positions in Node ESM/CJS and all three browser engines. They compare ids, minimum levels, order and exact totals against full search, covering the scalar kernel and its long-pattern fallback.
 
+## Applied settings and records
+
+Every comparison passes explicit `mode: 2` (WildcardSpace), `wrap: true`, `countTotal: true`, `limit: 30` and `maxAmbig: { kind: "by-length", every: 4, max: 3, unit: "profile", includeWildcards: false }`. Explanation comparisons set `limit` to the requested `count` instead. Both sides receive the selected engine explicitly, including `auto`; no artifact's search defaults determine the workload. Load validation searches and explanation setup use the same pinned settings outside their timed sections.
+
+`searchOptions.baseline` and `searchOptions.candidate` record the very settings passed to the public APIs, replacing the session runner's former descriptive `options` field. Load/batch `options` still records repetition counts; `iterations` records each batch size. The settings helper is included in harness hashes. Different engine names intentionally compare execution strategies; version comparisons should use the same engine. If a version does not support the pinned settings, the run must fail rather than silently fall back.
+
+The retained tuning measurements used distributions with these same defaults. Their reported benefits remain conditional historical observations; the corrected runner makes those conditions explicit for future comparisons. A validation run with identical artifacts checks the harness, not the speedup of a code change.
+
 ## Load and short-operation comparisons
 
 The same runner accepts `kind: "load"` to time in-memory `fromBytes` including expected SHA-384 verification. It builds the descriptor from the supplied ASIX, then checks search results and frees each index outside the timer. This measures validation and derived-structure construction, excluding module initialization, HTTP transfer and rendering. For example:

@@ -93,7 +93,8 @@ test("narrowing batches verify selection, preserve zeros and release all handles
     baselineEngine: "auto",
     candidateEngine: "auto",
   });
-  assert.deepEqual(a.settings, [{ engine: "auto", countTotal: true }]);
+  assert.deepEqual(a.settings, [result.searchOptions.baseline]);
+  assert.equal(a.settings[0].engine, "auto");
   assert.deepEqual(b.settings, a.settings);
   assert.equal(result.baseline.zeroSamples, 2);
   for (const { events } of [a, b])

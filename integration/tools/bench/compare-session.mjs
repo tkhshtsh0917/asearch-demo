@@ -93,6 +93,7 @@ const harness = {};
 for (const name of [
   "compare-session.mjs",
   "session-measure.mjs",
+  "search-settings.mjs",
   "operation-measure.mjs",
   "operation-pairs.mjs",
   "explain-measure.mjs",

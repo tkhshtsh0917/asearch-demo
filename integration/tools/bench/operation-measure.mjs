@@ -2,6 +2,7 @@
 
 import { measureExplanations } from "./explain-measure.mjs";
 import { pairedOperations as paired } from "./operation-pairs.mjs";
+import { comparisonSettings } from "./search-settings.mjs";
 import { measureSessions } from "./session-measure.mjs";
 
 function snapshot(result) {
@@ -25,6 +26,8 @@ async function descriptor(bytes) {
 }
 
 function measureLoad(apis, bytes, expected, options, now) {
+  const searchOptions = comparisonSettings(options);
+  const settings = Object.values(searchOptions);
   let reference;
   const pattern = options.pattern ?? "地理";
   const report = paired((side) => {
@@ -32,7 +35,7 @@ function measureLoad(apis, bytes, expected, options, now) {
     const index = apis[side].AsearchIndex.fromBytes(bytes, { expected });
     const elapsed = now() - start;
     try {
-      const value = snapshot(index.search(pattern, { countTotal: true }));
+      const value = snapshot(index.search(pattern, settings[side]));
       reference ??= value;
       if (value !== reference) throw new Error("Load result mismatch");
       return elapsed;
@@ -42,6 +45,7 @@ function measureLoad(apis, bytes, expected, options, now) {
   }, options);
   return {
     ...report,
+    searchOptions,
     pattern,
     scope:
       "Individual in-memory fromBytes with expected SHA-384; search/free outside timer; excludes HTTP, module compile and initialization",
@@ -68,13 +72,14 @@ function measureNarrowing(apis, bytes, options, now) {
     iterations > 16384
   )
     throw new RangeError("Invalid narrowing batch workload");
+  const searchOptions = comparisonSettings({ baselineEngine, candidateEngine });
   const indexes = [],
     sessions = [];
   try {
-    for (const api of apis) {
+    for (const [side, api] of apis.entries()) {
       const index = api.AsearchIndex.fromBytes(bytes);
       indexes.push(index);
-      sessions.push(index.session({ engine: "auto", countTotal: true }));
+      sessions.push(index.session(Object.values(searchOptions)[side]));
     }
     let reference;
     const verify = (result) => {
@@ -101,6 +106,7 @@ function measureNarrowing(apis, bytes, options, now) {
       pattern,
       iterations,
       comparison: { baselineEngine, candidateEngine },
+      searchOptions,
       scope:
         "Batch mean milliseconds per repeated public session.update; reset/prime and result checks excluded; percentiles describe batch means, not individual keystrokes",
     };

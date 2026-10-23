@@ -11,7 +11,7 @@ function fixture({ mismatch = false } = {}) {
         fromBytes() {
           return {
             session(options) {
-              const candidate = options.engine === undefined;
+              const candidate = options.engine === "auto";
               return {
                 reset() {},
                 free() {
