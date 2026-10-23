@@ -35,3 +35,5 @@ integration workspaceから実行します。配布物のディレクトリに�
 session・segmentの要約でも100標本未満のp95、1,000標本未満のp99を省略する。この最小件数だけでtailの精度を保証せず、run間変動と時計の0ms標本を確認する。
 
 `kind: "explain"`には`pattern`・`count`（1/5/20）・`iterations`（既定32）を指定できる。両索引で同じ条件の検索を先に行い、ids/levels/orders/exact totalsを照合する。opaqueなrefは各版が自身のものを使う。その順位の結果群への公開`explain`呼出しをバッチ計時し、text/span構築と結果コピーを含み、検索・索引構築は除外する。text・座標・level・spanの一致は計時外で確認する。標本は説明結果群当たりのバッチ平均で、個別クエリではない。ヒットしないpatternは空ループを測らず失敗させる。
+
+`pairedInterval(runs, seed, q)`は`q=0.95`等のrun内分位点にも対応する。推定値はpaired runの分位点比の幾何平均で、run全体を対応づけて再標本化する。各打鍵を独立とするbootstrapや、全標本を混ぜた分位点の信頼区間ではない。求めるtailに十分な標本を**各run内**で用意し、時計の限界を守り、別の計測組で確認する。

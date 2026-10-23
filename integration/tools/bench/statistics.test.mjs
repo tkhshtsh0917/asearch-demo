@@ -26,3 +26,16 @@ test("aggregation is deterministic and rejects invalid samples", () => {
   for (const bad of [[], [0], [-1], [NaN], [Infinity]])
     assert.throws(() => quantile(bad, 0.5), RangeError);
 });
+
+test("tail intervals resample paired run quantiles rather than independent queries", () => {
+  const data = Array.from({ length: 5 }, () => ({
+    baseline: [...Array(90).fill(1), ...Array(10).fill(10)],
+    candidate: [...Array(90).fill(1), ...Array(10).fill(5)],
+  }));
+  assert.equal(pairedInterval(data).ratio, 1);
+  const tail = pairedInterval(data, 31, 0.95);
+  assert.equal(tail.ratio, 0.5);
+  assert.equal(tail.lower, 0.5);
+  assert.equal(tail.upper, 0.5);
+  assert.throws(() => pairedInterval(data, 31, 2), RangeError);
+});
