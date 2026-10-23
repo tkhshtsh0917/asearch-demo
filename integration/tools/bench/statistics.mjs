@@ -15,11 +15,11 @@ export function seededRandom(seed = 31) {
 }
 
 // Resample whole paired runs, never individual operations as independent runs.
-export function pairedInterval(runs, seed = 31) {
+export function pairedInterval(runs, seed = 31, q = 0.5) {
   if (runs.length < 5)
     throw new RangeError("At least five paired runs are required");
   const logs = runs.map(({ baseline, candidate }) =>
-    Math.log(quantile(candidate, 0.5) / quantile(baseline, 0.5)),
+    Math.log(quantile(candidate, q) / quantile(baseline, q)),
   );
   const random = seededRandom(seed);
   const bootstrap = Array.from({ length: 10000 }, () => {
