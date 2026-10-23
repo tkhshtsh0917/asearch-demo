@@ -1,3 +1,4 @@
+import { timingSummary as summary } from "./timing-summary.mjs";
 // Complete update calls, including JS/WASM transfers and result copies.
 export const sequences = [
   ["地", "地理", "地理学", "地理", "地"],
@@ -12,18 +13,6 @@ function snapshot(result) {
       result[key] === undefined ? null : [...result[key]],
     ),
   ]);
-}
-
-function summary(raw) {
-  const sorted = [...raw].sort((a, b) => a - b);
-  const percentile = (q) => sorted[Math.floor((sorted.length - 1) * q)];
-  return {
-    samples: raw.length,
-    zeroSamples: raw.filter((v) => v === 0).length,
-    p50Ms: percentile(0.5),
-    p95Ms: percentile(0.95),
-    p99Ms: percentile(0.99),
-  };
 }
 
 export function measureSessions(

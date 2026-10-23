@@ -84,6 +84,7 @@ for (const name of [
   "compare-session.mjs",
   "session-measure.mjs",
   "operation-measure.mjs",
+  "timing-summary.mjs",
   "browser-session.mjs",
   "server.mjs",
   "start-server.mjs",

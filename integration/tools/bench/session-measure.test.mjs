@@ -52,7 +52,7 @@ test("individual session samples retain timer zeros and both paired paths", () =
   );
   assert.equal(result.baseline.samples, 20);
   assert.equal(result.candidate.zeroSamples, 20);
-  assert.equal(result.candidate.p95Ms, 0);
+  assert.equal(result.candidate.p95Ms, null);
   assert.equal(result.engines.incremental, 20);
   assert.deepEqual(released, ["candidate", "baseline", "index"]);
 });

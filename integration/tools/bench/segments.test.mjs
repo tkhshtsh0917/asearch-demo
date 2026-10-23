@@ -16,6 +16,8 @@ test("segment benchmark checks every column against the same flat index", async 
     assert.equal(entry.segments, i + 1);
     assert.equal(entry.lifecycle.load.samples, 3);
     assert.equal(entry.lifecycle.update.samples, 3);
+    assert.equal(entry.lifecycle.load.p95Ms, null);
+    assert.equal(entry.lifecycle.update.p99Ms, null);
     assert.equal(entry.baseline.samples, report.options.inputs.length);
     assert.equal(entry.candidate.samples, report.options.inputs.length);
     assert.ok(
