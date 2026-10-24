@@ -10,10 +10,12 @@ import {
 } from "asearch-wasm";
 import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
+import { intents } from "./shared/intents.ts";
 import type { Request, Response } from "./shared/protocol.ts";
-import { QueryPolicy, queryRules } from "./shared/query.ts";
+import { QueryPolicy } from "./shared/query.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
-import { corpusOptions, intents, search } from "./worker/search.ts";
+import { corpusOptions } from "./worker/options.ts";
+import { search } from "./worker/search.ts";
 import { candidate } from "./worker/stage.ts";
 
 const scope = self as DedicatedWorkerGlobalScope;
@@ -59,18 +61,14 @@ function state() {
 function run() {
   if (last && initialized)
     post(
-      search(
-        last.id,
-        last.pattern,
-        last.mode,
-        epoch,
+      search(last, epoch, {
         root,
         session,
         intent,
         questions,
-        updates.byKey,
+        changes: updates.byKey,
         policy,
-      ),
+      }),
     );
 }
 
@@ -85,13 +83,11 @@ async function init(url: string) {
   await ready;
   info = release(await jsonAsset(base, "release.json"));
   policy = new QueryPolicy(
-    queryRules(
-      await jsonAsset(
-        base,
-        info.queryRules.url,
-        2 * 1024 * 1024,
-        info.queryRules.sha256,
-      ),
+    await jsonAsset(
+      base,
+      info.queryRules.url,
+      2 * 1024 * 1024,
+      info.queryRules.sha256,
     ),
   );
   const next = await candidate(base, info, 0),

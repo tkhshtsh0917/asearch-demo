@@ -53,8 +53,8 @@ export class QueryPolicy {
   private readonly forms: ReadonlyMap<string, string>;
   private readonly kana: ReadonlyMap<string, string>;
 
-  constructor(rules: QueryRules) {
-    const valid = queryRules(rules);
+  constructor(value: unknown) {
+    const valid = queryRules(value);
     this.forms = new Map(valid.forms);
     this.kana = new Map(valid.kana);
   }
