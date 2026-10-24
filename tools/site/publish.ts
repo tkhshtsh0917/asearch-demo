@@ -67,9 +67,13 @@ export async function publish(
       integrity: `sha384-${createHash("sha384").update(data).digest("base64")}`,
     };
   };
-  const rulesBytes = encode(
-    analysis.queryRules([...questions, { ...added, key }]),
-  );
+  // Query vocabulary covers every original used by any stage, including changed contexts.
+  const querySources = [
+    ...new Map(
+      [...questions, ...changed, added].map((row) => [row.text, row]),
+    ).values(),
+  ].map((row, key) => ({ ...row, key }));
+  const rulesBytes = encode(analysis.queryRules(querySources));
   const rules = {
     url: put("query-rules", "json", rulesBytes),
     sha256: digest(rulesBytes),

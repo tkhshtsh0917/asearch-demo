@@ -28,7 +28,12 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
         return result;
       },
       provenance: analysis.provenance,
-      queryRules: analysis.queryRules,
+      queryRules(rows) {
+        assert.equal(new Set(rows.map((row) => row.key)).size, rows.length);
+        assert.ok(rows.some((row) => row.text.startsWith("更新例：")));
+        assert.ok(rows.some((row) => row.text === "質問0"));
+        return analysis.queryRules(rows);
+      },
     },
   );
 
@@ -37,6 +42,10 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
 
   const info = release(json("release.json"));
   assert.deepEqual(json("analysis.json"), provenance);
+  const queryAsset = files.get(info.queryRules.url);
+  assert.ok(queryAsset);
+  assert.equal(digest(queryAsset), info.queryRules.sha256);
+  assert.deepEqual(json(info.queryRules.url).forms, [["変化", "A/1"]]);
   const manifests = info.stages.map(
     (stage) => json(stage.manifest) as Manifest,
   );

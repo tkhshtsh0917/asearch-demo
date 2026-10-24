@@ -1,4 +1,4 @@
-/** Fetches bounded same-origin catalog and segment assets with digest checks. */
+/** Fetches bounded same-origin metadata and segment assets with digest checks. */
 import { assetName } from "../shared/catalog.ts";
 
 export async function jsonAsset(
@@ -46,7 +46,7 @@ export async function jsonAsset(
       new Uint8Array(await crypto.subtle.digest("SHA-256", bytes)),
       (b) => b.toString(16).padStart(2, "0"),
     ).join("");
-    if (hash !== sha256) throw new Error("Catalog integrity mismatch");
+    if (hash !== sha256) throw new Error("Asset integrity mismatch");
   }
   return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
 }
