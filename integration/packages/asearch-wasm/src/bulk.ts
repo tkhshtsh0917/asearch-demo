@@ -183,6 +183,7 @@ export class AsearchIndex {
         "countTotal",
         "engine",
         "maxCacheBytes",
+        "ranking",
       ],
       "session options",
     );
@@ -194,6 +195,7 @@ export class AsearchIndex {
       limit: options.limit,
       countTotal: options.countTotal,
       engine: options.engine,
+      ranking: options.ranking,
     };
     const maxCacheBytes = Math.min(
       integer(optional(cacheOption, 32 * 1024 * 1024), "maxCacheBytes"),

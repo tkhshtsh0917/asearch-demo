@@ -61,6 +61,8 @@ export interface SearchOptions {
   maxAmbig?: number | AmbigPolicy;
   limit?: number;
   countTotal?: boolean;
+  /** Requires asearch 0.3+: distance, normalized UTF-16 start, order, key. */
+  ranking?: "stable" | "position";
   engine?: "auto" | "transposed-blocked";
 }
 

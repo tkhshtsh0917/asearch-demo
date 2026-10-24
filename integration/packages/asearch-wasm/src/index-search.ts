@@ -86,5 +86,6 @@ export function executeSearch(
     nativeCall(() =>
       handle().search_prepared(keys, prepared.limit, prepared.countTotal),
     ),
+    prepared.config[7] === 1,
   );
 }
