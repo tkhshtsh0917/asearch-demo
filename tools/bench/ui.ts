@@ -1,11 +1,15 @@
 /** Measures Worker round trips and accepted DOM mutations on an already-built demo. */
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { cpus, platform } from "node:os";
 import { chromium, firefox, webkit } from "@playwright/test";
-
 import { installObservation, type Observation } from "./observe.ts";
+import {
+  artifacts as captureArtifacts,
+  unchanged,
+  verifyServed,
+} from "./provenance.ts";
 
 const [url, output] = process.argv.slice(2);
 if (
@@ -19,17 +23,14 @@ if (
 
 const sha = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
-const artifacts: Record<string, string> = {};
-for (const name of await readdir(
-  new URL("../../dist/assets/", import.meta.url),
-)) {
-  if (/\.(js|wasm|css)$/.test(name))
-    artifacts[`assets/${name}`] = sha(
-      await readFile(new URL(`../../dist/assets/${name}`, import.meta.url)),
-    );
-}
-artifacts["index.html"] = sha(
-  await readFile(new URL("../../dist/index.html", import.meta.url)),
+const root = new URL("../../dist/", import.meta.url);
+const snapshot = await captureArtifacts(root);
+await verifyServed(new URL(url), snapshot);
+const artifacts = Object.fromEntries(
+  Object.entries(snapshot).map(([name, entry]) => [name, entry.sha256]),
+);
+const artifactBytes = Object.fromEntries(
+  Object.entries(snapshot).map(([name, entry]) => [name, entry.bytes]),
 );
 const results = [];
 for (const [name, type] of Object.entries({ chromium, firefox, webkit })) {
@@ -103,6 +104,9 @@ for (const [name, type] of Object.entries({ chromium, firefox, webkit })) {
     await browser.close();
   }
 }
+unchanged(snapshot, await captureArtifacts(root));
+await verifyServed(new URL(url), snapshot);
+
 await writeFile(
   output,
   `${JSON.stringify(
@@ -118,6 +122,20 @@ await writeFile(
         ),
       ),
       artifacts,
+      artifactBytes,
+      harnessSources: Object.fromEntries(
+        await Promise.all(
+          ["ui.ts", "observe.ts", "provenance.ts", "../engine/http.ts"].map(
+            async (name) => [
+              name,
+              sha(await readFile(new URL(name, import.meta.url))),
+            ],
+          ),
+        ),
+      ),
+      lockfileSha256: sha(
+        await readFile(new URL("../../pnpm-lock.yaml", import.meta.url)),
+      ),
       harnessCommit: execFileSync("git", ["rev-parse", "HEAD"], {
         encoding: "utf8",
         cwd: new URL("../../", import.meta.url),
@@ -135,7 +153,7 @@ await writeFile(
         .update(await readFile(new URL(import.meta.url)))
         .digest("hex"),
       scope:
-        "Warm Worker public messages including search/explain, response arrival and accepted DOM mutation after the app's rAF; DOM mutation is not paint completion. Startup is one fresh context/navigation per browser, not a cold OS cache. Sequential queries, no network shaping. Experimental pre-release bundles require separate artifact provenance. Not a device guarantee.",
+        "Code and publication data are hash-verified against the served build before/after timing; preflight warms caches. Warm Worker public messages including search/explain, response arrival and accepted DOM mutation after the app's rAF; DOM mutation is not paint completion. Startup is one fresh context/navigation per browser, not a cold OS cache. Sequential queries, no network shaping. Experimental pre-release bundles require separate artifact provenance. Not a device guarantee.",
       results,
     },
     null,
