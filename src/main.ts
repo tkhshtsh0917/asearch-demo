@@ -31,10 +31,10 @@ function send(request: Request) {
   worker.postMessage(request);
 }
 
-/** Sends only committed IME text after the Worker has loaded its initial index. */
+/** Searches the current input value, including uncommitted IME text. */
 function query() {
   latest = ++serial;
-  if (composing || !loaded) return;
+  if (!loaded) return;
   send({
     kind: "query",
     id: latest,
@@ -82,8 +82,7 @@ function handleResults(
     generation === run &&
     message.id === latest &&
     message.mode === mode.value &&
-    message.epoch === epoch &&
-    !composing;
+    message.epoch === epoch;
   if (!accepted()) return;
 
   requestAnimationFrame(() => {
@@ -179,7 +178,7 @@ function bindEvents() {
     });
   element("search").addEventListener("submit", (event) => {
     event.preventDefault();
-    query();
+    if (!composing) query();
   });
   window.addEventListener("pagehide", (event) => {
     if (!event.persisted) worker.terminate();
