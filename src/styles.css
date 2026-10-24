@@ -27,10 +27,15 @@ a {
 }
 
 .brand {
+  margin: 0;
   font-size: 23px;
   font-weight: 800;
-  text-decoration: none;
   color: #242339;
+}
+
+.brand a {
+  color: inherit;
+  text-decoration: none;
 }
 
 .brand span {
@@ -39,23 +44,9 @@ a {
   color: #666174;
 }
 
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.18em;
-  color: #63549a;
-  margin: 56px 0 14px;
-}
-
-h1 {
-  font-size: clamp(38px, 7vw, 64px);
-  line-height: 1.25;
-  letter-spacing: -0.035em;
-  margin: 0;
-}
-
 .intro {
   color: #625e70;
-  margin: 22px 0 36px;
+  margin: 12px 0 28px;
 }
 
 /* Search controls and publication status. */
@@ -273,9 +264,6 @@ summary {
   .notes {
     grid-template-columns: 1fr;
     gap: 8px;
-  }
-  .eyebrow {
-    margin-top: 36px;
   }
   .input-row button {
     padding: 8px 12px;

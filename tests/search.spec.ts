@@ -21,6 +21,17 @@ test("WASM search, explanations, intent DAG and attribution run without console 
   const errors: string[] = [];
   page.on("pageerror", (error) => errors.push(error.message));
   await open(page);
+  const header = page.locator("header");
+  await expect(header.getByRole("heading", { level: 1 })).toHaveText(
+    "asearch / playground",
+  );
+  await expect(header.locator(":scope > *")).toHaveCount(2);
+  await expect(header.locator(".intro")).toContainText(
+    "言葉を思い出しきれなくても、探し始められる。",
+  );
+  await expect(header.locator(".intro")).toContainText(
+    "1万件の日本語の質問から、表記ゆれや少しの誤入力を越えて。",
+  );
   await query(page, "大学");
   await expect(page.locator("#results li").first()).toBeVisible();
   await expect(page.locator("mark").first()).toBeVisible();
@@ -56,7 +67,6 @@ test("delta and compacted snapshots preserve effective results, reset starts a f
   page,
 }, testInfo) => {
   await open(page);
-  await expect(page.locator("h1")).toContainText("曖昧だって、");
   await page.locator('[data-query="更新例"]').click();
   await expect(page.locator("#metrics")).toContainText("0件一致");
   await expect(page.locator("#status")).toContainText("索引1ファイル");
