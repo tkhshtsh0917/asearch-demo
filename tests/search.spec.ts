@@ -54,20 +54,80 @@ test("WASM search, explanations, intent DAG and attribution run without console 
 
 test("delta and compacted snapshots preserve effective results, reset starts a fresh root", async ({
   page,
-}) => {
+}, testInfo) => {
   await open(page);
-  await query(page, "更新例");
+  await expect(page.locator("h1")).toContainText("曖昧だって、");
+  await page.locator('[data-query="更新例"]').click();
   await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator("#status")).toContainText("索引1ファイル");
+  await expect(page.locator('[data-stage="0"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
+  await expect(page.locator("#change-legend")).toBeHidden();
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 2");
+  await expect(page.locator("#status")).toContainText("索引2ファイル");
+  await expect(page.locator("#delivery-detail")).toContainText(
+    "追加1件・変更3件・削除1件",
+  );
+  await expect(page.locator('[data-stage="1"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
   await expect(page.locator("#results li")).toHaveCount(4);
+  await expect(page.locator('#results [data-change="added"]')).toHaveCount(1);
+  await expect(page.locator('#results [data-change="updated"]')).toHaveCount(3);
+  await expect(page.locator("#change-legend")).toBeVisible();
   const texts = await page.locator("#results .question").allTextContents();
+  const badges = await page.locator("#results .change-badge").allTextContents();
+  if (
+    testInfo.project.name === "chromium" ||
+    testInfo.project.name === "iphone-profile"
+  )
+    await page.screenshot({
+      path: testInfo.outputPath("updates.png"),
+      fullPage: true,
+    });
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 3");
+  await expect(page.locator("#status")).toContainText("索引1ファイル");
+  await expect(page.locator('[data-stage="2"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
   await expect(page.locator("#results .question")).toHaveText(texts);
+  await expect(page.locator("#results .change-badge")).toHaveText(badges);
+  await expect(page.locator("#delivery-detail")).toContainText(
+    "検索結果と追加・変更のラベルはそのまま",
+  );
   await page.locator("#reset").click();
   await expect(page.locator("#status")).toContainText("世代 1");
   await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator('[data-stage="0"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
+  await expect(page.locator("#results [data-change]")).toHaveCount(0);
+  await expect(page.locator("#change-legend")).toBeHidden();
+});
+
+test("query examples select the matching mode and intent results never inherit corpus badges", async ({
+  page,
+}) => {
+  await open(page);
+  await page.locator("#advance").click();
+  await expect(page.locator("#status")).toContainText("世代 2");
+  await page.locator('[data-query="電球交換"]').click();
+  await expect(page.locator("#mode")).toHaveValue("intent");
+  await expect(page.locator("#results")).toContainText("電球交換");
+  await expect(page.locator("#results [data-change]")).toHaveCount(0);
+  await expect(page.locator("#change-legend")).toBeHidden();
+
+  await page.locator('[data-query="更新例"]').click();
+  await expect(page.locator("#mode")).toHaveValue("corpus");
+  await expect(page.locator("#results .change-badge")).toHaveCount(4);
+  await expect(page.locator("#change-legend")).toBeVisible();
 });
 
 test("failed integrity leaves old search usable and can be retried", async ({
@@ -85,6 +145,12 @@ test("failed integrity leaves old search usable and can be retried", async ({
   await page.locator("#advance").click();
   await expect(page.locator("#error")).toContainText("処理できませんでした");
   await expect(page.locator("#status")).toContainText("世代 1");
+  await expect(page.locator("#status")).toContainText("索引1ファイル");
+  await expect(page.locator('[data-stage="0"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
+  await expect(page.locator("#results [data-change]")).toHaveCount(0);
   await expect(page.locator("#results .question")).toHaveText(before);
   await page.unroute("**/delta.*.asix");
   await page.locator("#advance").click();
@@ -111,6 +177,11 @@ test("search continues during a delayed update and latest input survives adoptio
   });
   await page.locator("#advance").click();
   await started;
+  await expect(page.locator('[data-stage="0"]')).toHaveAttribute(
+    "aria-current",
+    "step",
+  );
+  await expect(page.locator("#status")).toContainText("索引1ファイル");
   await query(page, "大学");
   await expect(page.locator("#results li").first()).toBeVisible();
   await page.locator("#query").fill("更新例");
@@ -224,6 +295,15 @@ test("search page has no serious accessibility violations", async ({
   const report = await new AxeBuilder({ page }).analyze();
   expect(
     report.violations.filter((v) =>
+      ["critical", "serious"].includes(v.impact ?? ""),
+    ),
+  ).toEqual([]);
+  await page.locator('[data-query="更新例"]').click();
+  await page.locator("#advance").click();
+  await expect(page.locator("#results .change-badge")).toHaveCount(4);
+  const updated = await new AxeBuilder({ page }).analyze();
+  expect(
+    updated.violations.filter((v) =>
       ["critical", "serious"].includes(v.impact ?? ""),
     ),
   ).toEqual([]);

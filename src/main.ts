@@ -1,5 +1,6 @@
 /** Coordinates IME input, Worker generations and rendering of accepted responses. */
 import type { Mode, Request, Response } from "./shared/protocol.ts";
+import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
 import { renderRows } from "./view/results.ts";
 import "./styles.css";
 
@@ -16,6 +17,14 @@ const input = element<HTMLInputElement>("query"),
   metrics = element("metrics"),
   advance = element<HTMLButtonElement>("advance"),
   error = element("error");
+
+const delivery: DeliveryView = {
+  status,
+  advance,
+  detail: element("delivery-detail"),
+  steps: [...document.querySelectorAll<HTMLElement>("[data-stage]")],
+};
+const changeLegend = element("change-legend");
 
 let worker: Worker,
   serial = 0,
@@ -34,6 +43,7 @@ function send(request: Request) {
 /** Searches the current input value, including uncommitted IME text. */
 function query() {
   latest = ++serial;
+  changeLegend.hidden = stage === 0 || mode.value !== "corpus";
   if (!loaded) return;
   send({
     kind: "query",
@@ -61,10 +71,7 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
   epoch = stage;
 
   loaded = true;
-  status.textContent = `${message.count.toLocaleString()}件 · 世代 ${stage + 1}${message.busy ? " · 更新を取得中…" : " · 検索できます"}`;
-  advance.textContent =
-    stage === 0 ? "差分を適用" : stage === 1 ? "圧縮版へ切替" : "更新完了";
-  advance.disabled = message.busy || stage >= 2;
+  renderDelivery(delivery, message);
 
   element("creator").textContent = message.creator;
   element("changes").textContent = message.changes;
@@ -103,8 +110,8 @@ function start() {
   stage = 0;
   latest = ++serial;
   error.textContent = "";
-  status.textContent = "索引を読み込んでいます…";
-  advance.disabled = true;
+  renderDelivery(delivery);
+  changeLegend.hidden = true;
   renderRows(results, []);
   metrics.textContent = "";
 
@@ -173,6 +180,7 @@ function bindEvents() {
   ))
     button.addEventListener("click", () => {
       input.value = button.dataset.query ?? "";
+      if (button.dataset.mode) mode.value = button.dataset.mode;
       query();
       input.focus();
     });

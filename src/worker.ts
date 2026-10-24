@@ -9,6 +9,7 @@ import {
   type SearchSession,
 } from "asearch-wasm";
 import { type Question, type Release, release } from "./shared/catalog.ts";
+import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
 import { intents, search, searchOptions } from "./worker/search.ts";
@@ -31,6 +32,7 @@ let questions = new Map<number, Question>(),
   initialized = false;
 
 let last: Extract<Request, { kind: "query" }> | undefined;
+let updates: CatalogChanges = catalogChanges(questions, questions);
 
 const limits = { maxPatternUnits: 128, maxWorkingBytes: 64 * 1024 * 1024 };
 
@@ -41,6 +43,8 @@ function state() {
     stage,
     count: questions.size,
     busy,
+    segments: current.segments.length,
+    updates: updates.summary,
     creator: info.attribution.creator,
     changes: info.attribution.changes,
   });
@@ -59,6 +63,7 @@ function run() {
         session,
         intent,
         questions,
+        updates.byKey,
       ),
     );
 }
@@ -119,6 +124,8 @@ async function advance() {
   try {
     const next = await candidate(base, info, stage + 1),
       change = diffManifest(current, next.manifest);
+    const nextUpdates =
+      stage === 0 ? catalogChanges(questions, next.questions) : updates;
     if (change.kind === "append" && change.add.length === 1) {
       const part = change.add[0];
       if (!part) throw new Error("Missing delta");
@@ -135,6 +142,7 @@ async function advance() {
 
     current = next.manifest;
     questions = next.questions;
+    updates = nextUpdates;
     stage++;
     epoch++;
   } finally {

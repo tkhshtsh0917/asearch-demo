@@ -51,6 +51,14 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
       meta.append(link);
     }
     article.append(text);
+    if (row.change) {
+      item.dataset.change = row.change;
+      const badge = document.createElement("span");
+      badge.className = "change-badge";
+      badge.textContent =
+        row.change === "added" ? "追加された質問" : "変更された質問";
+      article.prepend(badge);
+    }
     if (row.alias) {
       const alias = highlightedText(
         row.alias.text,

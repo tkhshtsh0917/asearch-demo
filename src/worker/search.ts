@@ -7,6 +7,7 @@ import {
   type SearchSession,
 } from "asearch-wasm";
 import type { Question } from "../shared/catalog.ts";
+import type { ChangeKind } from "../shared/changes.ts";
 import type { Mode, Response, Row } from "../shared/protocol.ts";
 
 export const intents = [
@@ -31,6 +32,7 @@ export function search(
   session: SearchSession,
   intent: IntentIndex,
   questions: Map<number, Question>,
+  changes?: ReadonlyMap<number, ChangeKind>,
 ): Response {
   const started = performance.now();
 
@@ -87,12 +89,14 @@ export function search(
       )
         throw error;
     }
+    const change = mode === "corpus" ? changes?.get(key) : undefined;
     rows.push({
       key,
       text,
       spans,
       level,
       ...(alias ? { alias } : {}),
+      ...(change ? { change } : {}),
       title:
         mode === "corpus" ? (source?.title ?? "") : "意図表現から選ばれた展開",
       url: mode === "corpus" ? (source?.url ?? "") : "",
