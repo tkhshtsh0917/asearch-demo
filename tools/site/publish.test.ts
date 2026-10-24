@@ -17,6 +17,7 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
       license: "CC-BY-SA-4.0",
       changes: "Extracted questions",
     },
+    (rows) => rows.map(({ key, text }) => ({ key, order: key, texts: [text] })),
   );
 
   const json = (name: string) =>

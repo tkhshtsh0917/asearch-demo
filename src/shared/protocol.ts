@@ -12,6 +12,7 @@ export interface Row {
   url: string;
   level: number;
   spans: [number, number][];
+  alias?: { text: string; spans: [number, number][] };
 }
 export type Response =
   | { kind: "boot" }

@@ -1,0 +1,51 @@
+{
+  "repository": "WorksApplications/SudachiDict",
+  "revision": "830bf9e1313f6f75235ba87ee041e144dbcad8c1",
+  "files": {
+    "synonyms.txt": {
+      "source": "src/main/text/synonyms.txt",
+      "bytes": 3133723,
+      "sha256": "0b0c80c0505015fa6bd625b5f3b1ad4f5dcd15d4cf3e5215790ff86efe98a716"
+    },
+    "LICENSE-2.0.txt": {
+      "source": "LICENSE-2.0.txt",
+      "bytes": 11358,
+      "sha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30"
+    },
+    "LEGAL": {
+      "source": "LEGAL",
+      "bytes": 6037,
+      "sha256": "725a8776b38e058b185e905594bc9a2437dbf3787df022fffeefedb9a84e4665"
+    },
+    "stopwords.txt": {
+      "repository": "WorksApplications/elasticsearch-sudachi",
+      "revision": "7b764f3b653cbb890c74da4cb07f2aed873e009e",
+      "source": "lucene/src/main/resources/com/worksap/nlp/lucene/sudachi/ja/stopwords.txt",
+      "bytes": 1572,
+      "sha256": "25573b0e46672aa8b5783388e1104a8978c25120efc861ce504e3a53705de3d5"
+    },
+    "stoptags.txt": {
+      "repository": "WorksApplications/elasticsearch-sudachi",
+      "revision": "7b764f3b653cbb890c74da4cb07f2aed873e009e",
+      "source": "lucene/src/main/resources/com/worksap/nlp/lucene/sudachi/ja/stoptags.txt",
+      "bytes": 9255,
+      "sha256": "b6ca2427178953329b309b2bff54a513504aee084ae5b65ae168cb70f4bdef79"
+    },
+    "elasticsearch-sudachi-LICENSE": {
+      "repository": "WorksApplications/elasticsearch-sudachi",
+      "revision": "7b764f3b653cbb890c74da4cb07f2aed873e009e",
+      "source": "LICENSE",
+      "bytes": 11357,
+      "sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4"
+    }
+  },
+  "dictionary": {
+    "version": "20261015",
+    "url": "https://d2ej7fkh96fzlu.cloudfront.net/sudachidict/v1/sudachi-dictionary-20261015-core.zip",
+    "bytes": 76937904,
+    "sha256": "5cf5cb7f1ea943a988e2fb5d285a9a8b3538861faefa7a2604c2cd18c387f503",
+    "member": "sudachi-dictionary-20261015/system_core.dic",
+    "systemBytes": 202236003,
+    "systemSha256": "e815659f6ad6f6118725103d47d317d660276ff3a15f668f8fc123ec3c4e6646"
+  }
+}

@@ -39,6 +39,8 @@ jobs:
       - run: node tools/engine/build.ts
       - run: pnpm install --lockfile-only --update-checksums --ignore-scripts
       - run: pnpm install --frozen-lockfile
+      - run: pnpm analysis:prepare
+      - run: pnpm analysis:test
       - run: pnpm --dir integration fixtures:check
       - run: pnpm --dir integration docs:check
       - run: pnpm --dir integration test:bench
@@ -69,6 +71,9 @@ jobs:
             release.lock.json
             pnpm-lock.yaml
             dist/release.json
+            dist/data/analysis.json
+            tools/analysis/resources.lock.json
+            tools/analysis/policy.json
       - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         if: inputs.upload_pages
         with:

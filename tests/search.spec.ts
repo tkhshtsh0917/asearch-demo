@@ -178,6 +178,44 @@ test("IME replacement and cancellation search the entire restored value", async 
   await expect(page.locator("#query")).toHaveValue("更新例");
 });
 
+test("script, case, romaji and synonym queries display the same original questions", async ({
+  page,
+}) => {
+  await page.addInitScript(installObservation);
+  await open(page);
+  let originals: string[] | undefined;
+
+  for (const pattern of [
+    "ビートルズ",
+    "Beatles",
+    "BEATLES",
+    "beatles",
+    "びーとるず",
+    "biitoruzu",
+    "bi-toruzu",
+  ]) {
+    await page.locator("#query").fill(pattern);
+    await page.waitForFunction(
+      (value) =>
+        (
+          window as unknown as { __asearchBench: Observation }
+        ).__asearchBench.samples.at(-1)?.pattern === value,
+      pattern,
+    );
+    const questions = await page
+      .locator("#results .question")
+      .allTextContents();
+    expect(questions.length).toBeGreaterThan(0);
+    expect(questions).toEqual(originals ?? questions);
+    originals = questions;
+  }
+
+  await expect(page.locator(".search-alias").first()).toContainText(
+    "検索用表現:",
+  );
+  await expect(page.locator("#error")).toBeEmpty();
+});
+
 test("search page has no serious accessibility violations", async ({
   page,
 }) => {
@@ -200,6 +238,9 @@ test("redistributed code carries its own and dependency license notices", async 
     "LICENSE-MIT",
     "LICENSE-APACHE",
     "NOTICE",
+    "SudachiDict-LICENSE-2.0.txt",
+    "SudachiDict-LEGAL",
+    "elasticsearch-sudachi-LICENSE",
   ]) {
     const response = await request.get(`licenses/${name}`);
     expect(response.status()).toBe(200);

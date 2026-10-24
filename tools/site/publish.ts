@@ -6,6 +6,7 @@ import {
   type Question,
   type Release,
 } from "../../src/shared/catalog.ts";
+import { analysisProvenance, analyzeQuestions } from "../analysis/run.ts";
 import { buildSegments } from "./segments.ts";
 
 export const digest = (bytes: Uint8Array | string) =>
@@ -14,6 +15,7 @@ export const digest = (bytes: Uint8Array | string) =>
 export async function publish(
   input: Question[],
   attribution: Release["attribution"],
+  analyze: (rows: Question[]) => Doc[] = analyzeQuestions,
 ): Promise<Map<string, Uint8Array>> {
   const questions = catalog(input);
   if (questions.length < 4)
@@ -36,13 +38,16 @@ export async function publish(
     ...questions.filter((q) => !dead.has(q.key)),
     added,
   ]);
-  const docs = (rows: Question[]): Doc[] =>
-    rows.map(({ key, text }) => ({ key, order: key, texts: [text] }));
+  const baseDocs = analyze(questions);
+  const changedDocs = analyze([...changed, added]);
+  const effectiveDocs = new Map(baseDocs.map((doc) => [doc.key, doc]));
+  for (const key of dead) effectiveDocs.delete(key);
+  for (const doc of changedDocs) effectiveDocs.set(doc.key, doc);
   const { base, delta, compact } = await buildSegments(
-    docs(questions),
-    docs([...changed, added]),
+    baseDocs,
+    changedDocs,
     [...dead],
-    docs(updated),
+    [...effectiveDocs.values()],
   );
 
   const files = new Map<string, Uint8Array>(),
@@ -90,5 +95,6 @@ export async function publish(
     };
   });
   files.set("release.json", encode({ stages, attribution } satisfies Release));
+  files.set("analysis.json", encode(await analysisProvenance()));
   return files;
 }
