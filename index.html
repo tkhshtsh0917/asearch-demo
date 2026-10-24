@@ -1,23 +1,164 @@
 <!doctype html>
 <html lang="ja">
-<head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'" />
-<meta name="description" content="RustとWebAssemblyで、1万件の日本語質問をブラウザ内検索。" />
-<title>Asearch — 日本語の質問を、ブラウザで探す</title>
-<script type="module" src="/src/main.ts"></script>
-</head>
-<body>
-<main>
-<header><a class="brand" href="https://github.com/tkhshtsh0917/asearch">asearch<span> / playground</span></a><p class="eyebrow">RUST → WEBASSEMBLY → YOUR BROWSER</p><h1>曖昧だって、<br />かまわない。</h1><p class="intro">言葉を思い出しきれなくても、探し始められる。<br />1万件の日本語の質問から、表記ゆれや少しの誤入力を越えて。</p></header>
-<section aria-label="検索デモ" class="panel">
-<search><form id="search"><div class="form-top"><label for="query">質問・キーワード</label><label for="mode" class="mode-label">検索対象 <select id="mode"><option value="corpus">Wikipediaの質問</option><option value="intent">意図表現（3件）</option></select></label></div><div class="input-row"><input id="query" type="search" maxlength="128" autocomplete="off" placeholder="例：日本 歴史" aria-describedby="hint" /><button type="submit">検索</button></div><p id="hint">打鍵ごとに検索 · 最大128 UTF-16単位 · 空白はワイルドカード</p></form></search>
-<div class="samples"><button type="button" data-query="日本 歴史">日本 歴史</button><button type="button" data-query="大学">大学</button><button type="button" data-query="電球交換">電球交換</button></div>
-<div class="delivery"><p id="status" role="status">準備中…</p><div><button id="advance" type="button" disabled>差分を適用</button><button id="reset" type="button">再読み込み</button></div></div>
-<p id="error" role="alert"></p><p id="metrics" role="status"></p><ol id="results" aria-label="検索結果"></ol>
-</section>
-<section class="notes" aria-label="仕組みと出典"><div><h2>検索は、端末の中で。</h2><p>Rust製の検索エンジンをWASMとしてWorkerで実行します。質問の入力はサーバーへ送信しません。検索結果には照合範囲をハイライトします。</p></div><div><h2>配信された索引を更新。</h2><p>「差分を適用」で3件の変更・1件の削除・1件の追加を読み込みます。「圧縮版へ切替」で同じ内容を単一索引に置き換えます。変更はこのデモ用の固定シナリオです。</p></div></section>
-<footer><h2>データについて</h2><p><a href="https://huggingface.co/datasets/cl-nagoya/auto-wiki-qa">AutoWikiQA</a>の固定リビジョン・先頭1万件の機械生成された質問文を使用しています。データ全体の代表標本ではありません。回答を生成するアプリではありません。</p><p>出典: <span id="creator">CL Research Group in Nagoya, Japan / AutoWikiQA contributors</span> · <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> · Wikipedia由来。質問ごとの出典リンクを参照してください。</p><details><summary>データへの変更内容</summary><p id="changes">質問文と出典メタデータのみを抽出しています。</p></details><p>ブラウザ互換性はPlaywrightのエンジン・モバイルプロファイルによる検証範囲です。実機の性能や動作は保証しません。<a href="https://github.com/tkhshtsh0917/asearch-demo">ソースと再現手順 ↗</a></p></footer>
-</main>
-</body></html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self'; worker-src 'self'; connect-src 'self'; img-src 'self' data:; object-src 'none'; base-uri 'self'; form-action 'none'"
+    />
+    <meta
+      name="description"
+      content="RustとWebAssemblyで、1万件の日本語質問をブラウザ内検索。"
+    />
+    <title>Asearch — 日本語の質問を、ブラウザで探す</title>
+    <script type="module" src="/src/main.ts"></script>
+  </head>
+  <body>
+    <main>
+      <header>
+        <a class="brand" href="https://github.com/tkhshtsh0917/asearch"
+          >asearch<span> / playground</span></a
+        >
+        <p class="eyebrow">RUST → WEBASSEMBLY → YOUR BROWSER</p>
+        <h1>曖昧だって、<br />かまわない。</h1>
+        <p class="intro">
+          言葉を思い出しきれなくても、探し始められる。<br />1万件の日本語の質問から、表記ゆれや少しの誤入力を越えて。
+        </p>
+      </header>
+      <section aria-label="検索デモ" class="panel">
+        <search>
+          <form id="search">
+            <div class="form-top">
+              <label for="query">質問・キーワード</label
+              ><label for="mode" class="mode-label"
+                >検索対象
+                <select id="mode">
+                  <option value="corpus">Wikipediaの質問</option>
+                  <option value="intent">意図表現（3件）</option>
+                </select></label
+              >
+            </div>
+            <div class="input-row">
+              <input
+                id="query"
+                type="search"
+                maxlength="128"
+                autocomplete="off"
+                placeholder="例：日本 歴史"
+                aria-describedby="hint"
+              /><button type="submit">検索</button>
+            </div>
+            <p id="hint">
+              打鍵ごとに検索 · 最大128 UTF-16単位 · 空白はワイルドカード
+            </p>
+          </form>
+        </search>
+        <section class="samples" aria-label="検索例">
+          <button type="button" data-query="日本 歴史" data-mode="corpus">
+            日本 歴史
+          </button>
+          <button type="button" data-query="大学" data-mode="corpus">
+            大学
+          </button>
+          <button type="button" data-query="Beatles" data-mode="corpus">
+            Beatles
+          </button>
+          <button type="button" data-query="電球交換" data-mode="intent">
+            電球交換
+          </button>
+          <button
+            type="button"
+            data-query="更新例"
+            data-mode="corpus"
+            class="sample-update"
+          >
+            更新例 <span>差分の前後で比べる</span>
+          </button>
+        </section>
+        <section class="update-demo" aria-label="索引更新を試す">
+          <ol class="delivery-steps" aria-label="更新の3ステップ">
+            <li data-stage="0">
+              <span class="step-number" aria-hidden="true">1</span>
+              <div><strong>まず検索</strong><span>基本索引で探す</span></div>
+            </li>
+            <li data-stage="1">
+              <span class="step-number" aria-hidden="true">2</span>
+              <div>
+                <strong>内容を更新</strong
+                ><span>差分で質問が加わる・変わる</span>
+              </div>
+            </li>
+            <li data-stage="2">
+              <span class="step-number" aria-hidden="true">3</span>
+              <div>
+                <strong>索引をひとつに</strong><span>検索内容はそのまま</span>
+              </div>
+            </li>
+          </ol>
+          <div class="delivery">
+            <p id="status" role="status">準備中…</p>
+            <div>
+              <button id="advance" type="button" disabled>差分を適用</button
+              ><button id="reset" type="button">再読み込み</button>
+            </div>
+          </div>
+          <p id="delivery-detail">
+            準備ができたら、「更新例」で差分の前後を比べてみましょう。
+          </p>
+        </section>
+        <p id="error" role="alert"></p>
+        <p id="metrics" role="status"></p>
+        <p id="change-legend" hidden>
+          <span class="legend-added">追加</span
+          ><span class="legend-updated">変更</span>
+          最初の索引からの変化です。圧縮後も同じ質問に表示します。
+        </p>
+        <ol id="results" aria-label="検索結果"></ol>
+      </section>
+      <section class="notes" aria-label="仕組みと出典">
+        <div>
+          <h2>検索は、端末の中で。</h2>
+          <p>
+            Rust製の検索エンジンをWASMとしてWorkerで実行します。質問の入力はサーバーへ送信しません。検索結果には照合範囲をハイライトします。
+          </p>
+        </div>
+        <div>
+          <h2>配信された索引を更新。</h2>
+          <p>
+            「更新例」で検索してから「差分を適用」すると、変更3件・追加1件が現れます（別の1件は削除）。「圧縮版へ切替」は検索内容を保ち、基本索引＋差分をひとつの索引に置き換えます。変更はデモ用の固定シナリオです。
+          </p>
+        </div>
+      </section>
+      <footer>
+        <h2>データについて</h2>
+        <p>
+          <a href="https://huggingface.co/datasets/cl-nagoya/auto-wiki-qa"
+            >AutoWikiQA</a
+          >の固定リビジョン・先頭1万件の機械生成された質問文を使用しています。データ全体の代表標本ではありません。回答を生成するアプリではありません。
+        </p>
+        <p>
+          出典:
+          <span id="creator"
+            >CL Research Group in Nagoya, Japan / AutoWikiQA contributors</span
+          >
+          ·
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/"
+            >CC BY-SA 4.0</a
+          >
+          · Wikipedia由来。質問ごとの出典リンクを参照してください。
+        </p>
+        <details>
+          <summary>データへの変更内容</summary>
+          <p id="changes">質問文と出典メタデータのみを抽出しています。</p>
+        </details>
+        <p>
+          ブラウザ互換性はPlaywrightのエンジン・モバイルプロファイルによる検証範囲です。実機の性能や動作は保証しません。<a
+            href="https://github.com/tkhshtsh0917/asearch-demo"
+            >ソースと再現手順 ↗</a
+          >
+        </p>
+      </footer>
+    </main>
+  </body>
+</html>

@@ -302,3 +302,145 @@ summary {
   font-size: 0.85rem;
   overflow-wrap: anywhere;
 }
+
+/* The walkthrough separates visible content updates from index consolidation. */
+.samples .sample-update {
+  border: 1px solid #a99ac9;
+  background: #f5f1ff;
+}
+
+.sample-update span {
+  margin-left: 6px;
+  color: #625478;
+  font-size: 11px;
+}
+
+.update-demo {
+  border: 1px solid #e7e1f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fcfbfe;
+}
+
+.delivery-steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.delivery-steps li {
+  border: 0;
+  padding: 8px 0;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  color: #6b627b;
+}
+
+.delivery-steps strong,
+.delivery-steps div > span {
+  display: block;
+}
+
+.delivery-steps strong {
+  font-size: 13px;
+}
+
+.delivery-steps div > span {
+  font-size: 11px;
+}
+
+.step-number {
+  flex: 0 0 26px;
+  line-height: 26px;
+  border-radius: 50%;
+  text-align: center;
+  background: #eeeaf4;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.delivery-steps [aria-current="step"] {
+  color: #423184;
+}
+
+.delivery-steps [aria-current="step"] .step-number {
+  background: #5341a3;
+  color: white;
+}
+
+.delivery-steps .complete .step-number {
+  background: #e6e0f2;
+  color: #514372;
+}
+
+#delivery-detail {
+  color: #5d566b;
+  font-size: 12px;
+  margin-bottom: 0;
+}
+
+#change-legend {
+  color: #625c70;
+  font-size: 11px;
+}
+
+.change-badge,
+.legend-added,
+.legend-updated {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.change-badge {
+  margin-bottom: 8px;
+}
+
+.legend-added,
+.legend-updated {
+  margin-right: 5px;
+}
+
+#results [data-change] {
+  padding: 16px;
+  border-top: 0;
+  border-left: 4px solid;
+  border-radius: 8px;
+  margin-top: 12px;
+}
+
+#results [data-change="added"] {
+  border-left-color: #36856a;
+  background: #eff9f4;
+}
+
+#results [data-change="added"] .change-badge,
+.legend-added {
+  color: #205d48;
+  background: #daeee3;
+}
+
+#results [data-change="updated"] {
+  border-left-color: #ae7733;
+  background: #fff8ee;
+}
+
+#results [data-change="updated"] .change-badge,
+.legend-updated {
+  color: #785019;
+  background: #f5e7cc;
+}
+
+@media (max-width: 580px) {
+  .delivery-steps {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .update-demo {
+    padding: 12px;
+  }
+}

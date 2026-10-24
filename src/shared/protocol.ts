@@ -1,5 +1,6 @@
 /** Defines typed commands and responses exchanged by the UI and search Worker. */
 import type { SearchStats } from "asearch-wasm";
+import type { ChangeKind, ChangeSummary } from "./changes.ts";
 export type Mode = "corpus" | "intent";
 export type Request =
   | { kind: "init"; base: string }
@@ -13,6 +14,7 @@ export interface Row {
   level: number;
   spans: [number, number][];
   alias?: { text: string; spans: [number, number][] };
+  change?: ChangeKind;
 }
 export type Response =
   | { kind: "boot" }
@@ -21,6 +23,8 @@ export type Response =
       stage: number;
       count: number;
       busy: boolean;
+      segments: number;
+      updates: ChangeSummary;
       creator: string;
       changes: string;
     }
