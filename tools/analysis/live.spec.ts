@@ -4,7 +4,7 @@ import test from "node:test";
 import { AsearchIndex, IntentIndex } from "asearch-wasm";
 import { intents, search, searchOptions } from "../../src/worker/search.ts";
 import { buildSegments } from "../site/segments.ts";
-import { analyzeQuestions } from "./run.ts";
+import { createAnalysis } from "./run.ts";
 
 test("readings and directed synonyms survive ASIX v1, deltas and compaction", async () => {
   const rows = [
@@ -13,10 +13,11 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
     { key: 2, text: "🌟ビートルズの歌を聞く？", title: "", url: "" },
     { key: 3, text: "曲を聞かない理由は？", title: "", url: "" },
   ];
-  const docs = analyzeQuestions(rows);
+  const analysis = createAnalysis();
+  const docs = analysis.analyze(rows);
   const first = rows[0];
   assert.ok(first);
-  const changed = analyzeQuestions([{ ...first, text: "別の質問です" }]);
+  const changed = analysis.analyze([{ ...first, text: "別の質問です" }]);
   const segments = await buildSegments(
     docs,
     changed,

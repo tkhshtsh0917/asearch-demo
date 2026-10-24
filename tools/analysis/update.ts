@@ -11,9 +11,10 @@ import { join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { cached, digest, download } from "./cache.ts";
 import { runNative } from "./native.ts";
-import { resourceDirectory, resourceLock } from "./pins.ts";
+import { type ResourceLock, resourceDirectory, resourcePaths } from "./pins.ts";
 
-const next = structuredClone(resourceLock);
+const lockBytes = await readFile(resourcePaths.lock);
+const next: ResourceLock = JSON.parse(lockBytes.toString());
 const revisions = new Map<string, string>();
 for (const repository of [
   "WorksApplications/SudachiDict",
@@ -71,7 +72,9 @@ try {
   JSON.parse(await readFile(join(temporary, "resources.json"), "utf8"));
   const pending = pathToFileURL(join(temporary, "resources.lock.json"));
   await writeFile(pending, `${JSON.stringify(next, null, 2)}\n`);
-  await rename(pending, new URL("resources.lock.json", import.meta.url));
+  if (digest(await readFile(resourcePaths.lock)) !== digest(lockBytes))
+    throw new Error("Analysis pins changed during update; review and retry");
+  await rename(pending, resourcePaths.lock);
   console.log(
     `Updated language resources: ${[...revisions].map(([repo, sha]) => `${repo}@${sha}`).join(", ")}`,
   );
