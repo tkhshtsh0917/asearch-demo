@@ -73,3 +73,18 @@ For explicit testing before a Rust release, `ASEARCH_ANALYZER_CLI` can name a lo
 `data/analysis.json` in the built site records the synonym revision, byte counts, SHA-256 hashes, filtering policy, compiled-resource SHA and native analyzer executable SHA. License and legal notices accompany the derived data under `licenses/SudachiDict-LICENSE-2.0.txt` and `licenses/SudachiDict-LEGAL`; filter-source notices are in `licenses/elasticsearch-sudachi-LICENSE`. See [data attribution](data.md) for AutoWikiQA's separate CC BY-SA 4.0 requirements.
 
 Real-dictionary regression tests cover both directions of the Beatles example, expansion flags, filtering, unlimited soft limits, ASIX loading, delta invalidation and compaction. Playwright covers the seven query spellings, original-question display and synthetic IME events in three browser engines and mobile profiles. These profiles do not verify a physical device or an OS IME.
+
+## Corpus size and browser budgets
+
+The 2026-10-24 fixed-shard check produced these shapes with the same analysis policy. A searchable text is an original or auxiliary string, not a morpheme token or a result document.
+
+| Questions | Searchable texts | Base ASIX bytes | gzip-9 bytes |
+| --------- | ---------------- | --------------- | ------------ |
+| 10,000    | 120,629          | 8,454,336       | 2,534,502    |
+| 50,000    | 574,363          | 40,632,640      | 12,554,444   |
+
+gzip-9 is an offline size measurement; it does not assert that a CDN serves these files with that encoding.
+
+For 50k, the read-only WASM kernel rejected 64/128 MiB working budgets and loaded/searched successfully at 256 MiB in Chromium, Firefox and WebKit. This is a configured Rust resource budget, not total browser RAM usage. The comparison used released WASM v0.1.0 and the v0.2.0 analyzer source, demonstrating ASIX v1 compatibility.
+
+The production demo remains at 10k. Its ingestion cap, 20k catalog validation, 8 MiB catalog transfer limit and generation-transition headroom need separate evaluation before increasing that setting. The 50k kernel probe does not establish a 50k UI or mobile-memory guarantee. Server analysis can be batched: the probe combined 20k/20k/10k invocations before building one ASIX. Earlier tuning measurements use their recorded index shapes and do not automatically describe these expanded corpora.
