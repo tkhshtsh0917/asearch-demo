@@ -6,6 +6,7 @@ export interface DeliveryView {
   status: HTMLElement;
   detail: HTMLElement;
   advance: HTMLButtonElement;
+  restore: HTMLButtonElement;
   steps: HTMLElement[];
 }
 
@@ -24,6 +25,7 @@ export function renderDelivery(view: DeliveryView, state?: State): void {
       "準備ができたら、「更新例」で差分の前後を比べてみましょう。";
     view.advance.textContent = "差分を適用";
     view.advance.disabled = true;
+    view.restore.disabled = true;
     return;
   }
 
@@ -32,12 +34,15 @@ export function renderDelivery(view: DeliveryView, state?: State): void {
   view.advance.textContent =
     stage === 0 ? "差分を適用" : stage === 1 ? "圧縮版へ切替" : "更新完了";
   view.advance.disabled = busy || stage >= 2;
+  view.restore.disabled = busy || stage === 0;
 
   if (busy) {
     view.detail.textContent =
-      stage === 0
-        ? "差分を読み込んでいます。今の内容は引き続き検索できます。"
-        : "同じ内容の単一索引を読み込んでいます。検索内容は変わりません。";
+      state.pending === "restore"
+        ? "差分前の索引を読み込んでいます。完了まで現在の内容を検索できます。"
+        : stage === 0
+          ? "差分を読み込んでいます。今の内容は引き続き検索できます。"
+          : "同じ内容の単一索引を読み込んでいます。検索内容は変わりません。";
   } else if (stage === 0) {
     view.detail.textContent =
       "「更新例」はまだ0件。差分を適用すると、変更・追加された質問が見つかります。";

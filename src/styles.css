@@ -168,6 +168,13 @@ button:disabled {
   font-size: 12px;
 }
 
+.delivery-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
 #error {
   color: #a12537;
   font-size: 14px;

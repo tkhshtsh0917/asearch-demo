@@ -33,6 +33,7 @@ let questions = new Map<number, Question>(),
 
 let last: Extract<Request, { kind: "query" }> | undefined;
 let updates: CatalogChanges = catalogChanges(questions, questions);
+let pending: "advance" | "restore" | null = null;
 
 const limits = { maxPatternUnits: 128, maxWorkingBytes: 64 * 1024 * 1024 };
 
@@ -41,6 +42,8 @@ function state() {
   post({
     kind: "state",
     stage,
+    epoch,
+    pending,
     count: questions.size,
     busy,
     segments: current.segments.length,
@@ -119,6 +122,7 @@ async function init(url: string) {
 async function advance() {
   if (!initialized || busy || stage >= 2) return;
   busy = true;
+  pending = "advance";
   state();
 
   try {
@@ -147,6 +151,34 @@ async function advance() {
     epoch++;
   } finally {
     busy = false;
+    pending = null;
+    state();
+  }
+  run();
+}
+
+/** Atomically restores the base snapshot while preserving query handles and input. */
+async function restore() {
+  if (!initialized || busy || stage === 0) return;
+  busy = true;
+  pending = "restore";
+  state();
+  try {
+    const next = await candidate(base, info, 0);
+    const part = next.manifest.segments[0];
+    if (!part || next.manifest.segments.length !== 1)
+      throw new Error("Expected one initial segment");
+    await root.replaceSegments([
+      { expected: part, source: await segmentStream(base, part.url) },
+    ]);
+    current = next.manifest;
+    questions = next.questions;
+    updates = catalogChanges(questions, questions);
+    stage = 0;
+    epoch++;
+  } finally {
+    busy = false;
+    pending = null;
     state();
   }
   run();
@@ -173,6 +205,7 @@ scope.onmessage = (event: MessageEvent<Request>) => {
       return;
     }
     if (request.kind === "advance") await advance();
+    if (request.kind === "restore") await restore();
   })().catch((error) =>
     post({
       kind: "error",

@@ -21,6 +21,7 @@ const input = element<HTMLInputElement>("query"),
 const delivery: DeliveryView = {
   status,
   advance,
+  restore: element<HTMLButtonElement>("restore"),
   detail: element("delivery-detail"),
   steps: [...document.querySelectorAll<HTMLElement>("[data-stage]")],
 };
@@ -68,7 +69,7 @@ function schedule() {
 function handleState(message: Extract<Response, { kind: "state" }>) {
   const changed = stage !== message.stage;
   stage = message.stage;
-  epoch = stage;
+  epoch = message.epoch;
 
   loaded = true;
   renderDelivery(delivery, message);
@@ -173,6 +174,11 @@ function bindEvents() {
     error.textContent = "";
     advance.disabled = true;
     send({ kind: "advance" });
+  });
+  delivery.restore.addEventListener("click", () => {
+    error.textContent = "";
+    delivery.restore.disabled = true;
+    send({ kind: "restore" });
   });
   element("reset").addEventListener("click", start);
   for (const button of document.querySelectorAll<HTMLButtonElement>(
