@@ -22,7 +22,7 @@ export interface IntentEntry {
   key: number;
   order?: number;
 }
-export type IntentSearchOptions = Omit<SearchOptions, "engine"> & {
+export type IntentSearchOptions = Omit<SearchOptions, "engine" | "ranking"> & {
   engine?: "auto" | "dag";
 };
 interface Handle extends SearchHandle {

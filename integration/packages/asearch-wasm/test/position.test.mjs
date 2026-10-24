@@ -79,3 +79,61 @@ for (const [name, api] of [
     }
   });
 }
+
+test("positional merge reads intrinsic lengths for starts, including own getters and subclasses", () => {
+  class Starts extends Uint32Array {
+    get length() {
+      throw new Error("custom length");
+    }
+  }
+  for (const starts of [new Starts([0]), new Uint32Array([0])]) {
+    Object.defineProperty(starts, "length", {
+      get() {
+        throw new Error("own length");
+      },
+    });
+    const result = esm.mergeResults(
+      [
+        {
+          length: 1,
+          ids: new Uint32Array([1]),
+          levels: new Uint8Array([0]),
+          orders: new Uint32Array([0]),
+          refs: new Uint32Array([1]),
+          starts,
+        },
+      ],
+      1,
+    );
+    assert.deepEqual([...result.starts], [0]);
+  }
+});
+
+test("positional work exhaustion is a typed error and the session recovers", () => {
+  const index = esm.AsearchIndex.fromDocs(
+    [{ key: 0, texts: ["a".repeat(32768)] }],
+    { limits: { maxPatternUnits: 4096 } },
+  );
+  const session = index.session({ ranking: "position", maxAmbig: 0 });
+  try {
+    assert.throws(
+      () => session.update("a".repeat(2049)),
+      (error) => error.code === "RESOURCE_LIMIT",
+    );
+    assert.deepEqual([...session.update("a").ids], [0]);
+    assert.deepEqual(
+      [
+        ...index.search("a".repeat(2049), {
+          ranking: "position",
+          maxAmbig: 0,
+          limit: 0,
+          countTotal: true,
+        }).totals,
+      ],
+      [1],
+    );
+  } finally {
+    session.free();
+    index.free();
+  }
+});

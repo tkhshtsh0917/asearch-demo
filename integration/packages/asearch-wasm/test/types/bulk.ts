@@ -83,3 +83,10 @@ intent.search("a", { engine: "transposed-blocked" });
 AsearchIndex.fromDocs(docs);
 // @ts-expect-error Serialization belongs to the server.
 index.toBytes();
+
+// @ts-expect-error Positional ranking is specific to immutable ASIX indexes.
+intent.search("a", { ranking: "position" });
+const positioned: Uint32Array | undefined = index.search("a", {
+  ranking: "position",
+}).starts;
+void positioned;
