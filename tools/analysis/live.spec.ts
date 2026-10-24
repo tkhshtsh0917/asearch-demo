@@ -2,8 +2,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AsearchIndex, IntentIndex } from "asearch-wasm";
+import { intents } from "../../src/shared/intents.ts";
 import { QueryPolicy } from "../../src/shared/query.ts";
-import { intents, search, searchOptions } from "../../src/worker/search.ts";
+import { searchOptions } from "../../src/worker/options.ts";
+import { search } from "../../src/worker/search.ts";
 import { buildSegments } from "../site/segments.ts";
 import { createAnalysis } from "./run.ts";
 
@@ -46,14 +48,14 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
       assert.deepEqual([...root.search(query).ids], [0, 1, 2], query);
     }
     const message = search(
-      1,
-      "Beatles",
-      "corpus",
+      { kind: "query", id: 1, pattern: "Beatles", mode: "corpus" },
       0,
-      root,
-      session,
-      intent,
-      new Map(rows.map((row) => [row.key, row])),
+      {
+        root,
+        session,
+        intent,
+        questions: new Map(rows.map((row) => [row.key, row])),
+      },
     );
     assert.equal(message.kind, "results");
     if (message.kind !== "results") throw new Error("Missing results");
@@ -123,16 +125,15 @@ test("mixed input retries only on zero literal results and explains the effectiv
       session = root.session(searchOptions);
     try {
       const response = search(
-        1,
-        "びーt",
-        "corpus",
+        { kind: "query", id: 1, pattern: "びーt", mode: "corpus" },
         0,
-        root,
-        session,
-        intent,
-        new Map(rows.map((row) => [row.key, row])),
-        undefined,
-        policy,
+        {
+          root,
+          session,
+          intent,
+          questions: new Map(rows.map((row) => [row.key, row])),
+          policy,
+        },
       );
       assert.equal(response.kind, "results");
       if (response.kind !== "results") throw new Error("Missing results");
