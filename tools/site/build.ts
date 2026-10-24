@@ -82,3 +82,7 @@ await cp(
   new URL("node_modules/vite/LICENSE.md", root),
   new URL("vite-LICENSE.md", licenseRoot),
 );
+await cp(
+  new URL("tools/analysis/licenses/wana_kana-MIT.txt", root),
+  new URL("wana_kana-MIT.txt", licenseRoot),
+);

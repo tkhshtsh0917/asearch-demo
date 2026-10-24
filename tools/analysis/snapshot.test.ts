@@ -58,6 +58,8 @@ test("all batches and provenance keep their captured generation across resource 
   const next = await f.prepare();
   rmSync(new URL(provenance.compiledFile, f.paths.directory));
 
+  assert.deepEqual(old.queryRules(rows).forms, [["変化", "A/1"]]);
+  assert.deepEqual(next.queryRules(rows).forms, [["変化", "B/2"]]);
   assert.deepEqual(old.provenance(), provenance);
   assert.equal(old.analyze(rows)[0]?.texts[1], "old/1/A/D");
   assert.equal(next.analyze(rows)[0]?.texts[1], "new/2/B/E");

@@ -2,6 +2,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AsearchIndex, IntentIndex } from "asearch-wasm";
+import { QueryPolicy } from "../../src/shared/query.ts";
 import { intents, search, searchOptions } from "../../src/worker/search.ts";
 import { buildSegments } from "../site/segments.ts";
 import { createAnalysis } from "./run.ts";
@@ -72,4 +73,79 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
     root.free();
     compact.free();
   }
+});
+
+test("native query forms make past and dictionary verbs share candidates without erasing negatives", async () => {
+  const analysis = createAnalysis();
+  const rows = [
+    { key: 0, text: "寿司を食べた人は？", title: "", url: "" },
+    { key: 1, text: "何を食べる？", title: "", url: "" },
+    { key: 2, text: "寿司を食べない理由は？", title: "", url: "" },
+  ];
+  const policy = new QueryPolicy(analysis.queryRules(rows));
+  assert.equal(policy.normalize("食べた"), "食べる");
+  assert.equal(policy.normalize("食べました"), "食べる");
+  assert.equal(policy.normalize("食べない"), "食べない");
+  const parts = await buildSegments(
+    analysis.analyze(rows),
+    [],
+    [],
+    analysis.analyze(rows),
+  );
+  const root = AsearchIndex.fromBytes(parts.base);
+  try {
+    assert.deepEqual(
+      [...root.search(policy.normalize("食べた")).ids],
+      [...root.search(policy.normalize("食べる")).ids],
+    );
+    assert.equal(policy.fallback("びーt"), "bi-t");
+  } finally {
+    root.free();
+  }
+});
+
+test("mixed input retries only on zero literal results and explains the effective query", async () => {
+  const analysis = createAnalysis();
+  const rows = [
+    { key: 0, text: "ビートルズの曲は？", title: "", url: "" },
+    { key: 1, text: "びーtという入力例です", title: "", url: "" },
+  ];
+  const policy = new QueryPolicy(analysis.queryRules(rows));
+  const docs = analysis.analyze(rows);
+  const parts = await buildSegments(docs, [], [], docs);
+  const first = await buildSegments(docs.slice(0, 1), [], [], docs.slice(0, 1));
+  const intent = IntentIndex.fromEntries(intents);
+  for (const [bytes, expected] of [
+    [parts.base, 1],
+    [first.base, 0],
+  ] as const) {
+    const root = AsearchIndex.fromBytes(bytes),
+      session = root.session(searchOptions);
+    try {
+      const response = search(
+        1,
+        "びーt",
+        "corpus",
+        0,
+        root,
+        session,
+        intent,
+        new Map(rows.map((row) => [row.key, row])),
+        undefined,
+        policy,
+      );
+      assert.equal(response.kind, "results");
+      if (response.kind !== "results") throw new Error("Missing results");
+      assert.deepEqual(
+        response.rows.map((row) => row.key),
+        [expected],
+      );
+      if (expected === 0)
+        assert.ok(response.rows[0]?.alias?.text.includes("bi-toruzu"));
+    } finally {
+      session.free();
+      root.free();
+    }
+  }
+  intent.free();
 });

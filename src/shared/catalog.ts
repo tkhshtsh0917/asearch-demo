@@ -12,6 +12,7 @@ export interface Stage {
 }
 export interface Release {
   stages: Stage[];
+  queryRules: { url: string; sha256: string };
   attribution: { creator: string; license: string; changes: string };
 }
 
@@ -66,8 +67,10 @@ export function catalog(value: unknown): Question[] {
 
 export function release(value: unknown): Release {
   if (!value || typeof value !== "object") throw new Error("Invalid release");
-  const { stages, attribution } = value as Release;
+  const { stages, attribution, queryRules } = value as Release;
   if (
+    !queryRules ||
+    !/^[a-f0-9]{64}$/.test(queryRules.sha256) ||
     !Array.isArray(stages) ||
     stages.length !== 3 ||
     !attribution ||
@@ -77,6 +80,7 @@ export function release(value: unknown): Release {
   )
     throw new Error("Invalid release metadata");
   return {
+    queryRules: { url: assetName(queryRules.url), sha256: queryRules.sha256 },
     stages: stages.map(({ manifest, catalog, catalogSha256 }) => {
       if (!/^[a-f0-9]{64}$/.test(catalogSha256))
         throw new Error("Invalid catalog digest");
