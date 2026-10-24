@@ -6,18 +6,21 @@ Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/J
 
 IMEの変換中も現在の入力値で検索し、確定・候補の置換・キャンセル後は最新の値へ追従します。入力欄の内容や選択範囲は書き換えません。ブラウザ互換性は合成IMEイベントを含むPlaywright検証の範囲です。
 
+読み・ローマ字・同義語はサーバー専用のRust解析CLIで事前生成し、原文とは別の検索用textsに登録します。ASIX v1とブラウザ側の正規化・検索処理は維持します。[検索用解析の詳細](docs/ja/search-analysis.md)を参照してください。この機能には解析コマンドを含むRust CLI（v0.2.0以降）が必要です。公開前の明示的なローカル検証では`ASEARCH_ANALYZER_CLI`へビルド済みCLIを指定できます。v0.2.0公開後にそのReleaseのpinへ切り替えてください。
+
 ## セットアップ
 
-Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。公開済みv0.1.0のSHAを記録しています。未公開AssetsのSHAを捏造せず、別版へ切り替える場合は公開後にpinを更新します。
+Node/pnpmはmise、システム辞書の展開に`unzip`、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。公開済みv0.1.0のSHAを記録しています。未公開AssetsのSHAを捏造せず、別版へ切り替える場合は公開後にpinを更新します。
 
 ```sh
 mise install
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 mise exec -- pnpm --dir integration install --frozen-lockfile
-mise exec -- node tools/engine/select.ts v0.1.0
+mise exec -- node tools/engine/select.ts v0.2.0
 mise exec -- node tools/engine/build.ts
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
+mise exec -- pnpm analysis:prepare
 mise exec -- pnpm check
 mise exec -- pnpm data:prepare
 BASE_PATH=/asearch-demo/ mise exec -- pnpm build
@@ -46,6 +49,7 @@ Playwrightコマンドは出力先の衝突を避けて直列実行してくだ�
 - `integration/tests`: ブラウザ上のライブラリ検証。
 - `integration/tools`: グルー生成、fixture/oracle、計測。
 - `tools/engine`: Release Assetsの取得・検証。
+- `tools/analysis`: 上流言語リソースの取得・版固定・Rust解析CLIの呼出し。
 - `tools/data`, `tools/site`: コーパス取得、CLIによる索引・差分・出典情報の生成。
 
 AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを索引化します。[データと出典](docs/ja/data.md)、[ライブラリ仕様](integration/docs/ja/spec/README.md)を参照してください。

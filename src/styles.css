@@ -296,3 +296,9 @@ summary {
     background: #423184;
   }
 }
+/* Auxiliary matches have their own ranges; the original question stays intact. */
+.search-alias {
+  color: #505b6b;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}

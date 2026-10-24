@@ -64,6 +64,7 @@ export function search(
       entry = intents.find((entry) => entry.key === key);
     let text = mode === "corpus" ? (source?.text ?? "") : (entry?.expr ?? ""),
       spans: [number, number][] = [];
+    let alias: Row["alias"];
     try {
       const detail = (mode === "corpus" ? root : intent).explain(
         ref,
@@ -71,8 +72,12 @@ export function search(
         searchOptions,
       );
       if (detail) {
-        text = detail.text;
-        spans = detail.spans;
+        if (mode === "corpus" && detail.text !== text) {
+          alias = { text: detail.text, spans: detail.spans };
+        } else {
+          text = detail.text;
+          spans = detail.spans;
+        }
       }
     } catch (error) {
       if (
@@ -87,6 +92,7 @@ export function search(
       text,
       spans,
       level,
+      ...(alias ? { alias } : {}),
       title:
         mode === "corpus" ? (source?.title ?? "") : "意図表現から選ばれた展開",
       url: mode === "corpus" ? (source?.url ?? "") : "",

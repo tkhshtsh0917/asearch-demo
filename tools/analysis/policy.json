@@ -1,0 +1,6 @@
+{
+  "splitMode": "C",
+  "keepPartOfSpeech": ["名詞", "動詞", "形容詞", "形状詞"],
+  "maxSynonymTexts": 256,
+  "maxDocumentUnits": 131072
+}

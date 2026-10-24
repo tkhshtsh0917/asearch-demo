@@ -37,3 +37,5 @@ mise exec -- pnpm install --frozen-lockfile
 この操作で変更したpin/lockfileをレビューしてcommitできる。初期pinのnullは未公開AssetのSHAを捏造しないための値で、既存のprepare処理は引き続き拒否する。CIも公開Releaseがまだなければ失敗し、未検証バイナリへfallbackしない。
 
 GitHub側のApp/Secret/Pages設定と、実Releaseからのhosted実行はローカル検証と別の有効化作業になる。
+
+現在の画面の読み・同義語生成には、解析CLIを持つRust v0.2.0以降が必要です。手動指定でもこの互換条件を検証し、旧版などで失敗した場合は現在のPagesを維持します。リソースのpinと生成結果は`release-inputs` artifactの`analysis.json`でも確認できます。

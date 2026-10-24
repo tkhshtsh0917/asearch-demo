@@ -2,30 +2,41 @@
 import { sourceUrl } from "../shared/catalog.ts";
 import type { Row } from "../shared/protocol.ts";
 
+/** Applies ranges only to the exact source text described by an explanation. */
+function highlightedText(
+  value: string,
+  spans: [number, number][],
+  className: string,
+) {
+  const text = document.createElement("p");
+  text.className = className;
+  let cursor = 0;
+  for (const [start, end] of spans) {
+    if (
+      !Number.isInteger(start) ||
+      !Number.isInteger(end) ||
+      start < cursor ||
+      end <= start ||
+      end > value.length
+    )
+      continue;
+    text.append(document.createTextNode(value.slice(cursor, start)));
+    const mark = document.createElement("mark");
+    mark.textContent = value.slice(start, end);
+    text.append(mark);
+    cursor = end;
+  }
+  text.append(document.createTextNode(value.slice(cursor)));
+  return text;
+}
+
+/** Keeps original questions visible and labels matches through auxiliary texts. */
 export function renderRows(target: HTMLElement, rows: Row[]): void {
   const fragment = document.createDocumentFragment();
   for (const row of rows) {
     const item = document.createElement("li"),
       article = document.createElement("article"),
-      text = document.createElement("p");
-    text.className = "question";
-    let cursor = 0;
-    for (const [start, end] of row.spans) {
-      if (
-        !Number.isInteger(start) ||
-        !Number.isInteger(end) ||
-        start < cursor ||
-        end <= start ||
-        end > row.text.length
-      )
-        continue;
-      text.append(document.createTextNode(row.text.slice(cursor, start)));
-      const mark = document.createElement("mark");
-      mark.textContent = row.text.slice(start, end);
-      text.append(mark);
-      cursor = end;
-    }
-    text.append(document.createTextNode(row.text.slice(cursor)));
+      text = highlightedText(row.text, row.spans, "question");
     const meta = document.createElement("div");
     meta.className = "result-meta";
     const label = document.createElement("span");
@@ -39,7 +50,17 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
       link.rel = "noopener noreferrer";
       meta.append(link);
     }
-    article.append(text, meta);
+    article.append(text);
+    if (row.alias) {
+      const alias = highlightedText(
+        row.alias.text,
+        row.alias.spans,
+        "search-alias",
+      );
+      alias.prepend(document.createTextNode("検索用表現: "));
+      article.append(alias);
+    }
+    article.append(meta);
     item.append(article);
     fragment.append(item);
   }
