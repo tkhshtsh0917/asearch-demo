@@ -8,7 +8,7 @@ IMEの変換中も現在の入力値で検索し、確定・候補の置換・�
 
 ## セットアップ
 
-Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。現在のnullは初回リリース待ちを示し、検証を無効化して進める値ではありません。
+Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。公開済みv0.1.0のSHAを記録しています。未公開AssetsのSHAを捏造せず、別版へ切り替える場合は公開後にpinを更新します。
 
 ```sh
 mise install
