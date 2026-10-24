@@ -16,3 +16,5 @@ mise exec -- node tools/bench/ui.ts http://127.0.0.1:4185/asearch-demo/ OUTPUT_J
 各ブラウザは新しいcontextを使います。ready観測はnavigation・Worker起動・ローカルHTTP取得・検証・索引準備を含みますが、単独の診断標本で、OS cacheがcoldだったという主張はしません。8入力×28roundを再生し、最初の3roundをwarmupとして除外します。残る200標本にはWorkerが返す検索・説明時間、主スレッドでの要求→応答時間、要求→採用DOM mutation時間を保持します。DOM変更はアプリのanimation-frame callback内で起こりますが、**paint完了ではありません**。往復には直列化・スケジューリング・Worker実行を含みます。時計が異なるためWorker elapsedは参考の内訳であり、主スレッド時間から厳密に差し引けません。
 
 各入力で対応するDOM mutationを待ち、標本数・非負で有限な時刻・エラーメッセージ・応答後のDOM反映順を確認します。これは逐次応答のベンチマークです。連続入力のキャンセル、遅延更新、アクセシビリティ、モバイルemulationは`pnpm test:e2e`で検証します。時間の閾値をCIのassertionにしません。observerには追加費用があり、network shapingも行わず、desktop計測はスマホ性能の保証になりません。このUI runnerはネットワーク取得・WASM compile・instantiateを個別には分解しません。別途観測できるメモリ上の構築費用はAPIのload比較を使ってください。
+
+runnerはindex.htmlと全コード・配信データ資産をhash化し、ASIX・manifest・catalog・クエリ変換表・解析時情報も含めます。計測前後に配信byteとsnapshotを照合し、変更を拒否します。事前取得でcacheが温まるため、起動はcoldではありません。各資産は64 MiB以内、HTTP読み込みは取得済みの長さ以内です。既存のrunner・observer hashに加え、資産byte数・推移的なハーネスソースhash・ルートlockfile hashを記録します。

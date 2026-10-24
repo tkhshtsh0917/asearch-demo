@@ -15,7 +15,7 @@
     "lint": "biome check .",
     "fmt": "biome check --write .",
     "docs:check": "node integration/tools/docs/check.mjs --demo && prettier --check \"*.md\" \"docs/**/*.md\" \".github/**/*.yml\"",
-    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts tools/analysis/*.test.ts",
+    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts tools/analysis/*.test.ts tools/bench/*.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
     "engine:prepare": "node tools/engine/prepare.ts",
     "engine:build": "node tools/engine/build.ts",
