@@ -5,7 +5,8 @@ export type Mode = "corpus" | "intent";
 export type Request =
   | { kind: "init"; base: string }
   | { kind: "query"; id: number; pattern: string; mode: Mode }
-  | { kind: "advance" };
+  | { kind: "advance" }
+  | { kind: "restore" };
 export interface Row {
   key: number;
   text: string;
@@ -21,6 +22,8 @@ export type Response =
   | {
       kind: "state";
       stage: number;
+      epoch: number;
+      pending: "advance" | "restore" | null;
       count: number;
       busy: boolean;
       segments: number;
