@@ -130,3 +130,50 @@ test("the compact header and update cards fit a 320px viewport across stages", a
   await expect(page.locator("#status")).toContainText("世代 1");
   expect(await fits()).toBe(true);
 });
+
+test("Worker failure disables both update controls and rejects queued state before restart", async ({
+  page,
+}) => {
+  await page.addInitScript(() => {
+    const NativeWorker = window.Worker;
+    window.Worker = class extends NativeWorker {
+      constructor(...args: ConstructorParameters<typeof Worker>) {
+        super(...args);
+        Object.assign(window, { __testWorker: this });
+        this.addEventListener("message", (event) => {
+          if (event.data.kind === "state")
+            Object.assign(window, { __testState: event.data });
+        });
+      }
+    };
+  });
+  await openUpdateExample(page);
+  await page.locator("#advance").click();
+  await expect(page.locator("#restore")).toBeEnabled();
+  await expect(page.locator("#advance")).toBeEnabled();
+
+  await page.evaluate(() => {
+    const captured = window as unknown as {
+      __testWorker: Worker;
+      __testState: unknown;
+    };
+    const handler = captured.__testWorker.onmessage;
+    captured.__testWorker.dispatchEvent(
+      new ErrorEvent("error", { message: "Injected Worker failure" }),
+    );
+    handler?.call(
+      captured.__testWorker,
+      new MessageEvent("message", { data: captured.__testState }),
+    );
+  });
+  await expect(page.locator("#status")).toContainText("検索を停止しました");
+  await expect(page.locator("#advance")).toBeDisabled();
+  await expect(page.locator("#restore")).toBeDisabled();
+  await expect(page.locator("#delivery-detail")).toContainText("起動し直して");
+
+  await page.locator("#reset").click();
+  await expect(page.locator("#status")).toContainText("検索できます");
+  await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator("#advance")).toBeEnabled();
+  await expect(page.locator("#restore")).toBeDisabled();
+});
