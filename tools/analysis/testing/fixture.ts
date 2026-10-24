@@ -104,6 +104,23 @@ export function fixture(t: TestContext) {
         file(4),
         `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`,
       );
+    } else if (command === "query-rules") {
+      writeFileSync(
+        file(4),
+        JSON.stringify({
+          format: "asearch-query-rules/1",
+          forms: [
+            [
+              "変化",
+              `${version}/${JSON.parse(readFileSync(file(2), "utf8")).maxSynonymTexts}`,
+            ],
+          ],
+          kana: [
+            ["び", "bi"],
+            ["ー", "-"],
+          ],
+        }),
+      );
     } else throw new Error("Unexpected native fixture command");
   };
 

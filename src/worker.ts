@@ -11,8 +11,9 @@ import {
 import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
 import type { Request, Response } from "./shared/protocol.ts";
+import { QueryPolicy, queryRules } from "./shared/query.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
-import { intents, search, searchOptions } from "./worker/search.ts";
+import { corpusOptions, intents, search } from "./worker/search.ts";
 import { candidate } from "./worker/stage.ts";
 
 const scope = self as DedicatedWorkerGlobalScope;
@@ -24,6 +25,7 @@ let base: URL,
   session: SearchSession,
   intent: IntentIndex,
   current: Manifest;
+let policy: QueryPolicy;
 
 let questions = new Map<number, Question>(),
   stage = 0,
@@ -67,6 +69,7 @@ function run() {
         intent,
         questions,
         updates.byKey,
+        policy,
       ),
     );
 }
@@ -81,6 +84,16 @@ async function init(url: string) {
 
   await ready;
   info = release(await jsonAsset(base, "release.json"));
+  policy = new QueryPolicy(
+    queryRules(
+      await jsonAsset(
+        base,
+        info.queryRules.url,
+        2 * 1024 * 1024,
+        info.queryRules.sha256,
+      ),
+    ),
+  );
   const next = await candidate(base, info, 0),
     descriptor = next.manifest.segments[0];
   if (!descriptor || next.manifest.segments.length !== 1)
@@ -97,7 +110,7 @@ async function init(url: string) {
 
   try {
     session = root.session({
-      ...searchOptions,
+      ...corpusOptions,
       maxCacheBytes: 16 * 1024 * 1024,
     });
     intent = IntentIndex.fromEntries(intents, {

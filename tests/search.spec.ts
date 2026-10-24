@@ -287,7 +287,7 @@ test("script, case, romaji and synonym queries display the same original questio
       .locator("#results .question")
       .allTextContents();
     expect(questions.length).toBeGreaterThan(0);
-    expect(questions).toEqual(originals ?? questions);
+    expect([...questions].sort()).toEqual([...(originals ?? questions)].sort());
     originals = questions;
   }
 
@@ -331,6 +331,7 @@ test("redistributed code carries its own and dependency license notices", async 
     "SudachiDict-LICENSE-2.0.txt",
     "SudachiDict-LEGAL",
     "elasticsearch-sudachi-LICENSE",
+    "wana_kana-MIT.txt",
   ]) {
     const response = await request.get(`licenses/${name}`);
     expect(response.status()).toBe(200);
@@ -380,4 +381,60 @@ test("benchmark observer correlates Worker messages with accepted DOM changes", 
   expect(sample?.roundTripMs).toBeGreaterThanOrEqual(0);
   expect(sample?.domMs).toBeGreaterThanOrEqual(sample?.roundTripMs ?? Infinity);
   expect(sample?.workerMs).toBeGreaterThanOrEqual(0);
+});
+
+test("mixed composition fallback and verb normalization preserve the visible query", async ({
+  page,
+}) => {
+  await page.addInitScript(installObservation);
+  await open(page);
+  await page.locator("#query").evaluate((element) => {
+    const input = element as HTMLInputElement;
+    input.dispatchEvent(
+      new CompositionEvent("compositionstart", { bubbles: true }),
+    );
+    input.value = "びーt";
+    input.setSelectionRange(3, 3);
+    input.dispatchEvent(
+      new InputEvent("input", { bubbles: true, isComposing: true }),
+    );
+  });
+  await expect(page.locator("#results")).toContainText("ビートルズ");
+  await expect(page.locator("#query")).toHaveValue("びーt");
+  expect(
+    await page
+      .locator("#query")
+      .evaluate((e) => (e as HTMLInputElement).selectionStart),
+  ).toBe(3);
+  await page.locator("#query").dispatchEvent("compositionend");
+
+  const questions: string[][] = [];
+  for (const value of ["食べた", "食べる", "食べました"]) {
+    await page.locator("#query").fill(value);
+    await page.waitForFunction(
+      (pattern) =>
+        (
+          window as unknown as { __asearchBench: Observation }
+        ).__asearchBench.samples.at(-1)?.pattern === pattern,
+      value,
+    );
+    questions.push(await page.locator("#results .question").allTextContents());
+    await expect(page.locator("#query")).toHaveValue(value);
+  }
+  expect(questions[0]?.length).toBeGreaterThan(0);
+  expect(questions[1]).toEqual(questions[0]);
+  expect(questions[2]).toEqual(questions[0]);
+});
+
+test("short roman prefixes rank ahead of interior substring aliases", async ({
+  page,
+}) => {
+  await open(page);
+  await query(page, "bi");
+  await expect(
+    page.locator("#results li").first().locator(".search-alias"),
+  ).toHaveText(/^検索用表現:\s*bi/i);
+  await expect(page.locator("#results li").first()).not.toContainText(
+    "possibility",
+  );
 });

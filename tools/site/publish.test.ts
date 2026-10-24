@@ -28,6 +28,7 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
         return result;
       },
       provenance: analysis.provenance,
+      queryRules: analysis.queryRules,
     },
   );
 

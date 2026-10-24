@@ -48,7 +48,7 @@ Lookup uses exact surface/normalized/dictionary forms of eligible Sudachi tokens
 
 ## Format, display and resource bounds
 
-ASIX v1 already supports multiple `texts` for a document. This feature changes neither the binary format nor the WASM API. The engine selects the best matching text and deduplicates hits by key. Base generation, atomic upserts/removals and canonical compaction use exactly the same analyzed documents; replacing a document removes its old alternatives.
+ASIX v1 already supports multiple `texts` for a document. Auxiliary texts do not change the binary format. Query lookup uses a separate asset; optional positional ranking extends the runtime boundary as described below. The engine selects the best matching text and deduplicates hits by key. Base generation, atomic upserts/removals and canonical compaction use exactly the same analyzed documents; replacing a document removes its old alternatives.
 
 The UI always displays the catalog question. If a different text matched, it displays a separate **検索用表現** line with that text's own highlight spans. Alias offsets are never applied to the original question. IME `input` events also search uncommitted text; commit and cancellation schedule the final input value without modifying the input or its selection.
 
@@ -72,7 +72,7 @@ mise exec -- pnpm analysis:test
 BASE_PATH=/asearch-demo/ mise exec -- pnpm build
 ```
 
-`analysis:prepare` downloads checksum-verified dictionary, filter, synonym and license resources, then invokes the Rust resource converter. It requires `unzip` and a released CLI with analyzer support (v0.2.0 or newer). Subsequent analysis runs offline. The large system dictionary is memory-mapped by Sudachi and cached under its content hash; mapped files are immutable. Compiled stop/synonym JSON is loaded into owned Rust collections without another mmap layer.
+`analysis:prepare` downloads checksum-verified dictionary, filter, synonym and license resources, then invokes the Rust resource converter. It requires `unzip` and a released CLI with analyzer and query-rule support (v0.3.0 or newer). Subsequent analysis runs offline. The large system dictionary is memory-mapped by Sudachi and cached under its content hash; mapped files are immutable. Compiled stop/synonym JSON is loaded into owned Rust collections without another mmap layer.
 
 Run `mise exec -- pnpm analysis:update` to resolve the current `develop` heads of SudachiDict and elasticsearch-sudachi, fetch all three text resources and their notices, validate Rust conversion, update `resources.lock.json` and prepare them. Review and commit the pin changes. Ordinary builds never silently resolve latest upstream. The system-dictionary binary version is a separate fixed pin; text updates do not silently replace that much larger binary.
 
@@ -98,3 +98,15 @@ gzip-9 is an offline size measurement; it does not assert that a CDN serves thes
 For 50k, the read-only WASM kernel rejected 64/128 MiB working budgets and loaded/searched successfully at 256 MiB in Chromium, Firefox and WebKit. This is a configured Rust resource budget, not total browser RAM usage. The comparison used released WASM v0.1.0 and the v0.2.0 analyzer source, demonstrating ASIX v1 compatibility.
 
 The production demo remains at 10k. Its ingestion cap, 20k catalog validation, 8 MiB catalog transfer limit and generation-transition headroom need separate evaluation before increasing that setting. The 50k kernel probe does not establish a 50k UI or mobile-memory guarantee. Server analysis can be batched: the probe combined 20k/20k/10k invocations before building one ASIX. Earlier tuning measurements use their recorded index shapes and do not automatically describe these expanded corpora.
+
+## Query-only lookup and ranking (Rust 0.3+)
+
+Publication uses the same captured native analyzer to export one `asearch-query-rules/1` JSON asset, shared by base, delta and compacted stages. `release.json` names the immutable file and its SHA-256. The Worker verifies at most 2 MiB before readiness; no Sudachi dictionary is shipped to the browser.
+
+The server exports only unambiguous verb/adjective inflections whose normalized forms occur in the filtered corpus. The browser performs one exact lookup per standalone or whitespace-delimited query term: `食べた`, `食べました` and `食べる` therefore search the same canonical query. Unknown and ambiguous forms remain literal. This is not sentence segmentation; arbitrary unsegmented sentences, negatives and substrings inside nouns are not rewritten. Limits are 50,000 form rules, 8,192 kana rules and 128 UTF-16 units per query/form, independently of the synonym policy's `-1` options.
+
+Only after the effective query returns zero hits, a bounded longest-match kana table retries mixed IME input such as `びーt` → `bi-t`. Original matches win, and input text/selection are preserved. Lookup data comes from the server's pinned wana_kana implementation, including apostrophes such as `んあ` → `n'a`; its MIT notice is distributed as `licenses/wana_kana-MIT.txt`. Oversized rewrites are not retried.
+
+Corpus searches opt into Rust's global `(minimum edit distance, earliest normalized UTF-16 start, order, key)` ranking. Every live matching alias participates before top-N, so prefix matches outrank later substring matches at the same distance; offset 1 also outranks offset 2. Intent mode retains its existing order. See the [ranking contract](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ranking.md). This adds positional DP and sorting work; earlier performance measurements do not include it.
+
+These features require CLI and WASM 0.3 or newer. Until that release is published, use explicitly supplied development artifacts for local verification; do not fabricate checksums for unpublished assets or mistake local verification for a Pages deployment.

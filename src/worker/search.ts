@@ -9,6 +9,7 @@ import {
 import type { Question } from "../shared/catalog.ts";
 import type { ChangeKind } from "../shared/changes.ts";
 import type { Mode, Response, Row } from "../shared/protocol.ts";
+import type { QueryPolicy } from "../shared/query.ts";
 
 export const intents = [
   { key: 0, expr: "(電球|ライト)(を)?(交換|修理)(する)?" },
@@ -22,6 +23,8 @@ export const searchOptions = {
   countTotal: true,
 } as const;
 
+export const corpusOptions = { ...searchOptions, ranking: "position" } as const;
+
 /** Searches the chosen index and maps explanations to safe UI rows within the query budget. */
 export function search(
   id: number,
@@ -33,6 +36,7 @@ export function search(
   intent: IntentIndex,
   questions: Map<number, Question>,
   changes?: ReadonlyMap<number, ChangeKind>,
+  policy?: QueryPolicy,
 ): Response {
   const started = performance.now();
 
@@ -50,10 +54,19 @@ export function search(
     };
   }
 
-  const result: SearchResult =
+  let effective =
+    mode === "corpus" ? (policy?.normalize(pattern) ?? pattern) : pattern;
+  let result: SearchResult =
     mode === "corpus"
-      ? session.update(pattern)
-      : intent.search(pattern, searchOptions);
+      ? session.update(effective)
+      : intent.search(effective, searchOptions);
+  if (mode === "corpus" && result.length === 0) {
+    const fallback = policy?.fallback(effective);
+    if (fallback) {
+      effective = fallback;
+      result = session.update(effective);
+    }
+  }
 
   const rows: Row[] = [];
   for (let i = 0; i < result.length; i++) {
@@ -70,7 +83,7 @@ export function search(
     try {
       const detail = (mode === "corpus" ? root : intent).explain(
         ref,
-        pattern,
+        effective,
         searchOptions,
       );
       if (detail) {

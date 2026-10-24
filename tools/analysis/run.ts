@@ -11,6 +11,7 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Doc } from "asearch-wasm";
 import type { Question } from "../../src/shared/catalog.ts";
+import { type QueryRules, queryRules } from "../../src/shared/query.ts";
 import { digest } from "./cache.ts";
 import { documents } from "./documents.ts";
 import {
@@ -42,6 +43,7 @@ export interface AnalysisProvenance extends Prepared {
 
 export interface Analysis {
   analyze(rows: Question[]): Doc[];
+  queryRules(rows: Question[]): QueryRules;
   provenance(): AnalysisProvenance;
 }
 
@@ -95,6 +97,20 @@ export function createAnalysis(
   return {
     analyze: (rows) =>
       analyzeBatch(rows, dictionary, cli, compiled, policy, execute),
+    queryRules: (rows) =>
+      queryRules(
+        JSON.parse(
+          nativeBatch(
+            rows,
+            dictionary,
+            cli,
+            compiled,
+            policy,
+            execute,
+            "query-rules",
+          ),
+        ),
+      ),
     provenance: () => structuredClone(provenance),
   };
 }
@@ -108,8 +124,27 @@ function analyzeBatch(
   policy: Uint8Array,
   execute: NativeRunner,
 ): Doc[] {
-  if (rows.length > 20000) throw new Error("Analysis record limit");
   if (rows.length === 0) return [];
+  return documents(
+    rows,
+    nativeBatch(rows, dictionary, cli, compiled, policy, execute, "analyze")
+      .trimEnd()
+      .split("\n")
+      .map((line) => JSON.parse(line)),
+  );
+}
+
+/** Runs both exports against the same captured CLI, dictionary, resources and policy. */
+function nativeBatch(
+  rows: Question[],
+  dictionary: string,
+  cli: Uint8Array,
+  compiled: Uint8Array,
+  policy: Uint8Array,
+  execute: NativeRunner,
+  command: "analyze" | "query-rules",
+): string {
+  if (rows.length > 20000) throw new Error("Analysis record limit");
   const input = `${rows.map(({ key, text }) => JSON.stringify({ key, texts: [text] })).join("\n")}\n`;
   if (Buffer.byteLength(input) > 16 * 1024 * 1024)
     throw new Error("Analysis input byte limit");
@@ -124,18 +159,15 @@ function analyzeBatch(
     writeFileSync(resourceFile, compiled);
     writeFileSync(policyFile, policy);
     execute(
-      ["analyze", dictionary, resourceFile, policyFile, source, output],
+      [command, dictionary, resourceFile, policyFile, source, output],
       writeNative(directory, cli),
     );
-    if (statSync(output).size > 64 * 1024 * 1024)
+    if (
+      statSync(output).size >
+      (command === "query-rules" ? 2 : 64) * 1024 * 1024
+    )
       throw new Error("Analysis output byte limit");
-    return documents(
-      rows,
-      readFileSync(output, "utf8")
-        .trimEnd()
-        .split("\n")
-        .map((line) => JSON.parse(line)),
-    );
+    return readFileSync(output, "utf8");
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }

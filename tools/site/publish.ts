@@ -67,6 +67,13 @@ export async function publish(
       integrity: `sha384-${createHash("sha384").update(data).digest("base64")}`,
     };
   };
+  const rulesBytes = encode(
+    analysis.queryRules([...questions, { ...added, key }]),
+  );
+  const rules = {
+    url: put("query-rules", "json", rulesBytes),
+    sha256: digest(rulesBytes),
+  };
   const b = segment("base", base),
     d = segment("delta", delta),
     c = segment("compact", compact);
@@ -94,7 +101,10 @@ export async function publish(
       catalogSha256: digest(data),
     };
   });
-  files.set("release.json", encode({ stages, attribution } satisfies Release));
+  files.set(
+    "release.json",
+    encode({ stages, attribution, queryRules: rules } satisfies Release),
+  );
   files.set("analysis.json", encode(analysis.provenance()));
   return files;
 }
