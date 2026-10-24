@@ -102,6 +102,20 @@ function handleResults(
   });
 }
 
+/** Invalidates queued responses and disables commands until a fresh Worker starts. */
+function stopWorker(message: string, statusText: string) {
+  loaded = false;
+  ++run;
+  latest = ++serial;
+  worker.terminate();
+  advance.disabled = true;
+  delivery.restore.disabled = true;
+  error.textContent = message;
+  status.textContent = statusText;
+  delivery.detail.textContent =
+    "再読み込みで検索Workerを起動し直してください。";
+}
+
 /** Replaces the Worker and resets only UI state owned by its generation. */
 function start() {
   worker?.terminate();
@@ -134,9 +148,10 @@ function start() {
       if (message.id !== undefined && message.id !== latest) return;
       error.textContent = `処理できませんでした: ${message.message}`;
       if (message.fatal) {
-        loaded = false;
-        status.textContent =
-          "読み込みに失敗しました。再読み込みで再試行できます。";
+        stopWorker(
+          error.textContent,
+          "読み込みに失敗しました。再読み込みで再試行できます。",
+        );
       }
       return;
     }
@@ -150,10 +165,10 @@ function start() {
 
   worker.onerror = () => {
     if (generation === run) {
-      loaded = false;
-      error.textContent =
-        "検索Workerが停止しました。再読み込みで再試行してください。";
-      advance.disabled = true;
+      stopWorker(
+        "検索Workerが停止しました。再読み込みで再試行してください。",
+        "検索を停止しました。再読み込みで再試行できます。",
+      );
     }
   };
 }
