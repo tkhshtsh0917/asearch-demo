@@ -1,139 +1,107 @@
 # 照合意味論
 
-[原文](../../spec/semantics.md) · 日本語版
-
-一致・ワイルドカード・編集コスト・profileの違いなど、検索結果の正しさを決める規則を説明します。
-
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[English](../../spec/semantics.md)
 
 <a id="section-2"></a>
 
-## 2. 参照意味論（asearch.ts@1.0.3）
+## 2. 参照意味論
+
+互換性の基準は同梱したasearch.ts 1.0.3のソースと公開libです。現行の読み取り専用ランタイムと一括APIは別途[ランタイム](runtime.md)が規定します。
 
 <a id="section-2-1"></a>
 
-### 2.1 公開 API 面（検証済み: npm `asearch.ts@1.0.3` の `lib/index.js` と `lib/index.d.ts`）
+### 2.1 公開する形
 
-- exports: `MatchMode`（数値 enum。実行時は逆引き付きオブジェクト `{"0":"Exact","1":"Include","2":"WildcardSpace","Exact":0,"Include":1,"WildcardSpace":2}`）と `Asearch`。
-- `class Asearch { static MAXLENGTH = 31; readonly matchMode; readonly pattern; masks: {[char: string]: number}; constructor(pattern: string, mode?: MatchMode); match(query: string, ambig?: number): boolean }`
-- 型の上で private: `acceptPattern`, `initPattern`, `loopMask`, `verbose()`。実行時の状態フィールドは列挙可能な自前プロパティ（`Object.keys` → `loopMask, masks, matchMode, pattern, initPattern, acceptPattern`）。`verbose()`はprototype上のメソッドで、自前プロパティには含まれない。
-- `masks` の値は符号付き int32（位置 0 のビットは `-2147483648`）。
-- `package.json`: `main = lib/index.js`（CommonJS、TypeScript の ES5 ターゲット出力）、`types = lib/index.d.ts`。
+上流はAsearchと数値・逆引き付きのMatchMode（Exact=0、Include=1、WildcardSpace=2）を公開します。AsearchはMAXLENGTH=31、matchMode、pattern、符号付きint32のmasksを持ちます。観測できる自前フィールドの順序はloopMask・masks・matchMode・pattern・initPattern・acceptPatternで、verbose()はprototypeメソッドです。上流の型にはprivateメンバーがあるため、privateクラス型への名目的な代入ではなく公開面で互換性を測ります。
 
 <a id="section-2-2"></a>
 
-### 2.2 パターンのコンパイル（lib と src で同一）
+### 2.2 patternのコンパイル
 
-```text
-if (pattern.length > 31) throw new Error(`Pattern must be shorter than 32 chars. But given ${pattern}`)
-      // pattern.length は UTF-16 長で空白も数える
-splitted = Array.from(pattern)          // code point 単位
-INIT   = 1 << 31（符号なしとして扱う）
-accept = INIT >>> splitted.length
-loop   = (mode === Include) ? (INIT | accept) : 0
-pos = 0
-for c of splitted:
-  if (mode === WildcardSpace && c === ' ') { loop |= INIT >>> pos; accept <<= 1; continue }
-  for key of [c, c.toLocaleLowerCase(), c.toUpperCase()]: masks[key] |= INIT >>> pos
-  pos++
-```
+空白を含め31 UTF-16単位を超えるpatternを拒否します。Array.fromでコードポイントに分割します。INITは符号なしの31番ビット、acceptはINITをpattern記号数だけ右シフトした値です。Includeは開始・受理位置に無料ループを加えます。WildcardSpaceはU+0020ごとに直前位置の無料ループとし、空白を受理位置から除きます。Exactと未知の互換modeには無料ループがありません。
 
-- Include は位置 0 と受理位置にループ（＝部分一致）。WildcardSpace は空白の直前位置にループ（空白は位置を消費しない＝`.*`）。Exact と未知の mode はループなし。
-- 大文字小文字は **pattern 側だけ**最大 3 キーに展開し、text 側は加工しない。複数記号になるキー（`'ß'.toUpperCase() === 'SS'` 等）は単一記号と一致しないので実質無視される。
+大小文字はpattern側だけで元記号・locale小文字・大文字へ展開します。ß→SSのような複数記号への展開はtextの1記号と一致しません。互換経路はホストJSの変換を使い、native Rustの変換はlocaleによって異なる場合があります。
 
 <a id="section-2-3"></a>
 
-### 2.3 1 記号ずつの遷移
+### 2.3 記号遷移
 
 ```text
-states[e] = INIT >>> e        for e = 0..ambig       // JS のシフト量は mod 32
-for each symbol x of text:
+states[e] = INIT >>> e                     for e = 0..ambig
+for each text symbol x:
   mk = masks[x] ?? 0
   for e = ambig .. 1:
-    states[e] = (states[e] & loop) | ((states[e] & mk) >>> 1) | (states[e-1] >>> 1) | states[e-1]
+    states[e] = (states[e] & loop) | ((states[e] & mk) >>> 1)
+              | (states[e-1] >>> 1) | states[e-1]
   states[0] = ((states[0] & mk) >>> 1) | (states[0] & loop)
   for e = 1 .. ambig:
     states[e] |= states[e-1] >>> 1
 return (states[ambig] & accept) !== 0
 ```
 
-下位 level の更新前の値（挿入・置換）と、更新後の値（削除の閉包）を使い分ける点に注意。
+JSのシフト量は32で折り返します。挿入・置換には更新前の下位levelを使い、削除の閉包には更新後を使います。互換実装ではこの順序を維持します。
 
 <a id="section-2-4"></a>
 
-### 2.4 記号化の差（重要）
+### 2.4 ソースと公開物の記号単位
 
-- TypeScript ソース（`for (const char of query)`）は code point 単位で走査する。
-- **npm 公開物 `lib/index.js` は ES5 への降格で `for (i = 0; i < query.length; i++) char = query[i]`、つまり UTF-16 code unit 単位で走査する**（検証済み: `tools/reference/check_lib_quirks.js`）。pattern 側は `Array.from` でcode point単位のため、Exact・level 0では同じ絵文字同士でも一致しない。textに非BMPが含まれるだけで常に不一致になるわけではなく、例えばIncludeでpatternが`a`、textが`a😀`ならlevel 0で一致する。
-  - 実測: `new Asearch('a😀b').match('a😀b', 0) === false`、`match('a😀b', 2) === true`、`new Asearch('😀').match('😀') === false`。
-  - README の「絵文字対応」は公開物では成立していない。
+TypeScriptソースはコードポイントで走査します。ES5の公開libはtextをUTF-16単位で走査し、patternはコードポイントでコンパイルします。そのため非BMPを含む同一文字列でもlevel 0で一致するとは限りません。a😀b同士は0でfalse、2でtrue、😀同士は0でfalseです。非BMPのtextが常に失敗するわけではなく、Includeのpattern aはa😀と0で一致します。tools/reference/check_lib_quirks.jsを参照してください。
 
 <a id="section-2-5"></a>
 
-### 2.5 実測で確認した癖（npm `asearch.ts@1.0.3`、Node v22.22.0）
+### 2.5 互換性の観測
 
-| ID  | 現象                                                                                                                                                      | 本プロジェクトの扱い                                                                          |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Q1  | text を UTF-16 単位で走査（§2.4）                                                                                                                         | 既定プロファイル `AsearchTs` は code point（意図的逸脱）。ビット一致が必要なら `AsearchTsLib` |
-| Q2  | 長さ検査は UTF-16 長（空白含む）。絵文字 16 個（32 単位）で例外                                                                                           | compat API は同一メッセージで完全再現。拡張 API は 31 記号制限なし（§11.6 の資源上限は適用）  |
-| Q3  | ambig に対して非単調。pattern `"a"` vs `""` → e=0..3 で `[F,T,F,F]`、`"ab"` vs `""` → `[F,F,T,F,F]`                                                       | compat API は完全再現。一括 API は最小 level を返すので影響なし（§2.8）                       |
-| Q4  | ambig ≥ 32 でシフト量が折り返す（`"abc"` vs `"abc"`: ambig=31 → false、32 → true）                                                                        | compat API は u32 とシフト量 mod 32 で完全再現                                                |
-| Q5  | ambig が非整数（1.5）・負（-1）→ false                                                                                                                    | 再現                                                                                          |
-| Q6  | `match()` が毎回 `process.env.ASEARCH_VERBOSE` を参照し、`process` の無い環境（ポリフィル無しのブラウザ）で `ReferenceError`（検証済み: vm コンテキスト） | **再現しない**。Node 専用グローバルの参照を全面禁止                                           |
-| Q7  | 未知の mode（3 など）は Exact として振る舞う                                                                                                              | 再現                                                                                          |
-| Q8  | `toLocaleLowerCase` は実行環境のロケールに依存（tr/az/lt 等）                                                                                             | compat では候補キーを JS 側で同じ式で計算して WASM に渡し、完全一致させる（§12.2）            |
-| Q9  | 引数なしの `match()` は TypeError                                                                                                                         | TypeError であれば良い（メッセージ一致は不要）                                                |
-| Q10 | 文字列でない pattern（数値）は空パターン相当で動く                                                                                                        | 再現しない（TypeError）。逸脱として文書化                                                     |
+| ID  | 観測した動作                                       | 扱い                                                                         |
+| --- | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Q1  | 公開物のtext走査はUTF-16単位                       | 既定はソースのコードポイントで、asearch.ts-libを明示して公開物の動作を維持。 |
+| Q2  | 長さ検査はUTF-16と空白を数える                     | 互換APIで再現し、拡張索引は資源上限を使う。                                  |
+| Q3  | 受理は非単調。a対空文字はlevel 0..3でF,T,F,F       | match()で維持し、一括APIは最初の一致levelを返す。                            |
+| Q4  | シフトは32で折り返し、abc同士は31でfalse、32でtrue | 折り返すu32遷移を維持。                                                      |
+| Q5  | 負・小数の曖昧度はfalse                            | 文書化した型変換を維持。                                                     |
+| Q6  | 上流はprocess.envを参照しprocessがなければ失敗     | この依存を意図的に除く。                                                     |
+| Q7  | 未知modeはExactとして動く                          | 互換経路だけで維持。                                                         |
+| Q8  | locale依存の小文字化はホストに依存                 | WASM前に同じJS候補をコンパイル。                                             |
+| Q9  | match引数なしはTypeError                           | 型を維持し、正確なメッセージは維持しない。                                   |
+| Q10 | 上流で数値patternは空文字相当                      | TypeErrorで意図的に拒否。                                                    |
 
 <a id="section-2-6"></a>
 
-### 2.6 プロファイル
+### 2.6 profile
 
-| Profile               | text 記号   | pattern 記号 | 境界 B(i,e)        | 大文字小文字                                    | 備考                                                            |
-| --------------------- | ----------- | ------------ | ------------------ | ----------------------------------------------- | --------------------------------------------------------------- |
-| `AsearchTs`（既定）   | code point  | code point   | `i == e`           | JS から渡す候補キー（既定 `[c, lower, upper]`） | ソースの意味論＝README の意図                                   |
-| `AsearchTsLib`        | UTF-16 unit | code point   | `i == e`           | 同上                                            | npm 公開物とビット一致                                          |
-| `NodeAsearch`（任意） | UTF-16 unit | UTF-16 unit  | `i == 0 && e == 0` | ASCII のみ                                      | 空白は常にワイルドカード、K ≤ 3、非空白 32 記号以上は常に false |
-| `Ideal`               | code point  | code point   | `i <= e`           | 設定可                                          | 正しい初期 ε 閉包（Levenshtein）                                |
+| profile      | text／patternの記号            | 初期所属B(i,e) |
+| ------------ | ------------------------------ | -------------- |
+| AsearchTs    | コードポイント／コードポイント | i == e         |
+| AsearchTsLib | UTF-16単位／コードポイント     | i == e         |
+| Ideal        | コードポイント／コードポイント | i <= e         |
 
-B(i,e) は「text を 1 記号も読む前に、level e の状態集合に位置 i が含まれるか」。
+NodeAsearchは参照比較用で、選択できるランタイムengineではありません。UTF-16のpattern／text、ASCII大小文字、常時ワイルドカードの空白、K<=3を暗黙には採用しません。
 
 <a id="section-2-7"></a>
 
-### 2.7 理想コスト（Ideal）
+### 2.7 Idealの費用
 
 ```text
-C[i][0] = i                                                    (i = 0..m)
-C[i][j] = min( C[i][j-1]   + (i ∈ LOOPS ? 0 : 1),               // ループ / 挿入
-               C[i-1][j-1] + (EQ_i(t_j) ? 0 : 1),               // 一致 / 置換
-               C[i-1][j]   + 1 )                                // 削除
-cost(p, t) = C[m][n]
+C[i][0] = i
+C[i][j] = min(C[i][j-1] + (i in LOOPS ? 0 : 1),
+              C[i-1][j-1] + (EQ_i(t_j) ? 0 : 1),
+              C[i-1][j] + 1)
+cost(p,t) = C[m][n]
 ```
+
+Include・ワイルドカードのループは無料で記号を読み飛ばし、他の挿入・削除・置換は1です。一括順位の独立した最小費用の基準とします。
 
 <a id="section-2-8"></a>
 
-### 2.8 特性定理（検証済み）
+### 2.8 特性
 
-**定理.** `AsearchTs` と `AsearchTsLib` で、任意の pattern p・mode・text t・整数 `0 ≤ e ≤ 31` について
+互換profile・整数0<=e<=31・profileに従う記号について、以下が成り立ちます。
 
 ```text
-asearch.ts.match(t, e)  ⇔  cost(p, t) ≤ e  ∧  e ≤ m + n
+compat.match(t,e) iff cost(p,t)<=e and e<=m+n
 ```
 
-（記号化はプロファイルに従う。m は非ワイルドカード記号数、n は text の記号数。）
+cost<=m+nなので、最初の一致levelはIdeal費用と等しくなります。互換の非単調性はその最小値より上でだけ生じます。そのため一括・転置・絞り込み・DAGは単調な費用を使い、互換matchはu32の受理規則を維持します。
 
-**系.** `cost ≤ m + n` は常に成立する（全削除＋全挿入）。したがって「`match` が最初に true になる e」は、K 以内なら常に `cost` に等しい。**最小 level の一覧（＝ランキング）は `AsearchTs` と `Ideal` で完全に一致する。** 非単調性（Q3）は cost より上の level にしか現れない。
+証明の概略：t記号後のlevel eの位置は、費用<=eの位置と[e-t,無限大)の共通部分です。初期位置はちょうどeです。下限未満の位置はi+t<eを満たし、下位levelの有料遷移から再生成されます。受理位置mでは下限条件がe<=m+nになります。
 
-**証明スケッチ.** asearch.ts の状態集合を L_e(t) とすると、帰納法で `L_e(t) = {i : C[i][t] ≤ e} ∩ [e − t, ∞)` が示せる。初期値は `L_e(0) = {e}`。位置は単調非減少にしか動かず、下限 `e − t` より下の位置 i は `i + t < e`、すなわち `C[i][t] ≤ i + t ≤ e − 1` を満たすので、同じ遷移先は level e−1 からの挿入・置換・削除で必ず再生される。受理位置 m については `m ≥ e − n ⇔ e ≤ m + n`。
-
-**検証記録.** `characterize.py`（2 シード計 96 万三つ組で反例 0）、`first_level.py`（12 万ペアで不一致 0）、`verify.py`（npm 実物と 2 シード計 20,071 ペア × level 0..5 で一致）。
-
-**設計上の帰結（MUST）.**
-
-1. 最小 level を求める評価（転置、絞り込み、DAG、Myers、および ScalarWm の一括用途）は **Ideal（単調）**で行う。ScalarWm は compat 用に asearch.ts の初期状態も持つ（初期状態の定数を切り替えるだけ）。
-2. compat の `Asearch.match(t, e)` は asearch.ts の u32 レプリカ（§5）で実装する。テストでは `level(t) ≤ e ∧ e ≤ m + n` と突き合わせる。
-3. `matchLevel` と一括 API は最小 level を返すので、プロファイル差（`AsearchTs` と `Ideal`）は記号化と大文字小文字の扱いだけになる。
-
----
+過去の検証では特性960,000三つ組で反例なし、最小level 120,000ペアで不一致なし、公開JSと20,071ペア・level 0..5で一致しました。有限の検査であり、維持するfixtureと独立oracleも引き続き必要です。

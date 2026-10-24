@@ -1,41 +1,43 @@
-# ReleaseとPages配信
+# Releases and Pages deployment
 
-RustのRelease公開が成功すると、`asearch`の`notify-demo`がこのrepoの`release-update.yml`を起動する。対象タグのAssetsを検証し、ライブラリと画面の全回帰が成功した場合だけGitHub Pagesへ反映する。通常のpush/PRは最新の正式Releaseで検証だけを行い、手動で選んだ配信版を上書きしない。
+[日本語](ja/deployment.md)
 
-## 初回の設定
+After a successful Rust Release publication, `asearch`'s `notify-demo` starts this repository's `release-update.yml`. It verifies that tag's Assets and deploys to GitHub Pages only after all library/UI regressions succeed. Ordinary push/PR runs validate the latest stable Release without overwriting a manually selected deployment.
 
-1. 両repoのworkflowを先にmainへ反映し、このrepoのSettings → Pages → SourceをGitHub Actionsにする。
-2. GitHub Appを作成する。Webhookは不要。Repository permissionsはActions: Read and write、Metadata: Read-only。このrepoだけへインストールする。
-3. `asearch`側のSettings → Secrets and variables → Actionsで、AppのClient IDを変数`ASEARCH_DEMO_APP_CLIENT_ID`、生成した秘密鍵をSecret `ASEARCH_DEMO_APP_PRIVATE_KEY`へ登録する。秘密鍵をファイルとしてcommitしない。
-4. Rust側のversionを更新して対応タグをpushする。Rust CI → 全OSのAssets生成 → Release公開 → demoのAction起動、の順で進む。
+## Initial configuration
 
-repo固有のGITHUB_TOKENには別repoを起動する権限がないため、AppでdemoのActions起動権限だけを付与する。Pages配信にはdemo側のGITHUB_TOKENを使い、検証jobへPages書込み権限を与えない。このリリースworkflowではRust CI通過後にReleaseを作成する。demo起動に失敗した場合はRust側のnotify-demoだけを再実行できる。
+1. Merge both repositories' workflows to main, and set this repository's Settings → Pages → Source to GitHub Actions.
+2. Create a GitHub App with no webhook. Repository permissions: Actions: Read and write, Metadata: Read-only. Install it on this repository only.
+3. In `asearch` → Settings → Secrets and variables → Actions, set variable `ASEARCH_DEMO_APP_CLIENT_ID` to the App Client ID and secret `ASEARCH_DEMO_APP_PRIVATE_KEY` to its generated private key. Never commit the private key.
+4. Update the Rust version and push its matching tag. The sequence is Rust CI → all-platform Assets → Release publication → demo Action.
 
-## 手動で指定版を配信する
+A repository's GITHUB_TOKEN cannot start another repository's workflow, so the App grants only demo Actions access. Pages uses the demo's own GITHUB_TOKEN; validation jobs receive no Pages write permission. Rust Release creation follows Rust CI. If notification fails, rerun only Rust's notify-demo job.
 
-Actions → **Deploy a selected Rust version** → Run workflowから、Branchは`main`、tagに`v0.1.0`など公開済みのRust Releaseタグを指定する。過去版やプレリリースも指定できる。main以外の実行からは配信しない。draft、未公開タグ、不足するAssetsやSHA、互換性テストの失敗があれば配信を止め、現在のPagesを維持する。
+## Manually deploy a version
 
-手動と自動は同じ`validate.yml`で生成・回帰を行う。自動配信はGitHubでlatestとされる正式Releaseだけが対象で、配信直前に対象を再確認する。プレリリースや古い版の遅延通知は自動配信しない。手動操作はこのlatest条件を適用しないため、ロールバックにも使える。次の正式Releaseでは再び自動更新する。
+Open Actions → **Deploy a selected Rust version** → Run workflow. Select Branch `main` and a published Rust Release tag such as `v0.3.0`. Older releases and prereleases can be selected, subject to compatibility checks. Runs from other branches do not deploy. Drafts, unpublished tags, missing Assets/checksums or failed compatibility tests stop deployment and preserve current Pages.
 
-配信操作は同じconcurrency groupで直列化し、実行中の配信を新しい要求でキャンセルしない。GitHubの待機順は保証されない。自動処理の古い通知はlatest照合で除外されるが、手動要求を複数続けて実行するときは先の完了を待つ。
+Manual and automatic runs use the same `validate.yml`. Automatic deployment accepts only GitHub's latest stable Release and rechecks the target immediately before deployment. Prereleases and delayed notifications for old versions are skipped. Manual runs bypass the latest requirement and can roll back; the next stable Release resumes automatic updating.
 
-## バージョン固定と記録
+Deployment operations share one concurrency group and do not cancel an active deployment for a newer request. GitHub does not guarantee waiting order. The latest check excludes stale automatic notifications; wait for one manual deployment to finish before requesting another.
 
-CIは開始時に、指定タグまたはGitHubの最新正式Releaseを一度だけ解決し、同じReleaseの`SHA256SUMS`から3 OSのbundle SHAを取得する。取得Asset自体のSHAも既存のprepare処理で検査する。検証対象をbranchや途中で変化するlatestへ切り替えない。
+## Pins and provenance
 
-`release.lock.json`と生成tarballに対応するルート`pnpm-lock.yaml`は、その実行の作業コピーで更新する。依存パッケージの指定版は保持し、更新後にfrozen installと全テストを行う。自動commitやnpm公開は行わない。`release-inputs` artifactにはそのpin、lockfile、`release.json`を保存する。配信サイトの`release.json`でもRustのタグ・各OSのSHAとdemoのcommit・run IDを確認できる。
+At startup, CI resolves the selected tag or latest stable Release exactly once and reads all three OS bundle checksums from that Release's `SHA256SUMS`. Preparation verifies the downloaded bundle too. It does not switch to a branch or a moving latest target during validation.
 
-repoにあるpinはローカル開発用。CIの配信版は実行artifactとサイトの`release.json`で確認する。ローカルで同じ版へ揃える手順:
+The run updates `release.lock.json` and the generated adapter's root `pnpm-lock.yaml` in its working copy. Dependency versions are retained; frozen installation and all tests follow. No automatic commit or npm publication occurs. The `release-inputs` artifact records pins, lockfile and `release.json`. The deployed `release.json` also identifies the Rust tag/OS checksums and demo commit/run ID.
+
+The committed pin is for local development. Inspect run artifacts and the deployed `release.json` for the actual deployment version. To align local development after publishing the selected release:
 
 ```sh
-mise exec -- node tools/engine/select.ts v0.1.0
+mise exec -- node tools/engine/select.ts v0.3.0
 mise exec -- pnpm engine:build
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
 ```
 
-この操作で変更したpin/lockfileをレビューしてcommitできる。初期pinのnullは未公開AssetのSHAを捏造しないための値で、既存のprepare処理は引き続き拒否する。CIも公開Releaseがまだなければ失敗し、未検証バイナリへfallbackしない。
+Review and commit intentional pin/lockfile changes. Missing or null checksums are rejected rather than invented. CI fails if no suitable published Release exists; it does not fall back to unverified binaries.
 
-GitHub側のApp/Secret/Pages設定と、実Releaseからのhosted実行はローカル検証と別の有効化作業になる。
+GitHub App/Secret/Pages settings and hosted execution against an actual Release are activation steps separate from local validation.
 
-現在の画面の読み・同義語生成には、解析CLIを持つRust v0.2.0以降が必要です。手動指定でもこの互換条件を検証し、旧版などで失敗した場合は現在のPagesを維持します。リソースのpinと生成結果は`release-inputs` artifactの`analysis.json`でも確認できます。
+The current UI requires Rust CLI and WASM 0.3+ for native query-rule export and positional ranking. Older or incompatible manual selections fail tests and preserve current Pages. Language-resource pins and generated provenance also appear in `analysis.json` in the `release-inputs` artifact. Until 0.3 is published, these new features can only be verified locally with explicitly supplied development artifacts.

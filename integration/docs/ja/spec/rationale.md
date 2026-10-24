@@ -1,35 +1,29 @@
-# 設計判断と参考資料
+# 設計理由と参考資料
 
-[原文](../../spec/rationale.md) · 日本語版
-
-設計上のトレードオフと、アルゴリズム・互換性の参考資料をまとめます。
-
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[English](../../spec/rationale.md)
 
 <a id="section-16"></a>
 
-## 16. 採用しなかった案と理由
+## 16. 採用しなかった代替案
 
-| 案                         | 判断理由                                                                 |
-| -------------------------- | ------------------------------------------------------------------------ |
-| BNDM/ABNDM                 | 短い候補、両端固定、内部ワイルドカードを優先するため既定にしない         |
-| 無条件の長さフィルタ       | Include/WildcardSpaceで任意に長いtextを誤って落とす。下限のみ検査する    |
-| UTF-32の全面保存           | 密な記号IDを検討し、表の大きさとキャッシュ費用を抑える                   |
-| 独自の配信パッチ           | base/delta/tombstoneとmanifestを使い、独自パッチの検証・互換維持を避ける |
-| 派生EQや絶対offsetの保存   | 更新に伴う後続データの変化を避ける。ロード費用との比較は製品で計測する   |
-| 個別文字列の大量JS変換     | 一括経路は連結UTF-16またはバイナリ索引を使い、境界呼び出しを減らす       |
-| UIのdebounceやMLランキング | ライブラリの責務外。入力制御やorderは呼び出し側が与える                  |
+| 代替案                             | 理由                                                                           |
+| ---------------------------------- | ------------------------------------------------------------------------------ |
+| BNDM／ABNDMを既定にする            | 短い候補と内部wildcardの動作を重視する現行設計で、既定採用の実測優位性がない。 |
+| 無条件のtext長上限filter           | Include／WildcardSpaceは任意の長文と一致でき、安全な境界だけを使う。           |
+| 全UTF-32・派生EQ・絶対offsetを保存 | 表現・更新の結合を増やすため、検証済みtextから実行時構造を導出する。           |
+| 独自のバイナリpatch                | base・delta・tombstone・manifestで別のpatch互換／検証層を避ける。              |
+| 文字列ごとの一括JS／WASM呼び出し   | flat UTF-16やASIXで越境回数を減らす。                                          |
+| 組込みdebounce・学習順位           | 呼び出し元の責務で、ライブラリは明示された入力・orderを受ける。                |
+| 任意のSIMD／Myers／OSA kernel      | 未検証機能を表示せずautoで選ばない。同値性と条件付き効果が必要。               |
 
-Myers、SIMD等の任意エンジンは採否を性能計測で決める。予測だけで優劣を確定しない。
+決定的な位置順位は明示的に対応し、学習順位とは別です。サーバー専用解析はブラウザに形態素解析器を追加しません。
 
 <a id="section-18"></a>
 
 ## 18. 参考資料
 
-- [同梱上流の出典・版・ライセンス](../../../vendor/upstream/README.md)
+- [同梱ソース・版・ライセンス](../../../vendor/upstream/README.md)
 - [asearch.ts](https://github.com/teramotodaiki/asearch.ts)
 - [node-asearch](https://github.com/shokai/node-asearch)
-- [asearch-ruby](https://github.com/masui/asearch-ruby)（アルゴリズムの由来。コードは取り込まない）
-- [実行可能な参照実装](../../../tools/reference/README.md)
+- [asearch-ruby](https://github.com/masui/asearch-ruby)：algorithmの由来で、コードは取り込まない。
+- [実行できる独立モデル](../../../tools/reference/README.ja.md)

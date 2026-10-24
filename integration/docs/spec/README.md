@@ -1,21 +1,19 @@
-# 詳細仕様
+# Specifications
 
-現行のAPIと責務は[ランタイム契約](runtime.md)を優先する。生成APIを含む過去の案は設計記録として参照する。
+[日本語](../ja/spec/README.md)
 
-Rust本体の[アーキテクチャ図](https://github.com/tkhshtsh0917/asearch/blob/main/docs/architecture.md)、[Bitapの動画解説](https://github.com/tkhshtsh0917/asearch/blob/main/docs/algorithm.md)、[ASIXのバイト配置](https://github.com/tkhshtsh0917/asearch/blob/main/docs/asix-format.md)はRust repoで管理する。
+The [runtime contract](runtime.md) defines the current supported surface. These documents retain numeric section anchors so existing references remain usable. Older milestone reports are dated evidence, not additional APIs.
 
-M0の互換照合では§19を優先し、§2の意味論に従う。一括索引・逐次入力・サーバー更新も実装している。説明・DAGも実装済み。任意の未採用engine等は実装と区別し、受入の範囲は[開発計画](../PLAN.md)を参照する。
+| Sections | Document                                                |
+| -------- | ------------------------------------------------------- |
+| 0, 1, 17 | [Scope and terminology](scope.md)                       |
+| 2        | [Matching semantics](semantics.md)                      |
+| 3–7      | [Layouts and engines](engines.md)                       |
+| 8–10     | [Normalization, ranking and policies](normalization.md) |
+| 11, 20   | [Index format and updates](index-format.md)             |
+| 12–13    | [JS/TS APIs and WASM builds](api.md)                    |
+| 14–15    | [Validation and measurement](validation.md)             |
+| 16, 18   | [Rationale and references](rationale.md)                |
+| 19       | [Compatibility boundary](compatibility.md)              |
 
-| 節                 | 文書                                       |
-| ------------------ | ------------------------------------------ |
-| §0, §1, §17        | [スコープと用語](scope.md)                 |
-| §2                 | [照合意味論](semantics.md)                 |
-| §3, §4, §5, §6, §7 | [レイアウトと照合エンジン](engines.md)     |
-| §8, §9, §10        | [正規化・順位・ポリシー](normalization.md) |
-| §11, §20           | [索引形式とサーバー更新](index-format.md)  |
-| §12, §13           | [拡張APIとWASM構成](api.md)                |
-| §14, §15           | [テストと性能検証](validation.md)          |
-| §16, §18           | [設計判断と参考資料](rationale.md)         |
-| §19                | [M0互換APIと実装契約](compatibility.md)    |
-
-§番号は文書をまたいで共通。`crates/`はRust repo、`packages/`・`tools/`・`vendor/`はこのintegration workspaceを基準とする。M0当時の構成図とCIは歴史的記録であり、現行手順はREADMEとrepository-layoutを優先する。[開発順と現在の状態](../PLAN.md)、[決定の由来](../DECISIONS.md)、[ビルド・検証方法](../../README.md)を併用する。
+The Rust repository maintains [architecture diagrams](https://github.com/tkhshtsh0917/asearch/blob/main/docs/architecture.md), [Bitap animations](https://github.com/tkhshtsh0917/asearch/blob/main/docs/algorithm.md) and [ASIX byte layouts](https://github.com/tkhshtsh0917/asearch/blob/main/docs/asix-format.md). `crates/` refers to that Rust repository; `packages/`, `tools/` and `vendor/` refer to this workspace. See [milestones](../PLAN.md), [decisions](../DECISIONS.md) and [build instructions](../../README.md).

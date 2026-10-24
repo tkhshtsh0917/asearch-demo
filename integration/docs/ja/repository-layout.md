@@ -1,23 +1,19 @@
 # リポジトリ構成と依存方向
 
-[原文](../repository-layout.md) · 日本語版
+[English](../repository-layout.md)
 
-Rust本体、TS API、ブラウザ検証、デモ画面、生成物の配置と依存方向を説明します。
+`asearch`はRustの照合・形式・ネイティブ解析／索引生成・CLI・WASM境界・Rustテスト・fuzzを管理します。タグCIはRustの品質検査後、OS別のWASM・CLI・ライセンスbundleをSHA256SUMSとともに公開します。
 
-`asearch`はRustコア・CLI・WASM境界・Rustテスト・fuzzを管理します。タグCIはRustの品質検証後にOS別のWASM/CLI/ライセンスbundleとSHA256SUMSをRelease Assetsへ公開します。
-
-`asearch-demo`は固定タグのAssetsを取得し、SHA-256照合、JSグルー生成、TS APIのビルド、回帰テスト、画面E2Eの順に実行し、成功したものだけPagesへ配信します。Rustソースの取得・再ビルドは行いません。
-
-このintegration workspaceの配置は以下のとおりです。
+`asearch-demo`は固定したAssetsを取得し、SHA-256を照合し、JSグルーとTS APIを生成して、回帰テスト・画面E2Eを通過したビルドをPagesへ配信します。通常のビルドでRustソースを取得・再ビルドしません。
 
 - `packages/asearch-wasm/src`: TS APIと環境別初期化。
-- `packages/asearch-wasm/test`: API・型・配布物の回帰テスト。nativeとの比較とfixture生成には取得したCLIを使用。
-- `tests/browser`: WASM/Worker/ブラウザ境界の検証。
-- `tests/fixtures`: CLIによるNode/ブラウザ回帰用のASIX準備。配布物には含めない。
-- `tools/build`: wasm-bindgenと最適化・JS配布物の生成。
-- `tools/fixtures`, `tools/reference`, `vendor/upstream`: 独立oracleと互換fixture生成。原本のライセンス・ハッシュを保持。
+- `packages/asearch-wasm/test`: API・型・配布物の回帰。native比較とfixtureには取得済みCLIを使用。
+- `tests/browser`: WASM・Worker・ブラウザ境界の検証。
+- `tests/fixtures`: Node／ブラウザテスト用のCLIによるASIX準備。配布物からは除外。
+- `tools/build`: wasm-bindgen・最適化・JS配布物の生成。
+- `tools/fixtures`, `tools/reference`, `vendor/upstream`: 独立oracleと互換fixture。原本のライセンス・ハッシュを保持。
 - `tools/bench`: ネイティブCLI・Node・ブラウザの計測。
-- `fixtures`: JS回帰用の固定入力。Rust側にも独立テスト用の同一fixtureを保持する。
-- `.engine/release`: 検証済みのRelease Assets。生成物としてGit追跡しない。
+- `fixtures`: JS回帰用の固定入力。Rustも独立テスト用の同じfixtureを保持。
+- `.engine/release`: 検証済みでGit追跡しないRelease Assets。
 
-画面・IME・コーパス・配信資産の生成はデモrepoルートの`src`と`tools`に置きます。Rustの検索・正規化の別実装は作りません。ライセンスは配布単位ごとに保持します。npmへは公開しません。
+デモルートの`src`と`tools`がUI・IME・コーパス・配信資産を担当します。Rustの照合や正規化を再実装しません。UIは明示的なクエリポリシーとして、サーバー生成の上限付き変換表を利用できます。ライセンスは配布単位ごとに保持し、npmには公開しません。

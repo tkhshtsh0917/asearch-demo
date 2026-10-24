@@ -1,5 +1,7 @@
 # asearch-wasm
 
+[日本語](README.ja.md)
+
 Read-only WebAssembly search runtime over server-generated ASIX v1 segments. This package is used locally by the demo and is not published to npm.
 
 Build indexes on the server with the released native CLI:
@@ -16,6 +18,7 @@ Load and search in the browser or a module Worker:
 import { AsearchIndex, ready } from "asearch-wasm";
 await ready;
 const response = await fetch("/base.asix");
+if (!response.ok || !response.body) throw new Error("Index unavailable");
 const index = await AsearchIndex.fromStream(response.body);
 try {
   console.log(index.search("検索", { countTotal: true }));

@@ -1,64 +1,46 @@
-# 正規化・順位・ポリシー
+# 正規化・順位・曖昧度ポリシー
 
-[原文](../../spec/normalization.md) · 日本語版
-
-日本語の表記揺れの正規化、検索結果の順位、入力長に応じた曖昧度の決め方を説明します。
-
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[English](../../spec/normalization.md)
 
 <a id="section-8"></a>
 
-## 8. 正規化（任意の Strategy）
+## 8. 正規化
 
-- 互換クラス `Asearch` では**常に無効**（asearch.ts は正規化しない）。一括 API（AsearchIndex／SearchSession／IntentIndex）の既定は `ja-basic-v1` の項目 1〜5 を有効、項目 6 を無効にする（D4）。`normalizer: 'none'` でprofile/mode/wrapを揃えると、各textへasearch.tsを適用して0..Kを順に調べた最小levelと一致する。単にmatch(text, K)を1回呼ぶフィルタとは、上流の非単調性により一致しない場合がある（§2.8）。
-- 実行場所は Rust 側（索引構築＝CLI または WASM 版のビルダ、照合時＝WASM。どれも同一コード）。理由:
-  1. 索引とクエリで正規化が食い違う事故を構造的に排除できる。
-  2. JS の `normalize('NFKC')` は実装の Unicode／ICU の版に依存しうる。
-  3. クエリは短いので処理コストは無視できる。
-- 索引ヘッダに normalizer の (id, version, options) を記録し（§11.2）、実行時が対応していなければロードを拒否する。
-- `ja-basic-v1`（各項目を個別に on/off できる。一括 API の既定は 1〜5 が有効、6 が無効）:
-  1. U+3000 → U+0020（**WildcardSpace で全角空白をワイルドカードとして扱うために重要**）
-  2. 全角 ASCII U+FF01–FF5E → U+0021–007E
-  3. 半角カナ U+FF61–FF9F → 全角カナ（ﾞ・ﾟ は直前と合成できれば合成: ｶﾞ→ガ、ﾊﾟ→パ、ｳﾞ→ヴ）
-  4. カタカナ U+30A1–30F6 → ひらがな（−0x60）
-  5. ASCII 大文字 → 小文字（両側）
-  6. 長音・ダッシュ類の統一（ー／ｰ／－／‐／―／−／ASCII `-` → U+30FC）。全角ASCII変換との設定の組合せでも冪等になるようASCIIハイフンを含む。型番検索を壊しうるので既定は off
-- 正規化は長さを変えうる（ｶﾞ は 2 記号 → 1 記号）。編集距離は正規化後の記号列で数える。ハイライト用の原文 UTF-16 オフセットへの写像は、上位 N 件についてだけ再計算する。
-- 完全な NFKC（unicode-normalization クレート）は任意の feature。WASM サイズの増加を計測して採否を決める。
+互換`Asearch`は正規化しません。一括索引・セッション・IntentIndexの既定は`ja-basic-v1`の下記1〜5で、6は無効です。normalizerをnoneにしprofile・mode・wrapを揃えると、一括APIのlevelは互換照合で0..Kの中で最初に一致するlevelと等しくなります。match(text,K)を1回呼ぶ結果と同じとは限りません。
 
-M2のRust基盤はNormalizer::NONE/JA_BASICとfrom_descriptor(id,version,options)。descriptorは索引ヘッダと同じ(0/1,1,u32)であり、noneはoptions=0、ja-basicは0..63を受理する。未知id/versionと不正optionsを区別して拒否する。normalize_intoは入力のUTF-16単位数以上の容量を持つVecへ確保ゼロで書き込み、足りない場合は以前の出力を変更せずNeedsCapacityを返す。容量予約とinstance全体の予算管理は呼出側の索引/Workspaceが行う。孤立サロゲートは置換せず保持する。
+サーバーの索引生成とWASMクエリは同じRustの機械的正規化を使います。ASIXに`(id,version,options)`を記録し、非互換な記述子を拒否します。noneは`(0,1,0)`、ja-basicは`(1,1,0..63)`を受け付け、未知の版と不正なoptionsを区別します。以下を個別に選択できます。
 
-項目3のかな合成は、直後の半角濁点/半濁点を幅変換したときに行い、その後に項目4を適用する（ワ＋ﾞ→ヷは指定のひらがな変換範囲外）。既存のU+3099/U+309Aや他の結合文字に一般的なNFCは施さない。対応表は[Unicode 17.0.0の限定データ](../../../vendor/unicode/README.md)から生成し、全NFKCとは区別する。全64設定で全単位とかな/濁点の組合せ、混合列の冪等性を検査する。索引/JSへの接続はM2で続けて実装する。
+1. U+3000→U+0020。WildcardSpaceの解釈にも適用。
+2. 全角ASCII U+FF01–FF5E→U+0021–007E。
+3. 半角かなU+FF61–FF9F→全角。対応する直後の半角濁点・半濁点を合成。例：ｶﾞ→ガ、ﾊﾟ→パ、ｳﾞ→ヴ。
+4. カタカナU+30A1–30F6から0x60を引いてひらがなへ。
+5. 両側のASCII大文字→小文字。
+6. 任意の長音・ダッシュ統一：ー／ｰ／－／‐／―／−／ASCII `-`→U+30FC。ASCIIハイフンも含めて幅変換との組み合わせを冪等にし、型番を維持するため既定は無効。
 
----
+3の後に4を適用します。ヷは4の範囲外です。既存のU+3099/U+309Aや他の結合列に一般的なNFCを施しません。[Unicode 17.0.0の限定表](../../../vendor/unicode/README.ja.md)は全NFKCではなく、現状で汎用NFKC featureは提供しません。全64設定で全単位・かな／濁点・冪等性を検査し、孤立サロゲートを保持します。
+
+`normalize_into`は呼び出し元が入力UTF-16長以上を予約していれば確保せず書き込みます。不足なら以前の出力を変えずNeedsCapacityを返します。予約は所有する索引・作業領域が計上します。正規化で短くなる場合もあるため編集費用は正規化後の記号で数え、原文UTF-16への説明用写像は要求された結果だけ再計算します。
 
 <a id="section-9"></a>
 
-## 9. ランキング・重複排除・ハイライト
+## 9. 順位・重複排除・説明
 
-- 順位: (level, order, key) の昇順。order は文書ごとの順位キー（小さいほど上位、既定は key）で、不変セグメントでは配置順に織り込み済みなので、抽出時にソートしない（§4.4、§11.3）。全セグメントを不変として扱う。
-- 重複排除: 結果は key 単位。同じ key の text（言い換え、読み、展開文）のうち最初の（最良の）1 件だけを残す。text ごとに別の行が欲しい場合は、text ごとに別の key を振る。
-- 順位だけの変更も更新（upsert）として扱う（§20.2）。大量の順位変更は compaction で反映する。
-- ハイライト（`explain`）: 上位 N 件だけ、(pattern, text) の小さな DP をトレースバックする。M5実装は残り総予算内のDP行列を用い、容量不足をRESOURCE_LIMITで拒否する。原文写像はnormalize_mapped_intoで再計算し、無料loopはハイライトしない（D26）。同コストの整列が複数ある場合の選び方: 終端が最も左 → 始端が最も右（最短区間）→ 一致を優先。返り値はtext上のUTF-16オフセット区間列とcoordinateSpace。原文は呼出側のoriginalを優先し、無ければOLEN/OTXTを使う。originalを渡す場合は正規化後の内容が索引textと等しいことを検査する（不一致はINVALID_INPUT）。原文が無い場合は正規化後textとnormalized-utf16を返し、原文位置であると偽らない。IntentIndexは選ばれた展開をtextとし、その正規化前の展開へ戻せる場合だけoriginal-utf16を返す。
+既定順序は`(最小level,order,key)`です。orderの既定はkeyで、不変セグメントの配置に織り込むため、既定の抽出はソートせずlevel別に走査します。同じkeyは最良距離における最初のtextを選んで1回だけ返します。別々の結果行にしたい場合は別keyを付けます。順位だけの変更もupsertで、大量の並べ替えにはサーバーの圧縮を利用できます。
 
----
+Rust 0.3以降は`ranking: "position"`として`(最小level,最も早い正規化UTF-16開始位置,order,key)`も扱います。上位件数へ絞る前に、生存するすべての一致別名を評価し、同距離ならオフセット0、1、2の順です。同距離・同開始位置の別名は入力順を維持します。記号を消費しない開始位置は最後です。デモはコーパス検索で有効にします。予算付きの行バッファとABIは[順位の契約](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/ranking.md)を参照してください。
+
+`explain`は別途予算を計上する経路復元行列を使い、超過はRESOURCE_LIMITです。無料ループはハイライトしません。同点は最も左の終端、最も右の始端、完全一致の対角、置換、削除、挿入、無料ループの順です。範囲は明示された座標系のUTF-16区間です。指定された原文を優先し、正規化後の索引textとの不一致はINVALID_INPUTです。指定がなければ保存された原文を使い、正規化文だけのファイルは原文位置を捏造せずnormalized-utf16を返します。IntentIndexは選択した展開を説明します。位置順位はこのハイライトの同点規則を変えません。
 
 <a id="section-10"></a>
 
-## 10. 曖昧度ポリシー（Strategy）
+## 10. 曖昧度ポリシー
 
-M2のRust基盤ではAmbigPolicy::fixed/by_lengthとLengthUnitを実装済み。descriptorは構築時に検証し、evaluateは正規化済み・wrap前のUTF-16入力から確保ゼロでKを求める。QueryWorkspaceはResourceLimitsを検証してactive/stagingの2バッファをfallibleに予約し、updateで正規化→K→wrapを一度に実行する。失敗時は前回成功したpatternとKを保持する。入力上限に内部wrapの2単位は含めない。単体Workspaceの予算は自身の容量のみで、索引全体の合算は所有indexへ接続するときに適用する。これは検索前処理であり、文書の照合やSearchSessionではない。
+処理順は正規化→mode／profileに従う長さ→K→wrap→照合です。wrapはWildcardSpaceだけに空白2つを加え、Kや外部入力上限には数えません。QueryWorkspaceはactive／stagingを失敗可能な予約で確保し、前処理に失敗したら成功済みpattern・Kを保持します。索引の所有下では容量を合算します。
 
-処理順は **正規化 → モードに従った記号化と長さ計数 → K の決定 → wrap の付加 → 照合**。wrapはWildcardSpaceでだけ適用し、Exact/Includeでは値にかかわらず補わない。既定の K = min(floor(len / 4), 3)（D2）は変えない。
+- 既定は`byLength({every:4,max:3,unit:"profile",includeWildcards:false})`で、`min(floor(len/4),3)`です。
+- `fixed(k)`と数値のmaxAmbigは整数0..7を使い、everyは正の安全な整数です。丸めずに不正値を拒否します。K=0..3は専用化した経路、4..7は汎用経路です。互換matchには別の上限があります。
+- profile長はそのprofileのtext記号で数え、code-point・utf16も明示できます。孤立サロゲートは1です。WildcardSpaceの空白は既定で除き、Exact／Includeのリテラル空白は数えます。内部wrapは常に除きます。
+- 例：abc→3/0、abcd→4/1、ab cd→4/1、ＡＢＣＤ→4/1、ｶﾞｷｸｹ→がきくけ→4/1。😀😀はcode-point長で2/0、utf16で4/1です。
+- JSの独自ポリシーは、正規化後・wrap前の入力とmode・profileを検索／更新ごとに1回受けます。返値は整数0..7が必須です。呼び出し元の例外はそのまま伝え、callback後に解放・再入を再検査します。callbackの確保は準備済みRust検索器の確保ゼロには含めません。
 
-- `fixed(k)` は k をそのまま使う。`byLength({ every: 4, max: 3, unit: 'profile', includeWildcards: false })` が既定。省略した後ろ 2 項目はこの値。
-- `unit: 'profile'` は選択した profile の text 記号単位、`'code-point'` は code point、`'utf16'` は code unit。孤立サロゲートはどちらでも 1 と数える。
-- 長さは正規化後の入力で数え、wrap が補った空白は常に除く。`includeWildcards: false` は WildcardSpace の U+0020 を除く。Exact/Include の空白はリテラルなので数える。`true` はユーザーが入力した空白も数える。
-- 例（既定）: `abc` → len=3/K=0（wrap 後も K=0）、`abcd` → 4/1、`ab cd` → 4/1、`ＡＢＣＤ` → 4/1、`ｶﾞｷｸｹ` → 正規化後 `がきくけ` で 4/1。code-point profile の `😀😀` は 2/0、同じ入力を unit=utf16 で数えると 4/1。
-- `every` は正の安全な整数、`max` と `fixed(k)` は 0..7 の整数。数値の `maxAmbig` も 0..7。不正値は `INVALID_INPUT` とし、丸めない。0..3 は単相化、4..7 は汎用経路（§4.5）。互換 API の ambig はこの制限を使わず §19 に従う。
-- カスタムポリシーは `AmbigContext` を受ける JS 関数とし、正規化後の文字列、mode、profile を渡す。返値も 0..7 の整数として検査する。例外なら検索を中断し、セッションの前回成功状態を保つ。呼出回数は update/search につき 1 回。関数自身の確保は Rust コアの確保ゼロ保証に含めない。
-- 既定ポリシーの採用理由は D2 を参照する。len の計数単位と前処理は本節の規定に従う。境界 3/4・7/8・11/12、正規化による長さ変更、wrap、mode、非 BMP を受入テストにする。
-
----
+サーバー生成のクエリ変換表は、これらより前に適用する呼び出し元の別ポリシーで、ja-basic-v1やASIXを変えません。[デモの解析ガイド](../../../../docs/search-analysis.md)を参照してください。

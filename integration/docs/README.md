@@ -1,15 +1,17 @@
-# ドキュメント
+# Integration documentation
 
-互換照合、一括索引、逐次入力、サーバー更新、原文説明、意図表現を実装しています。現在の受入状態と制約は[開発計画](PLAN.md)を参照してください。
+[日本語](ja/README.md)
 
-| 読みたいこと                         | 入口                                       |
-| ------------------------------------ | ------------------------------------------ |
-| 製品・WASM境界・テスト・利用例の配置 | [リポジトリ構成](repository-layout.md)     |
-| ビルド・利用・検証                   | [ルートREADME](../README.md)               |
-| 実装順と完了条件                     | [開発計画](PLAN.md)                        |
-| 現行APIと拡張仕様                    | [仕様索引](spec/README.md)                 |
-| 採用理由・確定事項                   | [判断記録](DECISIONS.md)                   |
-| 独立した正しさのモデル               | [参照ツール](../tools/reference/README.md) |
-| 上流の原本・ライセンス・ハッシュ     | [vendor](../vendor/README.md)              |
+This workspace documents the TypeScript boundary consuming Rust Release Assets. The [current runtime contract](spec/runtime.md) and [package README](../packages/asearch-wasm/README.md) describe supported APIs; historical milestone evidence does not imply a current deployment or performance guarantee.
 
-`docs/`はMarkdownの説明と仕様を置く場所です。RustコードはRust repoの`crates/`、このworkspaceの実行コードは`packages/`・`tools/`、改変しない上流資料は`vendor/`に配置します。上流のコードはテストの入力であり、製品の実装ではありません。完了済み作業の引き継ぎ手順や、設計時の代理計測ログは現行ドキュメントとして維持しません。
+| Topic                                   | Entry                                           |
+| --------------------------------------- | ----------------------------------------------- |
+| Ownership and dependencies              | [Repository layout](repository-layout.md)       |
+| Build, use and validate                 | [Root README](../README.md)                     |
+| Milestones and acceptance gates         | [Plan](PLAN.md)                                 |
+| Matching, indexes and runtime APIs      | [Specifications](spec/README.md)                |
+| Adopted choices                         | [Decisions](DECISIONS.md)                       |
+| Independent correctness models          | [Reference tools](../tools/reference/README.md) |
+| Upstream originals, licenses and hashes | [Vendor](../vendor/README.md)                   |
+
+`docs/` contains Markdown explanations and specifications. Rust sources live in the Rust repository's `crates/`; executable integration code lives in `packages/` and `tools/`; unchanged upstream material lives in `vendor/`. Upstream code is test input, not product implementation. English is authoritative; Japanese counterparts translate the same content. Update both in one change.

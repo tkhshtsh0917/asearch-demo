@@ -1,22 +1,24 @@
 # asearch-demo
 
-[日本語版](README.ja.md)
+[日本語](README.ja.md)
 
-Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/JS API、グルー生成、ブラウザ回帰テストは`integration/`で管理し、画面・データ配信はこのrepoルートで管理します。検索・正規化アルゴリズムは[Rust repo](https://github.com/tkhshtsh0917/asearch)にあります。
+A Japanese search demo built from the Rust Asearch Release Assets. `integration/` owns the TS/JS API, glue generation and browser regression tests; this repository's root owns the UI and data publication. Matching and normalization algorithms live in the [Rust repository](https://github.com/tkhshtsh0917/asearch).
 
-IMEの変換中も現在の入力値で検索し、確定・候補の置換・キャンセル後は最新の値へ追従します。入力欄の内容や選択範囲は書き換えません。ブラウザ互換性は合成IMEイベントを含むPlaywright検証の範囲です。
+Search runs during IME composition and follows the latest value after commit, candidate replacement or cancellation. It preserves input text and selection. Browser coverage consists of Playwright tests, including synthetic IME events.
 
-読み・ローマ字・同義語はサーバー専用のRust解析CLIで事前生成し、原文とは別の検索用textsに登録します。ASIX v1とブラウザ側の正規化・検索処理は維持します。[検索用解析の詳細](docs/search-analysis.md)を参照してください。この機能には解析コマンドを含むRust CLI（v0.2.0以降）が必要です。公開前の明示的なローカル検証では`ASEARCH_ANALYZER_CLI`へビルド済みCLIを指定できます。v0.2.0公開後にそのReleaseのpinへ切り替えてください。
+The server-only Rust analyzer generates readings, romanizations, synonyms and query lookup data. Original questions remain unchanged; auxiliary `texts` use ASIX v1. Whole-term verb normalization makes `食べた` and `食べる` search the same query. Mixed input such as `びーt` retries as `bi-t` only after zero literal hits. Corpus results rank by edit distance, match start, order and key. See [search analysis](docs/search-analysis.md) for scope and limits.
 
-## セットアップ
+These features require Rust CLI and WASM 0.3+. Until that release is published, local verification requires explicitly supplied development artifacts. `ASEARCH_ANALYZER_CLI` can name a built analyzer CLI; it does not replace the WASM artifact. Switch to published Release pins after publication.
 
-Node/pnpmはmise、システム辞書の展開に`unzip`、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。公開済みv0.1.0のSHAを記録しています。未公開AssetsのSHAを捏造せず、別版へ切り替える場合は公開後にpinを更新します。
+## Setup
+
+Use mise for Node/pnpm, `unzip` for the system dictionary, and wasm-bindgen-cli 0.2.129 to match Rust's Cargo.lock. The demo does not build the engine's Rust source. Select a published tag and OS bundle checksums with `tools/engine/select.ts`; missing OS checksums stop preparation. The committed initial pin records actual v0.1.0 checksums. Do not fabricate unpublished asset checksums. The following example requires v0.3.0 to have been published.
 
 ```sh
 mise install
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 mise exec -- pnpm --dir integration install --frozen-lockfile
-mise exec -- node tools/engine/select.ts v0.2.0
+mise exec -- node tools/engine/select.ts v0.3.0
 mise exec -- node tools/engine/build.ts
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
@@ -27,9 +29,9 @@ BASE_PATH=/asearch-demo/ mise exec -- pnpm build
 mise exec -- pnpm preview --base /asearch-demo/
 ```
 
-`engine:build`はbundleのSHA-256を検査し、WASMからJSグルーとTS APIを生成・packします。意図的に版やラッパを更新した場合は、検証後にルートのpnpm-lock.yamlも更新します。通常のCIはfrozen lockfileで実行します。ローカルで同じAssetsを用意した場合は`node tools/engine/build.ts PATH_TO_ASSET_DIRECTORY`を使えます。隣接Rust checkoutは暗黙に参照しません。
+`engine:build` verifies the bundle's SHA-256, generates JS glue and the TS API, and packs the adapter. After intentionally updating a version or adapter, validate and update the root pnpm-lock.yaml. CI uses frozen installation after resolving its exact release. Explicit local bundles use `node tools/engine/build.ts PATH_TO_ASSET_DIRECTORY`. A sibling Rust checkout is never used implicitly.
 
-## 検証と配信
+## Validation and deployment
 
 ```sh
 mise exec -- pnpm --dir integration typecheck
@@ -40,30 +42,30 @@ mise exec -- pnpm test:dev
 mise exec -- pnpm test:e2e
 ```
 
-Playwrightコマンドは出力先の衝突を避けて直列実行してください。GitHub Actionsは実行開始時にReleaseのタグとSHAを固定してビルドします。Rust Release連動または手動指定の実行では、ライブラリ回帰テスト・画面E2E通過後だけPagesへ反映します。push/PRは検証のみです。Settings → PagesのSourceをGitHub Actionsに設定してください。実機は保証範囲外です。初回のRustタグ公開とrepo間起動用Appの設定が必要です。[配信と手動バージョン指定](docs/deployment.md)を参照してください。
+Run Playwright commands serially to avoid output-directory collisions. GitHub Actions pins a Release tag and checksums at the start of each run. Release-triggered and manual deployments reach Pages only after library regressions and UI E2E tests pass. Push/PR workflows only validate. Set Settings → Pages → Source to GitHub Actions. Physical devices are outside the guarantee. An initial Rust release and a cross-repository GitHub App are required. See [deployment and manual version selection](docs/deployment.md).
 
-## 責務
+## Responsibilities
 
-- `src/`: Worker、IME、検索画面、描画。
-- `integration/packages/asearch-wasm`: TS APIと生成配布物。
-- `integration/tests`: ブラウザ上のライブラリ検証。
-- `integration/tools`: グルー生成、fixture/oracle、計測。
-- `tools/engine`: Release Assetsの取得・検証。
-- `tools/analysis`: 上流言語リソースの取得・版固定・Rust解析CLIの呼出し。
-- `tools/data`, `tools/site`: コーパス取得、CLIによる索引・差分・出典情報の生成。
+- `src/`: Worker, IME handling, search UI and rendering.
+- `integration/packages/asearch-wasm`: TS API and generated distribution.
+- `integration/tests`: Browser-level library verification.
+- `integration/tools`: Glue generation, fixtures/oracles and measurement.
+- `tools/engine`: Release Asset retrieval and verification.
+- `tools/analysis`: Upstream language-resource retrieval, pinning and native analyzer invocation.
+- `tools/data`, `tools/site`: Corpus retrieval and CLI-based index/delta/attribution generation.
 
-AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを索引化します。[データと出典](docs/data.md)、[ライブラリ仕様](integration/docs/spec/README.md)を参照してください。
+The fixed scenario uses the first 10,000 AutoWikiQA questions and indexes question text only. The UI can apply a delta, load its compacted equivalent, restore the initial snapshot or restart the Worker. See [data and attribution](docs/data.md), [library specifications](integration/docs/spec/README.md) and the [documentation index](docs/README.md).
 
-## ライセンス
+## License
 
-デモはMIT。ラッパはMIT OR Apache-2.0、上流由来の原本・NOTICEは各ライセンスを保持します。AutoWikiQA由来データはCC BY-SA 4.0です。
+The demo is MIT. The adapter is MIT OR Apache-2.0; upstream sources and NOTICE retain their respective licenses. AutoWikiQA-derived data is CC BY-SA 4.0.
 
-## 謝辞
+## Acknowledgments
 
-照合の着想と互換性の基準には[asearch.ts](https://github.com/teramotodaiki/asearch.ts)を参照しています。上流原本とライセンスはintegration/vendorに保持します。
+[asearch.ts](https://github.com/teramotodaiki/asearch.ts) informed the matching design and compatibility baseline. Original upstream files and licenses remain under integration/vendor.
 
-ブラウザ向けWASMは読み取り専用です。索引生成・圧縮は取得済みCLIが担当します。初回ReleaseやAsset更新時には、SHA固定後に`engine:build`で生成したtarballを検証し、`pnpm install --update-checksums`でルートlockfileを更新してからfrozen installと回帰検証を行います。
+Browser WASM is read-only. The downloaded CLI builds and compacts indexes. For an initial Release or asset update, verify the SHA-pinned tarball from `engine:build`, update the root lockfile with `pnpm install --update-checksums`, then perform frozen installation and regression checks.
 
-索引生成をCLIへ分離したWASMは、同一ツールでの比較でraw 298,174 → 285,543 byte（約4.2%減）となりました。gzip/Brotliでも縮小を確認しています。このサイズ比較は検索速度の保証ではありません。
+In a historical same-tool comparison, moving index construction to the CLI reduced raw WASM from 298,174 to 285,543 bytes (about 4.2%), with reductions under gzip/Brotli too. This does not establish search speed or the size of later versions.
 
-Worker往復とDOM反映の計測方法は[デモ性能ガイド](docs/performance.md)を参照してください。
+The [demo performance guide](docs/performance.md) explains Worker round-trip and DOM timing.

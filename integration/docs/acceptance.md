@@ -1,28 +1,28 @@
-# ローカル受入結果
+# Historical local acceptance
 
-2026-10-21（JST）。M0〜M7のローカル受入を完了。再現コマンドは[README](../README.md)と[計測ハーネス](../tools/bench/README.md)、採否は[D28](DECISIONS.md#d28-m7の採否とスカラー経路の改善)を参照する。
+[日本語](ja/acceptance.md)
 
-| 対象              | 確認結果                                                                                                                       |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Rust              | rustfmt・Clippy（警告をエラー化）・workspace test 76件を通過                                                                   |
-| JS/TS             | Biome・型検査、Node 22/24で各121件を通過                                                                                       |
-| ブラウザ境界      | Chromium・Firefox・WebKitで計57件を通過                                                                                        |
-| 互換性            | 固定fixture 3,168件の再生成一致、同梱上流17ファイルのハッシュ一致                                                              |
-| 形式・Intent fuzz | ASan下で各31秒、ASIX 5,696,587回・Intent 114,535回。検出事項なし。有限の試行である                                             |
-| 計測              | 集計ハーネス13件。逐次入力5,250打鍵/経路、1〜8segment各1,300検索/経路、各lifecycle 30反復。Node・3ブラウザで結果と整合性を確認 |
-| 配布              | ESM/CJS・Worker、独立tarball利用・別ディレクトリ・Linux arm64での同一tarball再生成、第三者ライセンス同梱                       |
-| 依存              | RustSec・pnpm auditで既知の脆弱性検出なし（確認時点）                                                                          |
+## M0–M7 snapshot
 
-基本命令WASMを採用し、逐次入力の候補処理と共通コンパイルを改善した。SIMD等の任意engineは今回採用していない。Nodeの打鍵p95に改善を観測したが、中央値の悪化もあり、あらゆる負荷での優位性は主張しない。タイマー分解能・固定系列・端末差を含む制約がある。
+The following evidence is dated 2026-10-21 JST. It describes those artifacts, not the latest test counts or hosted deployment. Current reproduction commands are in the [README](../README.md) and [benchmark guide](../tools/bench/README.md); optimization adoption is summarized by [D28](DECISIONS.md#d28-m7の採否とスカラー経路の改善).
 
-別repo [asearch-demo](https://github.com/tkhshtsh0917/asearch-demo)では、固定版tarballを利用するWorker検索・IME・説明・差分更新・圧縮置換を実装した。AutoWikiQAの先頭1万質問を使い、3ブラウザとAndroid/iPhoneプロファイルのE2E 40件と開発サーバー1件、重大なアクセシビリティ違反の検査を通過した。これはモバイル実機の保証ではない。
+| Area               | Recorded result                                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rust               | rustfmt, Clippy with warnings denied and 76 workspace tests passed.                                                                         |
+| JS/TS              | Biome/types and 121 tests each on Node 22/24 passed.                                                                                        |
+| Browser boundary   | 57 tests across Chromium/Firefox/WebKit passed.                                                                                             |
+| Compatibility      | 3,168 fixtures regenerated identically; 17 vendored upstream files matched hashes.                                                          |
+| Format/intent fuzz | 31 seconds each under ASan: 5,696,587 ASIX and 114,535 intent iterations, no finding in these finite runs.                                  |
+| Measurement        | 13 aggregation tests; 5,250 keystrokes/path, 1–8 segments with 1,300 searches/path and 30 lifecycle repetitions across Node/three browsers. |
+| Distribution       | ESM/CJS/Worker, independent packed usage, regeneration on Linux arm64 and dependency notices.                                               |
+| Dependency audit   | No known vulnerabilities detected by RustSec/pnpm audit at that time.                                                                       |
 
-GitHubへのpush・hosted CI・Pagesでの配信確認は未実施。公開された本体の固定コミットを先に取得可能にし、デモrepoのPages設定後にCIを確認する。npmへの公開は行っていない。ログや詳細計測値は、この文書の性能保証へ転用しない。
+Baseline WASM and scalar preparation/shared-compilation improvements were retained. Optional SIMD and other engines were not adopted. Some keystroke p95 results improved while medians worsened; timer resolution, fixed sequences and hardware limit generalization.
 
-二次レビュー後、WASMの輸送容量を越境前に検査し、flat構築中の輸送容量も計上するよう修正した。初期ロード・文書/Intent/差分構築・原文指定の説明で、独立instanceの拒否前に線形メモリが増えない回帰テストを追加した。検索・説明・ストリーム更新にも越境前の残予算検査を適用した。境界修正後も上表の機能回帰を通過し、デモの固定版を更新した。Linuxでのtarball再生成と詳細性能測定はM7時点の成果物に対する結果であり、今回の境界修正後には再計測していない。
+## Later boundary and ownership checks
 
-追加レビューの残件だった外部TypedArrayの長さ偽装も修正した。初期ロードは実長検査後の固定コピーを渡し、ストリームと更新は組み込みgetterから得た固定長ビューを使う。独自getter・サブクラス・非ゼロoffset・余剰chunk・失敗時の旧索引/参照保持を回帰検査し、Worker結果の統合も実長で検証する。
+Subsequent reviews added pre-transfer capacity checks and intrinsic TypedArray/stream validation, with getters, subclasses, offsets, failed updates and ref retention regressions. Earlier Linux-regeneration and detailed timing records were not automatically rerun or relabeled after every boundary change.
 
-## Release Assetsへの責務分離
+On 2026-10-22, Release-Asset ownership separation was checked locally with a Release-shaped bundle: Node 22/24 each 121 tests, browser 57, fixtures 3,168, harness 13, demo unit 10, dev 1 and E2E 40 passed. These counts remain historical. Explicit development bundles were not claimed to be published Assets. Actual tag publication, platform CI and Pages delivery require their own hosted evidence.
 
-2026-10-22。Rustのfmt/Clippy/76テストはasearchで検証する。TS/JS API、ブラウザ検証と計測はこのintegration workspaceへ移設した。ローカルで作成したRelease形式bundleからグルーを生成し、Node22/24各121件、3ブラウザ57件、fixture3168件の再生成一致、計測ハーネス13件、デモ単体10件・dev1件・E2E40件を通過した。実際のタグ公開、OS別Release CI、Release Assetsを使うホステッドPages CIは未実行。release.lock.jsonのnullは初回公開後のハッシュ固定待ちを表し、ローカルbundleのハッシュを公開済みのものとして扱わない。
+The maintained [runtime contract](spec/runtime.md), [validation rules](spec/validation.md) and root workflows define current acceptance. Mobile profiles and synthetic IME tests are emulator-level coverage, not physical-device guarantees. No npm publication is planned.

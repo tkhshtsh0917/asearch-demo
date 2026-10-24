@@ -1,310 +1,69 @@
-# 拡張APIとWASM構成
+# JS/TS APIとWASMビルド
 
-[原文](../../spec/api.md) · 日本語版
-
-JS/TS APIとWASM境界の設計を説明します。過去のAPI案を含むため、現行の公開範囲はruntime.mdを優先してください。
-
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[English](../../spec/api.md)
 
 <a id="section-12"></a>
 
-## 12. JS/TS API
+## 12. ランタイムAPI
+
+将来案の一覧ではなく現在のAPIです。[パッケージREADME](../../../packages/asearch-wasm/README.ja.md)と生成するTypeScript宣言が利用例・正確な型を示します。
 
 <a id="section-12-1"></a>
 
-### 12.1 互換 API（asearch.ts@1.0.3 と同名同型）
+### 12.1 互換API
 
-```ts
-export enum MatchMode {
-  Exact = 0,
-  Include = 1,
-  WildcardSpace = 2,
-} // 逆引き付き
-export class Asearch {
-  static MAXLENGTH: number; // 31
-  readonly matchMode: MatchMode;
-  readonly pattern: string;
-  masks: { [char: string]: number }; // asearch.ts と同じ値
-  constructor(
-    pattern: string,
-    mode?: MatchMode,
-    options?: { profile?: "asearch.ts" | "asearch.ts-lib" | "ideal" },
-  ); // 第 3 引数は追加（後方互換）
-  match(query: string, ambig?: number): boolean;
-  // 追加（非破壊）
-  matchLevel(query: string, maxAmbig?: number): number; // 最初に一致する level。無ければ -1（Q3 の影響を受けない）
-  free(): void;
-  [Symbol.dispose](): void;
-}
-```
+`Asearch(pattern,mode?,{profile?})`はMAXLENGTH=31、pattern、matchMode、masksの互換な値・列挙順を公開します。既定modeはExact、profileはasearch.tsです。原始文字列と実際のStringオブジェクトを受け付けます。`match(text,ambig=0)`は文書化した変換・上限を維持します。`matchLevel(text,maxAmbig=3)`は最初の一致levelまたは-1を返し、全profileで整数0..31が上限です。number以外のmaxAmbigはTypeError、非整数・範囲外・非有限はRangeErrorです。引数検証より先に解放状態を確認します。Idealでもpatternは31 UTF-16単位で、長い入力には別の汎用Rust ScalarWmを使います。
 
-### M1: 最小levelと解放の契約
-
-`matchLevel(query, maxAmbig = 3)`は、選択profileで0からmaxAmbigまでの最初の一致levelを返し、一致が無ければ-1。Rustの1回の走査で求め、levelごとにJSから再呼出ししない。maxAmbigは原始numberの整数0〜31で、非numberはTypeError、範囲外/非整数/非有限はRangeError。型検査順は解放状態→queryの文字列検査→maxAmbig。解放後はDISPOSED。既存matchの65,535までの互換経路と混同しない。
-
-Rustはmatch_level/match_level_utf16でResult<Option<u16>, InvalidMaxAmbig>を返す。max_ambigは0〜31、範囲外をErrで返す。通常のmin-level評価も確保ゼロ。
-
-M1ではoptions.profile="ideal"も実装する。pattern/textの記号はcode point（孤立サロゲートは元の値を保持）、大小文字候補・mode・引数変換・公開フィールドは既存compilerと同じ。相違はIdeal初期ε閉包のみであり、match(text,e)はcost≤eを返す。matchのlevel上限は65,535のままで、32以上でも初期ビットを折り返さず、語幅を超えるprefixは飽和させる。matchLevelの上限は全profile共通で31。Asearchのpattern上限も全profile共通で31 UTF-16単位とし、長い入力は別のRust ScalarWm APIへ渡す。正規化はこの単発APIに追加しない。
-
-`free()`はRust側ハンドルを明示解放し、冪等とする。`[Symbol.dispose]()`は同じ操作。解放後の`match`は入力変換より先に`code: "DISPOSED"`を持つErrorをthrowする。不正receiverはTypeError。既存の公開フィールドとその列挙順は維持し、他のインスタンスへ影響しない。
-
-Symbol.disposeが無い実行環境でもfree()を使える。ランタイムではSymbol.for("Symbol.dispose")をフォールバックキーとして定義し、グローバルSymbolを変更しない。TypeScriptで追加APIを使う場合のlibにはESNext.Disposableを含める。
+`free()`と`[Symbol.dispose]()`は冪等です。不正receiverはTypeError、解放後の利用はDISPOSEDです。Symbol.disposeがなければグローバルSymbolを変えずSymbol.for("Symbol.dispose")を使います。TypeScriptの解放構文にはESNext.Disposableが必要です。
 
 <a id="section-12-2"></a>
 
-### 12.2 JS と WASM の境界の作法
+### 12.2 境界と初期化
 
-- 大文字小文字の候補キーは JS 側で `[c, c.toLocaleLowerCase(), c.toUpperCase()]` として計算し、単一記号になるものだけを WASM のパターンコンパイルに渡す（Q8 を完全一致させる）。`masks` プロパティもこの結果から asearch.ts と同じ式で作る。
-- text は UTF-16 code unit のまま、事前確保した WASM 側のバッファへ書き込み、`match_u16(handle, len, ambig)` を呼ぶ（TextEncoder を使わない。孤立サロゲートも保持される）。（最終形。M0 は `&[u16]` を渡す。§19.4）
-- Rust 側の pattern はハンドル（slab）で保持し、`FinalizationRegistry` と明示的な `free()` で解放する。
-- 単発の `match` が JS↔WASM の越境コストに支配される可能性があるので、asearch.ts 実物と素の JS 移植との比較ベンチを必須にする。JS の高速経路を足すのは M7 の任意項目とし、同じフィクスチャで検証する。
+JSが単一記号の大小文字候補`[c,c.toLocaleLowerCase(),c.toUpperCase()]`を生成し、Rustが検証・照合します。UTF-16転送で孤立サロゲートを保持し、TextEncoderを使いません。nativeハンドルは明示解放でき、finalizerを補助に使います。WASMコピー前に入力・輸送予算を確認し、呼び出し元のhook・callback後に解放・再入を再検査します。
+
+ブラウザESMは非同期初期化を試み、公開する`ready`または`init()`をawaitします。失敗してもimportを維持して後で再試行できます。Node ESM／CJSは同期初期化です。試行ごとのpromiseと競合する明示初期化は[互換契約](compatibility.md#section-19-5-1)が定義します。ブラウザコードはprocessやDOMのglobalを必要としません。
 
 <a id="section-12-3"></a>
 
-### 12.3 追加 API
+### 12.3 不変索引と結果
 
-M2の現行JS実装はAsearchIndex.fromStrings/fromDocs/fromBytes/toBytes/search/freeとbuildIndex、fixed/byLength descriptor。bulkのprofileはIdeal/asearch.ts/asearch.ts-libを受け付ける。正規化・K・wrapをRustで準備し、JSで単発Asearchと同じlocale lower/upper候補を生成してRustへ渡す。キーの元記号・個数・範囲は照合前に検証する。JSコールバック後も解放状態を再検査し、同一indexへのsearch再入はCONFLICTで拒否する。結果は下記SearchResultの配列・length・copy・totals・statsの形で、現在はJS所有のコピーを返す（WASMビューは未実装）。statsのblocks/earlyExitBlocksは実際の全量実行から取得する。未知・未実装のoptions（osaなど）を指定した場合は拒否する。fromStreamは64Bヘッダ→固定WASMバッファへ直接chunkコピーし、await後にmemory viewを更新する。SearchSessionは独立query/workspaceとbounded row checkpointを持ち、update/reset/free・親解放時無効化を実装した。maxCacheBytes=0またはengine=transposed-blockedは全量計算を使う。stats.reusedRowsは再利用した接頭辞行数。カスタムAmbigPolicyも正規化後・内部wrap前のcontextで一度だけ同期評価し、整数0〜7を検証してから照合する。失敗時はcheckpointを書き換えず、コールバック後に解放状態を再検査する。diffManifestの検証・比較は実装済み。expectedのbytes/texts/id/SHA-384検証も共通Rust実装を使う。IndexSetを共有するWASM更新も実装し、addSegment/replaceSegments・segments・canonical compactionを提供する。成功更新で全refsを失効させ、旧検索中も輸送バッファを総予算へ含める。explainも原文写像と世代検証を実装し、同点のD26規則と残予算を守る。IntentIndexもD27の範囲で実装済み。未採用のengineはUNSUPPORTED_OPTIONで拒否する。以下の最終API案全体を実装済みとは扱わない。
+| API                                               | 責務                                                              |
+| ------------------------------------------------- | ----------------------------------------------------------------- |
+| AsearchIndex.fromBytes / fromStream               | サーバーのASIXを検証・ロードし、任意でexpected記述子・SRIも照合。 |
+| index.search / index.session                      | 共有する不変内容を単発、または独立予算の繰り返し検索で照合。      |
+| session.update / reset / free                     | 入力更新、再利用checkpointの破棄、セッション解放。                |
+| index.explain                                     | 所有するrefから予算付き整列を取得。                               |
+| index.addSegment / replaceSegments                | 単一セグメントの追記、または完全な置換列の原子的採用。            |
+| index.segments / free                             | セグメント情報の確認、またはrootと子sessionの解放。               |
+| IntentIndex.fromEntries / search / explain / free | 上限付き意図DAGの構築、非展開検索、説明、解放。                   |
+| diffManifest                                      | 純粋な検証・比較。取得・状態変更を行わない。                      |
+| mergeResults                                      | 静的Worker分割を重複排除し、所有元ごとのrefを保持。               |
 
-```ts
-export function init(
-  module?: WebAssembly.Module | BufferSource | URL,
-): Promise<void>;
-// 既定の ESM エントリは top-level await で自動初期化する。CJS エントリは同期コンパイル（Node）。
+ランタイムにfromDocs・fromStrings・buildIndex・buildDelta・toBytesやクライアント編集APIはありません。これらの補助機能を持つnative CLIアダプターはテスト準備だけに存在し、pack配布物には含めません。
 
-export interface ResourceLimits {
-  maxTotalBytes?: number;
-  maxTexts?: number;
-  maxUnits?: number;
-  maxSlots?: number;
-  maxWorkingBytes?: number;
-  maxPatternUnits?: number;
-  maxSegments?: number;
-}
-export type AmbigPolicy =
-  | { kind: "fixed"; value: number }
-  | {
-      kind: "by-length";
-      every: number;
-      max: number;
-      unit?: "profile" | "code-point" | "utf16";
-      includeWildcards?: boolean;
-    }
-  | ((context: AmbigContext) => number);
-export interface AmbigContext {
-  normalized: string;
-  mode: MatchMode;
-  profile: "asearch.ts" | "asearch.ts-lib" | "ideal";
-}
-export function fixed(k: number): AmbigPolicy;
-export function byLength(options?: {
-  every?: number;
-  max?: number;
-  unit?: "profile" | "code-point" | "utf16";
-  includeWildcards?: boolean;
-}): AmbigPolicy;
-export type EngineName =
-  | "scalar-wm"
-  | "transposed-blocked"
-  | "incremental"
-  | "narrowing"
-  | "dag"
-  | "simd-lanes"
-  | "myers";
-export interface NormalizerConfig {
-  id: "none" | "ja-basic";
-  version: number;
-  options: number;
-}
-export interface SearchStats {
-  engine: EngineName;
-  segments: number;
-  blocks: number;
-  earlyExitBlocks: number;
-  elapsedMs?: number;
-}
-export interface IndexOptions {
-  profile?: "asearch.ts" | "asearch.ts-lib" | "ideal";
-  normalizer?: "none" | "ja-basic-v1" | NormalizerConfig; // 既定 'ja-basic-v1'（項目 1〜5、D4）
-  blockWords?: number; // 正の安全な整数。実際のレイアウトは資源予算内。索引ファイルには保存しない
-  limits?: ResourceLimits;
-}
-export interface Doc {
-  key: number;
-  order?: number;
-  texts: readonly string[];
-} // order の既定は key（§20.2）
-export interface LoadOptions extends IndexOptions {
-  maxBytes?: number; // 既定 256 MiB。ファイル単体の上限（§11.6）
-  expected?: ManifestSegment; // あれば bytes/texts/id/integrity を構築・採用前に照合（§20.5）
-}
-export interface SearchOptions {
-  mode?: MatchMode; // 一括 API の既定は WildcardSpace（D5）
-  wrap?: boolean; // WildcardSpace で pattern の前後に空白を補う（re_expand や takker のエンジンと同じ ` q ` 慣行）。既定 true（D5）
-  maxAmbig?: number | AmbigPolicy; // 既定 byLength({ every: 4, max: 3 })（D2）
-  limit?: number; // 既定 30（takker のエンジンの既定に合わせた暫定値）
-  engine?: "auto" | EngineName;
-  countTotal?: boolean;
-  osa?: boolean;
-}
-export interface SearchResult {
-  ids: Uint32Array; // key。結果は key 単位で (level, order, key) の昇順（§9）。WASM メモリのビュー: 次の呼び出しか更新まで有効
-  levels: Uint8Array; // 同上。copy() で複製できる
-  refs: Uint32Array; // 一致した text の参照。ビューと参照値の寿命を分ける（§12.4）
-  orders: Uint32Array; // 各結果の order（mergeResults での併合に使う）
-  length: number;
-  copy(): SearchResult; // 型配列をJS所有メモリへコピー。コピーのcopy()も独立したコピーを返す
-  totals?: Uint32Array; // countTotal=true のとき K+1 要素。最小level別の異なるkey数（§4.4）
-  stats: SearchStats; // 使用エンジン、セグメント数、ブロック数、早期終了数、時間（任意）
-}
-export interface SegmentInfo {
-  id: string;
-  texts: number;
-  dead: number;
-  bytes: number;
-} // id = ヘッダの file_xxh3（16 進 16 桁）
-export class AsearchIndex {
-  static fromStrings(
-    texts: readonly string[],
-    options?: IndexOptions,
-  ): AsearchIndex; // key = 添字
-  static fromDocs(docs: Iterable<Doc>, options?: IndexOptions): AsearchIndex;
-  static fromBytes(bytes: Uint8Array, options?: LoadOptions): AsearchIndex;
-  static fromStream(
-    body: ReadableStream<Uint8Array>,
-    options?: LoadOptions,
-  ): Promise<AsearchIndex>;
-  // セグメントと更新（§20）
-  addSegment(
-    source: Uint8Array | ReadableStream<Uint8Array>,
-    expected?: ManifestSegment,
-  ): Promise<SegmentInfo>; // 古い順に追加。TOMB を既存セグメントに適用
-  replaceSegments(
-    sources: readonly {
-      source: Uint8Array | ReadableStream<Uint8Array>;
-      expected?: ManifestSegment;
-    }[],
-  ): Promise<void>; // すべて構築してから切り替える
-  segments(): SegmentInfo[];
-  toBytes(): Uint8Array; // 生きている文書を 1 セグメントに作り直したバイト列（決定的。compaction と同じ）
-  search(pattern: string, options?: SearchOptions): SearchResult;
-  explain(
-    ref: number,
-    pattern: string,
-    options?: SearchOptions & { original?: string },
-  ): // M5。原文は OLEN／OTXT か original（§11.2）
-  {
-    text: string;
-    level: number;
-    spans: [number, number][];
-    coordinateSpace: "original-utf16" | "normalized-utf16";
-  } | null;
-  session(options?: SearchOptions & { maxCacheBytes?: number }): SearchSession; // 既定32MiB、総予算内
-  free(): void;
-}
-export function buildIndex(
-  docs: Iterable<Doc>,
-  options?: IndexOptions,
-): Uint8Array; // サーバー（Node）用。CLI と同じバイト列
-export interface ManifestSegment {
-  id: string;
-  url: string;
-  bytes: number;
-  texts: number;
-  integrity: string;
-}
-export interface Manifest {
-  format: "asearch-manifest/1";
-  indexId: string;
-  generation: number;
-  index: {
-    major: number;
-    minor: number;
-    symbol_unit: "code-point" | "utf16";
-    normalizer: { id: string; version: number; options: number };
-  };
-  segments: ManifestSegment[];
-}
-export function diffManifest(
-  current: Manifest | undefined,
-  manifest: Manifest,
-):
-  | { kind: "stale" }
-  | { kind: "none" }
-  | { kind: "append"; add: ManifestSegment[] }
-  | { kind: "replace"; segments: ManifestSegment[] }; // §20.5
-export function mergeResults(
-  parts: readonly SearchResult[],
-  limit: number,
-): // 静的な Worker 分割（§12.3 の注）の結果を併合
-{
-  ids: Uint32Array;
-  levels: Uint8Array;
-  orders: Uint32Array;
-  parts: Uint8Array;
-  refs: Uint32Array;
-}; // (level, order, key) 順、key で重複排除。refs は parts が示す元の結果の中でだけ有効
-export class SearchSession {
-  update(pattern: string): SearchResult;
-  reset(): void;
-  free(): void;
-}
-export class IntentIndex {
-  static fromEntries(
-    entries: readonly { expr: string; key: number; order?: number }[],
-    options?: IndexOptions,
-  ): IntentIndex;
-  search(pattern: string, options?: SearchOptions): SearchResult;
-  explain(
-    ref: number,
-    pattern: string,
-    options?: SearchOptions,
-  ): {
-    text: string;
-    level: number;
-    spans: [number, number][];
-    coordinateSpace: "original-utf16" | "normalized-utf16";
-  } | null;
-  free(): void;
-}
-```
+一括の既定はIdeal・ja-basic-v1・WildcardSpace・wrap=true・ByLength・limit=30・countTotal=false・engine=autoです。検索はmode・wrap・maxAmbig・limit・countTotal・engine・rankingを受け付けます。不変索引の対応engineはauto／transposed-blockedで、未対応optionは失敗します。sessionには全体予算内で既定32 MiBのmaxCacheBytesもあります。0はcheckpointを無効にしますが、autoは安全な絞り込みを使う場合があります。transposed-blockedは全量検索を明示します。Intentはauto／dagを受け付け、rankingは受け付けません。
 
-- `process` などの Node 専用グローバルを参照しない（Q6）。
-- 入力の防振、latest-wins、requestAnimationFrame での合流、DOM の更新は範囲外（§0）。README に推奨手順（時間ベースの debounce を既定にしない、最新要求だけを処理する、描画は rAF で合流する）を書くだけで、API は持たない。
-- `mergeResults`はstructured clone可能なids/levels/orders/refs/lengthの部分型も受け付ける。最大256 partsで、全partの外部プロパティ取得後に実要素型・長さ・昇順を検査する。共有bufferの並行書換えは呼出側で防ぐ。配列長はTypedArrayの組み込みgetterで取得し、独自getterやサブクラスによる偽装を採用しない。出力型配列の予約上限は256MiB（JS heap全体の保証ではない）。同順位の同keyは入力part順・part内順で決定し、totalsは返さない。
-- Worker 並列化は SharedArrayBuffer（COOP/COEP が必要で、埋め込みウィジェットでは使えないことが多い）に頼らず、**セグメント（またはブロック範囲）を分けて各 Worker が別々に保持**し、上位 N を `mergeResults` で (level, order, key) の順に併合する（索引の総量は増えないが、Worker ごとの Workspace とキャッシュは増える）。Worker の生成とメッセージングは呼び出し側が行う。
-- **v1 では、Worker 分割は更新しない索引（静的な分割）に限る。** 更新（tombstone）を使う場合は、1 つの Worker に索引全体を持たせる（別の Worker にあるセグメントへ tombstoneを届ける規則は定めない。§20.8）。
+結果はJS所有のids・levels・refs・orders配列、length、任意の正確な最小level別totals、stats、copy()を持ちます。位置順位は任意のstartsを加え、既定順序は維持します。totalsはlimitとは独立に生存する一意keyを数えます。limit=0は有効です。空クエリをライブラリで暗黙に抑制せず、選択した意味論で評価します。UI側で抑制することは可能です。
 
----
+`mergeResults`はstructured clone対応の最大256 partを受けます。呼び出し元のプロパティを取得し終えてから、配列の実際の型・長さ・順位を検証します。位置順位は全partにstartsが必須で、モード混在は失敗します。出力型配列の上限は256 MiBで、JS heap全体ではありません。重複時の同点は入力part・順序で決め、refはparts[i]が示す所有元に属します。統合totalsは返しません。共有bufferの並行変更は呼び出し元が防ぎます。更新／tombstoneの列は1つのWorkerに保持し、v1にはWorkerをまたぐ更新プロトコルを設けません。Worker生成・通信・スケジューリング・描画は呼び出し元の責務です。
 
 <a id="section-12-4"></a>
 
-### 12.4 エラー・更新の直列化・借用の寿命（M2 以降）
+### 12.4 エラー・寿命・更新
 
-- bulk API の入力検査はメソッド呼出時に行う。同期メソッドは `Error` を throw、非同期は reject し、いずれも安定した `code` を付ける。コードは `INVALID_INPUT`、`INVALID_INDEX`、`UNSUPPORTED_FORMAT`、`UNSUPPORTED_OPTION`、`RESOURCE_LIMIT`、`INVALID_MANIFEST`、`CONFLICT`、`BUSY`、`DISPOSED`。Rust は対応する型付き `Result` を返す。メッセージ文字列を機械判定に使わない。型不正は`TypeError`に`INVALID_INPUT`を付ける。呼出側のgetter・policy callback・streamが投げた例外は元のまま伝播し、診断codeを保証しない。互換 `Asearch.match` の例外は §19 を維持する。
-- 選択できるengineは実装済みかつ当該APIの前提を満たすものだけ。Fixed指定が使えない場合は `UNSUPPORTED_OPTION`（autoだけが安全なfallbackを選ぶ）。M0にbulkの型やstubを先取りしない。NormalizerConfigはnone/version=1/options=0、ja-basic/version=1/options=0..63のみをv1で受理し、未知versionは `UNSUPPORTED_FORMAT`、不正optionsは `INVALID_INPUT`。検索の経過時間はJS/CLI側で取得し、コアはtime APIに依存しない。
-- key/order は 0..2^32−1 の整数（NaN・小数・負数・範囲外を拒否）。text は原始文字列、文書の texts は 1 個以上。各textは正規化前/後の両方で65,535 UTF-16 code unit以下とし、OLEN/TLENへ切り詰めず格納できることを検査する。同一 key の複数文書入力をエラーにし、同じ文書内の text 順は意味のある入力として保存する。limit は 0..maxTexts の整数で 0 も可。空 pattern は暗黙に抑制せず、選んだ意味論で評価する。
-- 同じ index の非同期更新は最大 1 操作。2 個目の更新は `BUSY`。検索は旧 active で続けられる。free は staging を中止し、後着の完了は採用しない。失敗/中止で旧状態を保持する。異なる instance 間の並行は可。
-- 結果の型配列は常にJS所有の独立したコピーであり、次のAPI呼出し・索引更新・`free()`後も内容を保持できる。WASMメモリへの借用ビューではない。`.copy()`は型配列とstatsをさらに独立して複製する。配列内のopaque refsは更新後に失効する。JSとWASM境界の確保は、準備済みRustコアの確保ゼロとは区別する。
-- refs の整数値は、その index の更新世代に属する opaque な参照。配列をcopyしても値は更新成功後に失効し、他 index/Worker にそのまま渡せない。explain は世代と範囲を検査し古い参照を `INVALID_INPUT` とする。世代を含む参照表は予約した容量内で管理し、番号の再利用で古いrefが別textを指さないようにする。参照番号空間を使い切ったら `RESOURCE_LIMIT` とし、黙って折り返さない。
-- free は冪等。解放済み index/session の利用は `DISPOSED`。indexを解放すると子sessionも無効。更新成功時は影響する cacheだけを無効化し、検索オプションと入力を保持する。
+一括の同期メソッドはthrow、非同期はrejectし、安定したcodeとしてINVALID_INPUT・INVALID_INDEX・UNSUPPORTED_FORMAT・UNSUPPORTED_OPTION・RESOURCE_LIMIT・INVALID_MANIFEST・CONFLICT・BUSY・DISPOSEDを返します。型不正はINVALID_INPUT付きTypeErrorです。呼び出し元のgetter・policy・stream例外はそのまま伝え、codeを保証しません。メッセージを機械判定に使わないでください。互換Asearchには別の変換規則を維持します。
 
----
+key・orderは0..2^32-1の整数です。元文書は原始文字列のtextを1つ以上持ち、原文・正規化文とも各65,535 UTF-16単位以内が必須です。文書keyの重複は失敗し、text入力順は意味を持ちます。確保前に上限・記述子を検証し、root・session・輸送・準備の容量を合算します。
+
+rootごとの非同期更新は1つだけで、2つ目はBUSYです。検索は旧active状態で継続します。失敗・中止でその状態を保持し、freeは準備を中止して遅れた採用を防ぎます。複数セグメントのmanifestは1回のreplaceSegmentsで原子的に採用します。成功時は全opaque refと関連cacheを無効にし、sessionの入力・optionを維持します。
+
+結果配列は次の呼び出し・採用・free後も保持でき、copy()は配列・statsを独立複製します。refはroot・世代固有で、別root／Workerに流用できません。古い／別所有元のrefはINVALID_INPUTです。参照番号は暗黙に折り返さず、枯渇はRESOURCE_LIMITです。root解放で子sessionも無効になります。
 
 <a id="section-13"></a>
 
-## 13. WASM ビルド構成
+## 13. WASMビルド
 
-- Rust repoのRelease CIでWASMをビルドする。デモはタグ・SHA-256固定のRelease Assetsを取得し、`wasm-bindgen` → `wasm-opt -O3`（Binaryen）を実行する。
-- wasm-packには依存せず、ReleaseのRust Cargo.lockと同じ版のwasm-bindgen CLIを直接使う。
-- SIMDを採用した場合の成果物は 2 つ: `*_simd.wasm`（`-C target-feature=+simd128`）と基本版。実行時に小さな SIMD モジュールを `WebAssembly.validate` して選ぶ。SIMD のコードは `#[cfg(target_feature = "simd128")]` で分岐する（関数単位の `#[target_feature]` は使わない）。relaxed-simd は採用しない。
-- Rust 1.87 以降で既定有効の WASM 機能: multivalue、mutable-globals、reference-types、sign-ext、nontrapping-fptoint、bulk-memory。
-- `[profile.release]`: `opt-level = 3`、`lto = "fat"`、`codegen-units = 1`、`panic = "abort"`、`debug = false`、`strip = true`。
-- アロケータはRustの既定を使う。準備済みbulkの検索中には確保しない。DAGや説明など確保を行う経路は、個別の資源予算で検証する。
-- CJSはNodeの同期初期化、ブラウザは非同期のWASM取得・初期化を使う。基本命令版を配布し、任意engineの採否はM7で判断する。
-- サイズ: raw／gzip／brotliをCIで記録し、差分をレビューする。速度の回帰判定は§15.1.1の別手順。
-- 安全性: 本体 `asearch-rs` は全マイルストーンで `#![forbid(unsafe_code)]`。little-endian の索引は検査済みsliceから明示的に復号し、ファイルの型付きpointer castを前提にしない。M7でunsafeなSIMD intrinsicが必要なら、小さな任意kernel crateへ隔離し、境界・整列・長さを検査したsafe APIのみをcoreから呼ぶ。M0にkernel crateを作らない。
-- M0のJS formatter/linterはBiome 2.5.15（D17）をpackage.jsonとlockで固定する。Rust/JSのformat/lintとtscの型検査を別コマンドにし（webはDOM lib、WorkerはWebWorker libで独立に検査。実行時DOM非依存と型ライブラリの指定を混同しない）、formatによる修正とcheckを分ける。上流コピーの原本を一括formatしない。
+Rust Release CIが基本命令版WASMを生成します。デモは固定Assetsを検証し、wasm-bindgenの後にwasm-opt -O3を実行します。wasm-bindgen-cliはRust Cargo.lockと同じ版を使い、wasm-packは不要です。SIMD・Myers・OSAのランタイム成果物は採用しません。Rust release設定はopt-level=3・fat LTO・codegen unit 1・abort panic・debug情報除去です。コアRustはunsafeを禁止し、検証済みlittle-endian sliceを明示的に復号します。
 
----
+Rust既定allocatorを維持します。準備済みnative照合は検索中に確保せず、境界の結果コピー・DAG構築・更新・説明は別途予算を持ちます。raw・gzip・Brotliサイズと条件付き時間計測は別指標です。Biome・rustfmt／Clippy・型・テスト・文書検査を別コマンドに保ち、変更しない上流原本を一括formatしません。

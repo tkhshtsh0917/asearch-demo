@@ -1,25 +1,19 @@
-# 詳細仕様
+# 仕様
 
-[原文](../../spec/README.md) · 日本語版
+[English](../../spec/README.md)
 
-詳細仕様をテーマ別に案内し、現行契約と過去の設計案の優先順位を説明します。
+[ランタイム契約](runtime.md)が現在の対応範囲を定義します。既存参照を維持するため数値の節アンカーを残します。過去のマイルストーン報告は日付付きの証拠で、追加APIではありません。
 
-現行のAPIと責務は[ランタイム契約](runtime.md)を優先する。生成APIを含む過去の案は設計記録として参照する。
+| 節       | 文書                                       |
+| -------- | ------------------------------------------ |
+| 0, 1, 17 | [スコープと用語](scope.md)                 |
+| 2        | [照合意味論](semantics.md)                 |
+| 3–7      | [配置とエンジン](engines.md)               |
+| 8–10     | [正規化・順位・ポリシー](normalization.md) |
+| 11, 20   | [索引形式と更新](index-format.md)          |
+| 12–13    | [JS/TS APIとWASMビルド](api.md)            |
+| 14–15    | [検証と計測](validation.md)                |
+| 16, 18   | [設計理由と参考資料](rationale.md)         |
+| 19       | [互換境界](compatibility.md)               |
 
-Rust本体の[アーキテクチャ図](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/architecture.md)、[Bitapの動画解説](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/algorithm.md)、[ASIXのバイト配置](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/asix-format.md)はRust repoで管理する。
-
-M0の互換照合では§19を優先し、§2の意味論に従う。一括索引・逐次入力・サーバー更新も実装している。説明・DAGも実装済み。任意の未採用engine等は実装と区別し、受入の範囲は[開発計画](../PLAN.md)を参照する。
-
-| 節                 | 文書                                       |
-| ------------------ | ------------------------------------------ |
-| §0, §1, §17        | [スコープと用語](scope.md)                 |
-| §2                 | [照合意味論](semantics.md)                 |
-| §3, §4, §5, §6, §7 | [レイアウトと照合エンジン](engines.md)     |
-| §8, §9, §10        | [正規化・順位・ポリシー](normalization.md) |
-| §11, §20           | [索引形式とサーバー更新](index-format.md)  |
-| §12, §13           | [拡張APIとWASM構成](api.md)                |
-| §14, §15           | [テストと性能検証](validation.md)          |
-| §16, §18           | [設計判断と参考資料](rationale.md)         |
-| §19                | [M0互換APIと実装契約](compatibility.md)    |
-
-§番号は文書をまたいで共通。`crates/`はRust repo、`packages/`・`tools/`・`vendor/`はこのintegration workspaceを基準とする。M0当時の構成図とCIは歴史的記録であり、現行手順はREADMEとrepository-layoutを優先する。[開発順と現在の状態](../PLAN.md)、[決定の由来](../DECISIONS.md)、[ビルド・検証方法](../../../README.ja.md)を併用する。
+[アーキテクチャ図](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/architecture.md)、[Bitap動画](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/algorithm.md)、[ASIXバイト配置](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ja/asix-format.md)はRust repoが管理します。`crates/`はRust repo、`packages/`・`tools/`・`vendor/`はこのワークスペースを指します。[マイルストーン](../PLAN.md)、[判断記録](../DECISIONS.md)、[ビルド手順](../../../README.ja.md)も参照してください。

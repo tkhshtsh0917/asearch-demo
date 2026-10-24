@@ -1,69 +1,39 @@
-# スコープと用語
+# Scope and terminology
 
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[日本語](../ja/spec/scope.md)
 
 <a id="section-0"></a>
 
-## 0. スコープ（D8）
+## 0. Scope
 
-目的: **ブラウザ上の WASM で、asearch 系の曖昧照合を最速で行うこと。** ただし、サーバー側で WASM が扱いやすい形式に前処理した索引を CDN で配信する使い方と、コーパスの更新頻度が高い場合の対応は範囲に含める（利用者決定、2026-10-19）。
+The goal is fast approximate matching in browser WASM, including loading server-built indexes from a CDN and adopting frequent content updates. Changes must improve matching results or time to results, including load/update costs. UI, scheduling, network transport, caching, personalization and learned ranking belong to hosts.
 
-**判断基準**: 新しい機能は、(a) 照合結果、または (b) 照合までの時間（索引のロードと更新を含む）に直接効くものだけを入れる。それ以外は拡張点（trait、API の引数）だけを用意し、実装は持たない。
+Rust owns compatibility matching, bulk/session/DAG matching, mechanical normalization, ASIX validation, native building/analysis, base/delta/tombstone updates and server compaction. The TS adapter is DOM-independent and works in Workers. It is locally packed for integration, not published to npm. Browser WASM only loads/searches/adopts indexes. Tokenization, readings, romanization and synonyms run in the separate server-only analyzer; intent generation is not automatic.
 
-範囲内（このリポジトリが作り、性能に責任を持つ）:
-
-1. 照合: 互換 API（asearch.ts）と、一括・逐次・意図表現の高速照合。出力は (key, level) の順序付き列と、上位 N 件のハイライト区間（原文を保持/提供した場合は原文の UTF-16 オフセット。座標体系を明示、§9）。
-2. 照合意味論の一部としての正規化（機械的な文字の対応表に限る。§8）。
-3. 索引: 構築器（RustのCLI。ブラウザWASMは読み込み・検索のみ）、バイナリ形式、検証付きローダ（ストリーミング読み込みを含む）。CDN 配信を前提にした性質（決定性、版の互換、差分に強い並び）。§11
-4. 更新: セグメント（base＋delta＋tombstone）、マニフェスト形式、サーバー側compaction。クライアントは配信された索引の採用だけを行う。§20
-5. JS/TSの薄い境界とローカル配布用パッケージ（npmへは公開しない）。DOM に依存しない（MUST）。Worker 内での動作は Playwright でテストする（§14）。
-6. 互換フィクスチャ、プロパティテスト、ベンチハーネス。
-
-このWASM検索APIの範囲外（呼出し元やサーバー専用crateで扱う）:
-
-- UI と描画: DOM の更新、ハイライトの描画、入力イベントと IME の処理、防振・latest-wins などの実行スケジューリング。
-- 言語資源: 形態素解析・読み・ローマ字・同義語は、別のサーバー専用Rust crate `asearch-analyzer`／CLIで生成する。意図表現の自動生成は扱わない。これらで作った文字列は、同じ key の別 text として索引に入れる（§20.2）。エンジンは文字クラスと DAG（§7）を受け付けるので、外で作った展開をそのまま渡せる。
-- 配信基盤: CDN・ストレージの設定、アップロード、マニフェストの取得・ポーリング・プッシュ（WebSocket／SSE）、HTTP キャッシュやオフライン保存（Cache API／IndexedDB）の制御。
-- サーバー側の検索 API。ネイティブの crate は構築・検証・テストのために動くが、ネイティブ実行の速度は最適化の目標にしない。
-- ランキング学習、個人化、利用ログ。順位は (level, order, key) だけで決める。
-- 長文の全文検索（1 text が 65,535 code unit を超えるもの）と、下記の想定規模を超えるコーパス。
-
-想定規模と対象環境:
-
-- 性能目標の主対象は総 code unit 数 10^5〜10^6、text 長は数十文字が中心。10^7 は動作と計測の上限。
-- 1 text の長さは 65,535 code unit 以下（構築時に検査してエラーにする。黙って切り詰めない）。
-- 対象: Chromium／Firefox／Safari の現行安定版のメインスレッドと Worker。テストは Playwright 同梱の Chromium／Firefox／WebKit で行う（同梱版は各ブラウザの安定版と一致しないことがあり、WebKit は Safari そのものではない。Safari 実機での確認は、行っていなければ報告で未検証として列挙する）。Node は構築とテストに使う。その他の実行環境（Deno、エッジ）は動けば良く、保証しない。
-
----
+The original tuning target was 10^5–10^6 total UTF-16 units, mostly short texts; 10^7 units were a scale probe. Neither is a universal capacity guarantee. Each text must fit 65,535 UTF-16 units before and after normalization. Larger corpora need measured text/unit/working-memory budgets. Browser coverage uses Playwright Chromium, Firefox and WebKit, with mobile profiles; WebKit is not physical Safari and profiles are not OS IME/device verification. Node supports tooling/tests. Deno and edge runtimes are not guaranteed.
 
 <a id="section-1"></a>
 
-## 1. 用語と記法
+## 1. Terms
 
-| 用語          | 定義                                                                                                         |
-| ------------- | ------------------------------------------------------------------------------------------------------------ |
-| pattern       | ユーザーの検索入力。asearch.ts の `new Asearch(pattern)`                                                     |
-| text（候補）  | 照合される文字列。**asearch.ts の `match(query)` の `query` に相当**。本仕様では混同を避けるため text と呼ぶ |
-| 記号 (symbol) | 照合の最小単位。プロファイルにより Unicode code point または UTF-16 code unit                                |
-| m             | pattern の非ワイルドカード記号数。受理位置は m                                                               |
-| n             | text の記号数                                                                                                |
-| 位置 i        | pattern 接頭辞の長さ 0..m。状態ビット i =「pattern の先頭 i 記号を消費済み」                                 |
-| level e       | 誤り数（ambig, 曖昧度）。0..K                                                                                |
-| LOOPS         | 0 コストの自己ループ（任意記号を読み飛ばす）を持つ位置の集合                                                 |
-| EQ_i(x)       | text 記号 x が pattern 位置 i のキー集合に属するか                                                           |
-| cost          | §2.7 の理想コスト（Ideal）                                                                                   |
-| level(t)      | text t の最小一致 level（K を超えるなら「なし」）                                                            |
-| key           | 文書の ID（u32）。版をまたいで安定。更新・削除・重複排除の単位。1 つの key に複数の text を持てる（§20.2）   |
-| order         | 順位キー（u32、小さいほど上位）。既定は key                                                                  |
-| セグメント    | サーバーで生成された不変の索引ファイル（§11）。索引はセグメントの列（§20）                                   |
-| tombstone     | 古いセグメントの key を無効にする印（§20.2）                                                                 |
-
----
+| Term            | Meaning                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| pattern         | User search input; the constructor pattern in the compatibility API. |
+| text            | Candidate string; the argument called query by upstream match().     |
+| symbol          | Unicode code point or UTF-16 unit, according to profile.             |
+| m / n           | Non-wildcard pattern length / text symbol count.                     |
+| position i      | Pattern prefix length 0..m; bit i means i symbols consumed.          |
+| level e / K     | Edit level / maximum accepted edit level.                            |
+| LOOPS           | Positions with zero-cost symbol-skipping self-loops.                 |
+| EQ_i(x)         | Whether text symbol x belongs to pattern position i's key class.     |
+| cost / level(t) | Ideal cost / first matching level within K.                          |
+| key             | Stable u32 document ID; update, deletion and deduplication unit.     |
+| order           | u32 rank key, lower first; defaults to key.                          |
+| segment         | Immutable server-built ASIX file.                                    |
+| tombstone       | A key invalidating occurrences in older segments.                    |
 
 <a id="section-17"></a>
 
-## 17. 決定事項
+## 17. Decisions
 
-採用理由と確定事項は[DECISIONS](../DECISIONS.md)を正本とする。
+[Decisions](../DECISIONS.md) records adopted choices. [Runtime](runtime.md) specifies current APIs. Host query lookup policy and opt-in position ranking do not introduce client editing or learned relevance.

@@ -1,6 +1,8 @@
-# 性能検証ハーネス
+# Performance harness
 
-M1で実装。NodeとPlaywrightのChromium/Firefox/WebKitで、上流asearch.tsの公開JSとRust/WASMラッパの固定level照合を比較する。profileはasearch.ts-lib、Include、level 3。これは一括索引や逐次入力の性能ではない。
+[日本語](README.ja.md)
+
+Implemented during M1. Node and Playwright Chromium/Firefox/WebKit compare vendored upstream JS with fixed-level Rust/WASM adapter matching: asearch.ts-lib, Include, level 3. This does not measure bulk indexes or incremental input.
 
 ```sh
 mise exec -- pnpm build
@@ -12,50 +14,50 @@ mise exec -- pnpm bench:compare BASELINE_DIST CANDIDATE_DIST OUTPUT_JSON BASELIN
 mise exec -- pnpm bench:native OUTPUT_NATIVE_JSON 10000
 ```
 
-OUTPUT_JSONは測定ログの保存先。UNITSは10,000〜10,000,000で、seedは31。計測中に他のビルドやテストを並行実行しない。生成器は3,000個のBMP記号、Zipf指数1.05、text長10〜60を使う。
+OUTPUT_JSON is the measurement-log destination. UNITS ranges from 10,000 to 10,000,000; seed is 31. Do not run builds/tests concurrently. The generator uses 3,000 BMP symbols, Zipf exponent 1.05 and text lengths 10–60.
 
-計測前にpatternごとに全text・level 0〜3の真偽が一致することを確認する。patternは3/7/15/31記号。構築時間を除外し、各sampleは全候補へのmatchの平均時間。タイマー分解能を超えるようバッチ反復数を自動調整する。5 paired runs、各30標本をAB/BA交互に測り、runごとの中央値比をbootstrapする。出力のp50/p95は**バッチ平均の分布**で、個別の打鍵レイテンシではない。
+Before timing, verify every text at levels 0–3 for each pattern. Patterns contain 3/7/15/31 symbols. Exclude construction; each sample is the mean match time over all candidates. Adjust batch repetitions to exceed timer resolution. Alternate five paired AB/BA runs with 30 samples each and bootstrap per-run median ratios. Reported p50/p95 describe **batch-mean distributions**, not individual keystrokes.
 
-raw標本、seed、コーパス・上流・WASM・JSラッパ・lockfileのSHA256、HEAD、日時UTC、Node/V8/OS/CPUをJSONへ保存する。Nodeの上流はVM context、ブラウザの上流は専用のCommonJS/verbose shimを渡したFunctionで実行し、製品はNodeエントリから呼ぶ。比較はこの呼出し経路を含む。コアだけの性能とは区別する。
+JSON records raw samples, seed, SHA256 of corpus/upstream/WASM/JS adapter/lockfile, HEAD, UTC timestamp and Node/V8/OS/CPU. Node upstream executes in a VM context; browser upstream uses Function with a dedicated CommonJS/verbose shim. Product Node calls use the Node entry. These call paths are included and are not isolated-core timing.
 
-各runnerは未コミット変更の有無もbooleanで保存する。dirtyの場合、HEADだけでは実測ソースを特定できないので、artifact/runnerのhashと測定時の差分を合わせて記録する。端末の変更ファイル名はJSONへ保存しない。
+Each runner records a dirty boolean. Dirty HEAD alone cannot identify measured source: retain artifact/runner hashes and the measured diff. Changed workstation filenames are not stored in JSON.
 
-統計モジュールはノイズのある架空標本、既知の10%超回帰、独立再確認の有無、固定seedによる再現性をテストする。単一の5run組だけでは回帰を確定しない。ブラウザは3エンジンを順番に測定する。
+Statistics tests cover synthetic noise, known regressions above 10%, independent confirmation and fixed-seed reproducibility. One five-run group cannot confirm regression. Browser engines are measured sequentially.
 
-Node/ブラウザの`replicaResults`は、verbose/process呼出しを持たない素直なJS移植との固定level比較。同梱上流のコードは変更せず、レプリカを全fixtureで別に検証する。これはベンチ専用で、JS製品経路ではない。`extensions.minimumLevels`はJSでmatchを0..K回呼ぶ最小levelと、製品matchLevelの1回呼出しを比較する。各textの最小levelを揃え、key順位・top-Nを含まない。両者とも同じタイマー・コーパス・AB/BA方式を使う。
+Node/browser replicaResults compare fixed-level matching with a plain JS port without verbose/process calls. Vendored originals are unchanged; the replica is separately checked against all fixtures and is benchmark-only. extensions.minimumLevels compares JS calls at 0..K against one product matchLevel call, with equal per-text minimum levels but no key ranking/top-N. Both use the same timers, corpus and AB/BA design.
 
-`extensions.construction`は1回ごとにconstructorを呼び、freeがある実装はその場で解放する。最後のインスタンスを観測可能に保持して、未使用な構築処理を測らないようにする。上流JSのGCは遅延するため、解放費用が同じ範囲に入るという保証は無く、constructor/freeの費用を知る参考値とする。生存数・GCを制御した同等の解放ベンチとして速度優位性を主張しない。この2カテゴリの分位点はbatchMeanOperationMsという名前で、固定level照合と区別する。いずれも個別打鍵の分位点ではない。
+extensions.construction invokes a constructor each time and immediately frees implementations with free. The final instance remains observable to prevent unused construction from disappearing. Upstream JS GC is delayed, so release costs are not equivalent; this is a constructor/free diagnostic, not a controlled live-count/GC speed claim. Both extension categories use batchMeanOperationMs percentiles, distinct from fixed-level matching and individual keystrokes.
 
-`bench:compare`は変更前後のビルド済みdistを同じNodeプロセスへ読み込み、同じコーパスをAB/BAで比較する。独立した過去のJSON同士を速度比にしない。BASELINE_COMMITとCANDIDATE_COMMITには、それぞれのdistを生成した40桁のcommit IDを指定する。ビルドは同じツールチェーン・依存版で行い、実際の版を測定記録へ併記する。呼出側が指定するcommitラベルと成果物の対応は呼出側が確認する。runnerは両方のWASM・JSラッパ・生成グルーのSHA256、コーパスとハーネスのSHA256を記録する。記録に端末のファイルパスは含めない。
+bench:compare loads two built distributions in one Node process and compares the same corpus in AB/BA order. Do not divide independent historical JSON reports. BASELINE_COMMIT and CANDIDATE_COMMIT are the 40-digit commits that built each distribution. Build with the same toolchain/dependencies and record actual versions. The caller verifies commit labels against artifacts. The runner records both WASM/JS/glue SHA256 values plus corpus/harness hashes, never workstation paths.
 
-4パターンのいずれかで回帰候補が出たら、もう1組の5runを全パターンについて測り、個別に再確認する。p50/p95/p99はいずれも150標本のバッチ平均分布であり、個別操作の分位点と区別する。各patternの計測終了時と異常終了時には、両方のハンドルをfree可能なら解放する。構築・解放の時間はこの固定level計測には含めない。
+A regression candidate in any of four patterns triggers a second five-run group for all patterns, confirmed separately. p50/p95/p99 are distributions of 150 batch means. Free both handles after each pattern and on abnormal exit where supported. Constructor/free time is excluded from fixed-level timing.
 
-`bench:native`は同じworkloadをCLIへ渡す。RustのAsearch Idealによる各textのmatch_levelとScalarEngine<u32>の全件level走査を、全textのlevel一致を検査してから比較する。normalizerなし、Rust casing、Include、K=3。どちらもネイティブコアであり、JSとの速度比ではない。上位key順位付けも含まない。std::time::Instantを使い、10回ウォームアップ、5run×30標本、AB/BA、最小4msを目指す共通反復数で測る（上限1,024）。集計はJSと同じ統計モジュールへ渡す。raw、コーパス、実行ファイル・Release NOTICE・runner・集計のSHA256、固定タグ、デモcommit、Node/OS/CPUを保存する。Release Assetsの準備と検証は計測前に完了する。比較する2実装の比率であり、単一の実測だけを変更前後の回帰判定として扱わない。
+bench:native passes the same workload to the CLI. It compares native Ideal Asearch match_level per text against ScalarEngine<u32> full-level scanning after verifying all levels. Settings: no normalizer, Rust casing, Include, K=3. Both are native; this is neither a JS ratio nor top-key ranking. Use Instant, ten warmups, five runs × 30 samples, AB/BA and common repetitions targeting at least 4 ms (cap 1,024). JS uses the same aggregation module. Record raw samples, corpus/executable/Release NOTICE/runner/aggregation SHA256, pinned tag, demo commit and Node/OS/CPU. Prepare verified Release Assets before timing. A single comparison of these two implementations is not before/after regression evidence.
 
-CLIの直接利用は`asearch-cli bench INPUT_JSON OUTPUT_JSON`。入力はworkloadと同じseed/units/texts/patternsで、JSONは64 MiB、pattern数は1〜64、宣言unitsと実データが一致する10^4〜10^7 UTF-16単位を受理する。native Asearchとの比較なのでpatternは31 UTF-16単位以内。長いパターン単体の正しさはRustテストで別に検査する。
+Direct CLI usage: asearch-cli bench INPUT_JSON OUTPUT_JSON. Input matches workload seed/units/texts/patterns, with JSON <=64 MiB, 1–64 patterns and actual/declared units equal in 10^4–10^7 UTF-16 units. Patterns fit native Asearch's 31 UTF-16 units; longer-pattern correctness is checked separately in Rust tests.
 
-## 一括索引の逐次入力
+## Bulk incremental input
 
-変更前後の別配布物を同じengineで比較する場合は、[版間比較手順](../../docs/performance.md)を使う。以下は同一配布物内のblockedとautoの比較である。
+For two distributions using the same engine, follow [version comparison](../../docs/performance.md). The following compares blocked and auto within one distribution.
 
 ```sh
 mise exec -- pnpm bench:session INPUT_ASIX OUTPUT_JSON node
 mise exec -- pnpm bench:session INPUT_ASIX OUTPUT_JSON browser
 ```
 
-`INPUT_ASIX`は呼出側が用意したASIX base。データセットを本体へ組み込まない。browserはChromium/Firefox/WebKitを順番に実行する。索引のSHA256をブラウザでも照合し、localhostで指定ファイルだけを追加配信する。
+INPUT_ASIX is a caller-provided ASIX base; the engine embeds no dataset. Browser runs are sequential across the three engines. Verify the index SHA256 in browsers too and serve only that additional file on localhost.
 
-同じ索引を共有するblocked sessionとauto sessionを、同じ既定ポリシー・countTotal=true・limit=30で比較する。4系列21打鍵（延長・後退・末尾置換・半角濁点・空入力）を10回warmupし、5run×50roundをAB/BA交互に実行する。各updateを個別に計時し、結果のids/levels/orders/厳密totalsは計時区間外で照合する。reset・構築・ロード・描画は含めない。raw、engine使用件数、標本数、p50/p95/p99、環境と成果物hashを保存する。Firefox等の粗い時計による0ms標本は捨てずに記録し、0を分母にした速度比は計算しない。普遍的な閾値や端末の保証には使わない。
+Blocked/auto sessions share an index, default policy, countTotal=true and limit=30. Ten warmups precede five runs × 50 rounds of four sequences/21 keystrokes (extension, deletion, suffix replacement, halfwidth marks and empty input), alternating AB/BA. Time each update individually; compare ids/levels/orders/exact totals outside timing. Exclude reset/construction/load/rendering. Retain raw samples, engine counts, sample counts, percentiles, environment and artifact hashes. Preserve zero-ms samples from coarse clocks, but do not divide by zero. These are not universal thresholds or device guarantees.
 
-## 複数セグメントの計測
+## Multiple segments
 
 ```sh
 mise exec -- pnpm bench:segments OUTPUT_JSON node
 mise exec -- pnpm bench:segments OUTPUT_JSON browser
 ```
 
-固定の合成1万文書・2万textを1〜8segmentへ分割し、同じフル索引とAB/BA順で照合します。各segment数・各経路1,300回（13入力×5run×20round）のsearch呼出時間を保存し、ids/levels/orders/exact totalsとcompaction bytesを照合します。現行のクライアント計測はロード・更新のみ。索引準備とCLI圧縮は計時外で行う。以下は移行前の計測記録である。ロード・圧縮・更新は新しいrootで3回のウォームアップ後に各30回計測します。取得元はメモリ上のbytesで、HTTP通信時間ではありません。先頭の単独観測値は診断用で、30標本の分布とは区別します。ロードと更新にはexpectedのSHA-384検査を含みます。8segment後の更新は圧縮base＋deltaへの全量置換なので、他のappendと処理量が異なります。
+Split a fixed synthetic 10,000-document/20,000-text corpus into 1–8 segments and compare with the same full index in AB/BA order. Record 1,300 searches per segment count/path (13 inputs × five runs × 20 rounds), checking ids/levels/orders/exact totals and compacted bytes. Current client lifecycle timing measures load/update only; CLI fixture construction/compaction is outside timing. Historical pre-separation measurements timed load/compaction/update 30 times on fresh roots after three warmups. Sources are in-memory bytes, not HTTP. Initial standalone observations are diagnostic, separate from the 30-sample distributions. Load/update include expected SHA-384 validation. After eight segments, updates replace the whole column with compacted base plus delta, unlike append cases.
 
-WASM memoryのbyteLengthは縮まないページ数の観測です。同じinstanceで先行シナリオも実行するため、現在のlive allocationや厳密な操作別ピークと同一視しません。合成データの結果を実データの検索品質・端末性能へ一般化しません。2026-10-21のローカル実行では、segment追加の検索オーバーヘッドと全量置換の高いロード費用を確認しました。小さなdeltaと定期圧縮を組み合わせる方針を維持し、既定の圧縮目安を全用途の最適閾値として保証しません。
+WASM memory byteLength reports nonshrinking pages. Earlier scenarios in the same instance affect it; it is not live allocation or an exact operation peak. Synthetic results do not establish real-data relevance or device performance. Local 2026-10-21 runs observed segment-search overhead and higher full-replacement load costs. Small deltas plus periodic compaction remain the policy; provisional thresholds are not universally optimal.
 
-2026-10-21の最終逐次入力計測では、実コーパス1万質問の21打鍵系列を各経路5,250回、Nodeと3ブラウザで照合した。Nodeのautoは全量経路よりp95が低かった一方、中央値は計測組によって悪化した。Chromiumでもtailの改善を観測したが、Firefox/WebKitは時計の分解能が粗く、速度比を主張しない。これは特定コーパス・短い系列・1環境の観測であり、全用途の優位性を保証しない。採否と制約は[D28](../../docs/DECISIONS.md#d28-m7の採否とスカラー経路の改善)を参照する。
+Final local session measurements on 2026-10-21 ran 5,250 updates/path over 21-keystroke sequences on 10,000 real questions in Node/three browsers. Node auto had lower p95 but worse medians in some groups. Chromium showed tail improvement; coarse Firefox/WebKit clocks do not support speed ratios. This is one corpus, short sequences and one environment, not universal superiority. See [D28](../../docs/DECISIONS.md#d28-m7の採否とスカラー経路の改善).

@@ -1,11 +1,13 @@
 # Vendored upstream
 
-`upstream/`は互換性の基準となる上流の原本です。製品コードと区別し、このディレクトリ全体をformatter/linterの対象外にします。
+[日本語](README.ja.md)
 
-- [出典・版・ライセンスとSHA256](upstream/README.md)
-- [Unicode正規化データの出典・再生成・ライセンス](unicode/README.md)
-- fixture生成、型互換テスト、参照ツールはこの同梱コピーを読み、ネットワークから取り直しません。
-- 上流の全ファイルをbyte-for-byteで保持します。移動によってSHA256SUMSの値は変わりません。
-- `upstream/licenses`はビルド時に配布物へ同梱します。帰属・許諾はルートの[NOTICE](../NOTICE)も参照してください。
+upstream/ contains original upstream files serving as compatibility references. Keep them separate from product code and exclude this directory from formatters/linters.
 
-リポジトリのルートで`(cd vendor/upstream && shasum -a 256 -c SHA256SUMS)`を実行すると検証できます。
+- [Sources, versions, licenses and SHA256](upstream/README.md)
+- [Unicode normalization sources, regeneration and license](unicode/README.md)
+- Fixture generation, type compatibility and reference tools read these copies without refetching them.
+- Keep upstream files byte-for-byte; moving them does not change SHA256SUMS.
+- Build tooling copies upstream/licenses into distributions. See root [NOTICE](../NOTICE) for attribution/permissions.
+
+From the integration root, run `(cd vendor/upstream && shasum -a 256 -c SHA256SUMS)` to verify them.

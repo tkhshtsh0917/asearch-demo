@@ -1,135 +1,107 @@
-# 照合意味論
+# Matching semantics
 
-[仕様索引](README.md)へ戻る。節番号は分割前から維持する。
-
-M0以後の計画を含む。実装済みの範囲は[開発計画](../PLAN.md)を参照する。
+[日本語](../ja/spec/semantics.md)
 
 <a id="section-2"></a>
 
-## 2. 参照意味論（asearch.ts@1.0.3）
+## 2. Reference semantics
+
+The compatibility baseline is the vendored source and published lib of asearch.ts 1.0.3. The current read-only runtime and bulk API are specified separately in [runtime](runtime.md).
 
 <a id="section-2-1"></a>
 
-### 2.1 公開 API 面（検証済み: npm `asearch.ts@1.0.3` の `lib/index.js` と `lib/index.d.ts`）
+### 2.1 Public shape
 
-- exports: `MatchMode`（数値 enum。実行時は逆引き付きオブジェクト `{"0":"Exact","1":"Include","2":"WildcardSpace","Exact":0,"Include":1,"WildcardSpace":2}`）と `Asearch`。
-- `class Asearch { static MAXLENGTH = 31; readonly matchMode; readonly pattern; masks: {[char: string]: number}; constructor(pattern: string, mode?: MatchMode); match(query: string, ambig?: number): boolean }`
-- 型の上で private: `acceptPattern`, `initPattern`, `loopMask`, `verbose()`。実行時の状態フィールドは列挙可能な自前プロパティ（`Object.keys` → `loopMask, masks, matchMode, pattern, initPattern, acceptPattern`）。`verbose()`はprototype上のメソッドで、自前プロパティには含まれない。
-- `masks` の値は符号付き int32（位置 0 のビットは `-2147483648`）。
-- `package.json`: `main = lib/index.js`（CommonJS、TypeScript の ES5 ターゲット出力）、`types = lib/index.d.ts`。
+Upstream exports Asearch and a numeric, reverse-mapped MatchMode enum: Exact=0, Include=1, WildcardSpace=2. Asearch exposes MAXLENGTH=31, matchMode, pattern and signed-int32 masks. Observable own fields are ordered loopMask, masks, matchMode, pattern, initPattern, acceptPattern; verbose() is a prototype method. Upstream declarations have private members, so compatibility is measured against the public surface, not nominal assignment to its private class type.
 
 <a id="section-2-2"></a>
 
-### 2.2 パターンのコンパイル（lib と src で同一）
+### 2.2 Pattern compilation
 
-```text
-if (pattern.length > 31) throw new Error(`Pattern must be shorter than 32 chars. But given ${pattern}`)
-      // pattern.length は UTF-16 長で空白も数える
-splitted = Array.from(pattern)          // code point 単位
-INIT   = 1 << 31（符号なしとして扱う）
-accept = INIT >>> splitted.length
-loop   = (mode === Include) ? (INIT | accept) : 0
-pos = 0
-for c of splitted:
-  if (mode === WildcardSpace && c === ' ') { loop |= INIT >>> pos; accept <<= 1; continue }
-  for key of [c, c.toLocaleLowerCase(), c.toUpperCase()]: masks[key] |= INIT >>> pos
-  pos++
-```
+Reject patterns longer than 31 UTF-16 units, including spaces. Array.from splits the pattern into code points. INIT is unsigned bit 31; accept starts at INIT shifted right by pattern symbol count. Include adds initial/accepting free loops. WildcardSpace turns each U+0020 into a free loop at its preceding position and removes that space from the accepting position. Exact and unknown compatibility modes have no free loops.
 
-- Include は位置 0 と受理位置にループ（＝部分一致）。WildcardSpace は空白の直前位置にループ（空白は位置を消費しない＝`.*`）。Exact と未知の mode はループなし。
-- 大文字小文字は **pattern 側だけ**最大 3 キーに展開し、text 側は加工しない。複数記号になるキー（`'ß'.toUpperCase() === 'SS'` 等）は単一記号と一致しないので実質無視される。
+Only pattern-side case candidates are expanded: original, locale lowercase and uppercase. Multi-symbol expansions such as ß→SS cannot match one text symbol. Host JS casing is used for compatibility; native Rust casing can differ by locale.
 
 <a id="section-2-3"></a>
 
-### 2.3 1 記号ずつの遷移
+### 2.3 Symbol transitions
 
 ```text
-states[e] = INIT >>> e        for e = 0..ambig       // JS のシフト量は mod 32
-for each symbol x of text:
+states[e] = INIT >>> e                     for e = 0..ambig
+for each text symbol x:
   mk = masks[x] ?? 0
   for e = ambig .. 1:
-    states[e] = (states[e] & loop) | ((states[e] & mk) >>> 1) | (states[e-1] >>> 1) | states[e-1]
+    states[e] = (states[e] & loop) | ((states[e] & mk) >>> 1)
+              | (states[e-1] >>> 1) | states[e-1]
   states[0] = ((states[0] & mk) >>> 1) | (states[0] & loop)
   for e = 1 .. ambig:
     states[e] |= states[e-1] >>> 1
 return (states[ambig] & accept) !== 0
 ```
 
-下位 level の更新前の値（挿入・置換）と、更新後の値（削除の閉包）を使い分ける点に注意。
+JS shifts wrap modulo 32. Insertion/substitution use the previous lower-level states; deletion closure uses the updated ones. Preserve this order in the compatibility replica.
 
 <a id="section-2-4"></a>
 
-### 2.4 記号化の差（重要）
+### 2.4 Source and published symbol units
 
-- TypeScript ソース（`for (const char of query)`）は code point 単位で走査する。
-- **npm 公開物 `lib/index.js` は ES5 への降格で `for (i = 0; i < query.length; i++) char = query[i]`、つまり UTF-16 code unit 単位で走査する**（検証済み: `tools/reference/check_lib_quirks.js`）。pattern 側は `Array.from` でcode point単位のため、Exact・level 0では同じ絵文字同士でも一致しない。textに非BMPが含まれるだけで常に不一致になるわけではなく、例えばIncludeでpatternが`a`、textが`a😀`ならlevel 0で一致する。
-  - 実測: `new Asearch('a😀b').match('a😀b', 0) === false`、`match('a😀b', 2) === true`、`new Asearch('😀').match('😀') === false`。
-  - README の「絵文字対応」は公開物では成立していない。
+The TypeScript source iterates code points. The ES5 published lib iterates UTF-16 units in text but still compiles pattern code points. Consequently identical non-BMP strings need not match at level zero: a😀b against itself is false at 0 and true at 2; 😀 against itself is false at 0. Non-BMP text does not always fail: Include pattern a matches a😀 at 0. See tools/reference/check_lib_quirks.js.
 
 <a id="section-2-5"></a>
 
-### 2.5 実測で確認した癖（npm `asearch.ts@1.0.3`、Node v22.22.0）
+### 2.5 Compatibility observations
 
-| ID  | 現象                                                                                                                                                      | 本プロジェクトの扱い                                                                          |
-| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
-| Q1  | text を UTF-16 単位で走査（§2.4）                                                                                                                         | 既定プロファイル `AsearchTs` は code point（意図的逸脱）。ビット一致が必要なら `AsearchTsLib` |
-| Q2  | 長さ検査は UTF-16 長（空白含む）。絵文字 16 個（32 単位）で例外                                                                                           | compat API は同一メッセージで完全再現。拡張 API は 31 記号制限なし（§11.6 の資源上限は適用）  |
-| Q3  | ambig に対して非単調。pattern `"a"` vs `""` → e=0..3 で `[F,T,F,F]`、`"ab"` vs `""` → `[F,F,T,F,F]`                                                       | compat API は完全再現。一括 API は最小 level を返すので影響なし（§2.8）                       |
-| Q4  | ambig ≥ 32 でシフト量が折り返す（`"abc"` vs `"abc"`: ambig=31 → false、32 → true）                                                                        | compat API は u32 とシフト量 mod 32 で完全再現                                                |
-| Q5  | ambig が非整数（1.5）・負（-1）→ false                                                                                                                    | 再現                                                                                          |
-| Q6  | `match()` が毎回 `process.env.ASEARCH_VERBOSE` を参照し、`process` の無い環境（ポリフィル無しのブラウザ）で `ReferenceError`（検証済み: vm コンテキスト） | **再現しない**。Node 専用グローバルの参照を全面禁止                                           |
-| Q7  | 未知の mode（3 など）は Exact として振る舞う                                                                                                              | 再現                                                                                          |
-| Q8  | `toLocaleLowerCase` は実行環境のロケールに依存（tr/az/lt 等）                                                                                             | compat では候補キーを JS 側で同じ式で計算して WASM に渡し、完全一致させる（§12.2）            |
-| Q9  | 引数なしの `match()` は TypeError                                                                                                                         | TypeError であれば良い（メッセージ一致は不要）                                                |
-| Q10 | 文字列でない pattern（数値）は空パターン相当で動く                                                                                                        | 再現しない（TypeError）。逸脱として文書化                                                     |
+| ID  | Observed behavior                                                    | Treatment                                                                              |
+| --- | -------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Q1  | Published text iteration uses UTF-16 units                           | Default uses source code points; explicit asearch.ts-lib preserves published behavior. |
+| Q2  | Length check counts UTF-16 and spaces                                | Compatibility reproduces it; extended indexes use resource limits.                     |
+| Q3  | Acceptance is not monotonic: a vs empty gives F,T,F,F at levels 0..3 | Preserve in match(); bulk returns the first accepted level.                            |
+| Q4  | Shifts wrap at 32; abc vs abc is false at 31, true at 32             | Preserve wrapping u32 transitions.                                                     |
+| Q5  | Negative/fractional ambiguity returns false                          | Preserve documented coercions.                                                         |
+| Q6  | Upstream reads process.env and fails without process                 | Deliberately remove this requirement.                                                  |
+| Q7  | Unknown modes behave as Exact                                        | Preserve in compatibility only.                                                        |
+| Q8  | Locale-sensitive lowercasing depends on host                         | Compile the same JS candidates before WASM.                                            |
+| Q9  | Missing match argument throws TypeError                              | Preserve the type, not exact message.                                                  |
+| Q10 | Numeric pattern behaves like empty upstream                          | Deliberately reject with TypeError.                                                    |
 
 <a id="section-2-6"></a>
 
-### 2.6 プロファイル
+### 2.6 Profiles
 
-| Profile               | text 記号   | pattern 記号 | 境界 B(i,e)        | 大文字小文字                                    | 備考                                                            |
-| --------------------- | ----------- | ------------ | ------------------ | ----------------------------------------------- | --------------------------------------------------------------- |
-| `AsearchTs`（既定）   | code point  | code point   | `i == e`           | JS から渡す候補キー（既定 `[c, lower, upper]`） | ソースの意味論＝README の意図                                   |
-| `AsearchTsLib`        | UTF-16 unit | code point   | `i == e`           | 同上                                            | npm 公開物とビット一致                                          |
-| `NodeAsearch`（任意） | UTF-16 unit | UTF-16 unit  | `i == 0 && e == 0` | ASCII のみ                                      | 空白は常にワイルドカード、K ≤ 3、非空白 32 記号以上は常に false |
-| `Ideal`               | code point  | code point   | `i <= e`           | 設定可                                          | 正しい初期 ε 閉包（Levenshtein）                                |
+| Profile      | Text / pattern symbols   | Initial membership B(i,e) |
+| ------------ | ------------------------ | ------------------------- |
+| AsearchTs    | Code point / code point  | i == e                    |
+| AsearchTsLib | UTF-16 unit / code point | i == e                    |
+| Ideal        | Code point / code point  | i <= e                    |
 
-B(i,e) は「text を 1 記号も読む前に、level e の状態集合に位置 i が含まれるか」。
+NodeAsearch remains a reference comparator, not a selectable runtime engine. Its UTF-16 pattern/text, ASCII casing, unconditional wildcard spaces and K<=3 are not implicitly adopted.
 
 <a id="section-2-7"></a>
 
-### 2.7 理想コスト（Ideal）
+### 2.7 Ideal cost
 
 ```text
-C[i][0] = i                                                    (i = 0..m)
-C[i][j] = min( C[i][j-1]   + (i ∈ LOOPS ? 0 : 1),               // ループ / 挿入
-               C[i-1][j-1] + (EQ_i(t_j) ? 0 : 1),               // 一致 / 置換
-               C[i-1][j]   + 1 )                                // 削除
-cost(p, t) = C[m][n]
+C[i][0] = i
+C[i][j] = min(C[i][j-1] + (i in LOOPS ? 0 : 1),
+              C[i-1][j-1] + (EQ_i(t_j) ? 0 : 1),
+              C[i-1][j] + 1)
+cost(p,t) = C[m][n]
 ```
+
+Include and wildcard loops skip symbols at zero cost; other insertions, deletions and substitutions cost one. This is the independent minimum-cost reference for bulk ranking.
 
 <a id="section-2-8"></a>
 
-### 2.8 特性定理（検証済み）
+### 2.8 Characterization
 
-**定理.** `AsearchTs` と `AsearchTsLib` で、任意の pattern p・mode・text t・整数 `0 ≤ e ≤ 31` について
+For compatibility profiles, integer 0<=e<=31 and profile-consistent symbols:
 
 ```text
-asearch.ts.match(t, e)  ⇔  cost(p, t) ≤ e  ∧  e ≤ m + n
+compat.match(t,e) iff cost(p,t)<=e and e<=m+n
 ```
 
-（記号化はプロファイルに従う。m は非ワイルドカード記号数、n は text の記号数。）
+Since cost<=m+n, the first accepted level equals Ideal cost. Compatibility's nonmonotonicity only occurs above that minimum. Bulk/transposed/narrowing/DAG engines therefore use monotonic costs; compatibility match retains its u32 acceptance rule.
 
-**系.** `cost ≤ m + n` は常に成立する（全削除＋全挿入）。したがって「`match` が最初に true になる e」は、K 以内なら常に `cost` に等しい。**最小 level の一覧（＝ランキング）は `AsearchTs` と `Ideal` で完全に一致する。** 非単調性（Q3）は cost より上の level にしか現れない。
+Proof sketch: after t symbols, level-e positions are those with cost<=e intersected with [e-t,infinity). Initial positions are exactly e. Positions below the cutoff satisfy i+t<e and are regenerated by lower-level paid transitions. At accepting position m the cutoff becomes e<=m+n.
 
-**証明スケッチ.** asearch.ts の状態集合を L_e(t) とすると、帰納法で `L_e(t) = {i : C[i][t] ≤ e} ∩ [e − t, ∞)` が示せる。初期値は `L_e(0) = {e}`。位置は単調非減少にしか動かず、下限 `e − t` より下の位置 i は `i + t < e`、すなわち `C[i][t] ≤ i + t ≤ e − 1` を満たすので、同じ遷移先は level e−1 からの挿入・置換・削除で必ず再生される。受理位置 m については `m ≥ e − n ⇔ e ≤ m + n`。
-
-**検証記録.** `characterize.py`（2 シード計 96 万三つ組で反例 0）、`first_level.py`（12 万ペアで不一致 0）、`verify.py`（npm 実物と 2 シード計 20,071 ペア × level 0..5 で一致）。
-
-**設計上の帰結（MUST）.**
-
-1. 最小 level を求める評価（転置、絞り込み、DAG、Myers、および ScalarWm の一括用途）は **Ideal（単調）**で行う。ScalarWm は compat 用に asearch.ts の初期状態も持つ（初期状態の定数を切り替えるだけ）。
-2. compat の `Asearch.match(t, e)` は asearch.ts の u32 レプリカ（§5）で実装する。テストでは `level(t) ≤ e ∧ e ≤ m + n` と突き合わせる。
-3. `matchLevel` と一括 API は最小 level を返すので、プロファイル差（`AsearchTs` と `Ideal`）は記号化と大文字小文字の扱いだけになる。
-
----
+Historical validation found no counterexample in 960,000 characterization triples, no first-level mismatch in 120,000 pairs, and agreement with published JS across 20,071 pairs at levels 0..5. These are finite checks; maintained fixtures and independent oracles remain required.
