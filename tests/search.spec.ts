@@ -121,12 +121,11 @@ test("search continues during a delayed update and latest input survives adoptio
   await expect(page.locator("#query")).toHaveValue("更新例");
 });
 
-test("composition suppresses intermediate requests and subsequent typing wins", async ({
+test("composition searches intermediate text and subsequent typing wins", async ({
   page,
 }) => {
   await open(page);
   await query(page, "大学");
-  const before = await page.locator("#metrics").textContent();
   await page.locator("#query").evaluate((input) => {
     input.dispatchEvent(
       new CompositionEvent("compositionstart", { bubbles: true }),
@@ -136,8 +135,9 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
       new InputEvent("input", { bubbles: true, isComposing: true }),
     );
   });
-  await page.waitForTimeout(100);
-  expect(await page.locator("#metrics").textContent()).toBe(before);
+  await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator("#results li")).toHaveCount(0);
+  await expect(page.locator("#query")).toHaveValue("更新例");
   await page.locator("#query").evaluate((input) => {
     input.dispatchEvent(
       new CompositionEvent("compositionend", { bubbles: true, data: "更新例" }),
@@ -149,6 +149,33 @@ test("composition suppresses intermediate requests and subsequent typing wins", 
   await page.locator("#query").fill("更新例");
   await expect(page.locator("#metrics")).toContainText("0件一致");
   await expect(page.locator("#results li")).toHaveCount(0);
+});
+
+test("IME replacement and cancellation search the entire restored value", async ({
+  page,
+}) => {
+  await open(page);
+  await query(page, "更新例");
+
+  await page.locator("#query").evaluate((element) => {
+    const input = element as HTMLInputElement;
+    input.dispatchEvent(new CompositionEvent("compositionstart"));
+    input.value = "大学";
+    input.dispatchEvent(
+      new InputEvent("input", { bubbles: true, isComposing: true }),
+    );
+  });
+  await expect(page.locator("#results li").first()).toBeVisible();
+
+  await page.locator("#query").evaluate((element) => {
+    const input = element as HTMLInputElement;
+    input.value = "更新例";
+    input.dispatchEvent(new CompositionEvent("compositionend", { data: "" }));
+    input.dispatchEvent(new InputEvent("input", { bubbles: true }));
+  });
+  await expect(page.locator("#metrics")).toContainText("0件一致");
+  await expect(page.locator("#results li")).toHaveCount(0);
+  await expect(page.locator("#query")).toHaveValue("更新例");
 });
 
 test("search page has no serious accessibility violations", async ({

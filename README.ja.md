@@ -4,6 +4,8 @@
 
 Rust製AsearchのRelease Assetsを利用する日本語検索デモです。TS/JS API、グルー生成、ブラウザ回帰テストは`integration/`で管理し、画面・データ配信はこのrepoルートで管理します。検索・正規化アルゴリズムは[Rust repo](https://github.com/tkhshtsh0917/asearch)にあります。
 
+IMEの変換中も現在の入力値で検索し、確定・候補の置換・キャンセル後は最新の値へ追従します。入力欄の内容や選択範囲は書き換えません。ブラウザ互換性は合成IMEイベントを含むPlaywright検証の範囲です。
+
 ## セットアップ
 
 Node/pnpmはmise、wasm-bindgen-cliはRustのCargo.lockと同じ0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。ローカルでは`tools/engine/select.ts`で公開済みタグとOS別bundleのSHA-256を`release.lock.json`へ設定してください。未設定のOSでは取得を停止します。現在のnullは初回リリース待ちを示し、検証を無効化して進める値ではありません。
