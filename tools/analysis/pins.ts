@@ -1,12 +1,21 @@
 /** Resolves only approved, hash-pinned upstream resources and local cache filenames. */
-import { readFile } from "node:fs/promises";
 import type { Pin } from "./cache.ts";
 
 export const root = new URL("../../", import.meta.url);
 export const resourceDirectory = new URL(".analysis/resources/", root);
-export const resourceLock = JSON.parse(
-  await readFile(new URL("resources.lock.json", import.meta.url), "utf8"),
-) as {
+export interface ResourcePaths {
+  lock: URL;
+  ready: URL;
+  directory: URL;
+}
+
+export const resourcePaths: ResourcePaths = {
+  lock: new URL("resources.lock.json", import.meta.url),
+  ready: new URL(".analysis/ready.json", root),
+  directory: resourceDirectory,
+};
+
+export interface ResourceLock {
   repository: string;
   revision: string;
   files: Record<
@@ -20,9 +29,9 @@ export const resourceLock = JSON.parse(
     systemBytes: number;
     systemSha256: string;
   };
-};
+}
 
-export function sourceURL(name: string): string {
+export function sourceURL(name: string, resourceLock: ResourceLock): string {
   const pin = resourceLock.files[name];
   if (!pin) throw new Error("Unknown analysis resource");
   const repository = pin.repository ?? resourceLock.repository;
@@ -43,7 +52,11 @@ export function sourceURL(name: string): string {
   return `https://raw.githubusercontent.com/${repository}/${revision}/${pin.source}`;
 }
 
-export function resourcePath(name: string): URL {
+export function resourcePath(
+  name: string,
+  resourceLock: ResourceLock,
+  directory = resourceDirectory,
+): URL {
   const pin = resourceLock.files[name];
   if (
     !pin ||
@@ -51,11 +64,14 @@ export function resourcePath(name: string): URL {
     !/^[a-zA-Z0-9._-]+$/.test(name)
   )
     throw new Error("Invalid analysis resource definition");
-  return new URL(`${pin.sha256}.${name}`, resourceDirectory);
+  return new URL(`${pin.sha256}.${name}`, directory);
 }
 
-export function dictionaryPath(): URL {
+export function dictionaryPath(
+  resourceLock: ResourceLock,
+  directory = resourceDirectory,
+): URL {
   const sha = resourceLock.dictionary.systemSha256;
   if (!/^[a-f0-9]{64}$/.test(sha)) throw new Error("Invalid dictionary digest");
-  return new URL(`system.${sha}.dic`, resourceDirectory);
+  return new URL(`system.${sha}.dic`, directory);
 }

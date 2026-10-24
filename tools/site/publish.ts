@@ -1,12 +1,12 @@
 /** Builds a deterministic base/delta/compacted publication and matching catalogs. */
 import { createHash } from "node:crypto";
-import type { Doc, Manifest } from "asearch-wasm";
+import type { Manifest } from "asearch-wasm";
 import {
   catalog,
   type Question,
   type Release,
 } from "../../src/shared/catalog.ts";
-import { analysisProvenance, analyzeQuestions } from "../analysis/run.ts";
+import { type Analysis, createAnalysis } from "../analysis/run.ts";
 import { buildSegments } from "./segments.ts";
 
 export const digest = (bytes: Uint8Array | string) =>
@@ -15,7 +15,7 @@ export const digest = (bytes: Uint8Array | string) =>
 export async function publish(
   input: Question[],
   attribution: Release["attribution"],
-  analyze: (rows: Question[]) => Doc[] = analyzeQuestions,
+  analysis: Analysis = createAnalysis(),
 ): Promise<Map<string, Uint8Array>> {
   const questions = catalog(input);
   if (questions.length < 4)
@@ -38,8 +38,8 @@ export async function publish(
     ...questions.filter((q) => !dead.has(q.key)),
     added,
   ]);
-  const baseDocs = analyze(questions);
-  const changedDocs = analyze([...changed, added]);
+  const baseDocs = analysis.analyze(questions);
+  const changedDocs = analysis.analyze([...changed, added]);
   const effectiveDocs = new Map(baseDocs.map((doc) => [doc.key, doc]));
   for (const key of dead) effectiveDocs.delete(key);
   for (const doc of changedDocs) effectiveDocs.set(doc.key, doc);
@@ -95,6 +95,6 @@ export async function publish(
     };
   });
   files.set("release.json", encode({ stages, attribution } satisfies Release));
-  files.set("analysis.json", encode(await analysisProvenance()));
+  files.set("analysis.json", encode(analysis.provenance()));
   return files;
 }

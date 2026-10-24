@@ -2,9 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AsearchIndex, diffManifest, type Manifest } from "asearch-wasm";
 import { catalog, release, sourceUrl } from "../../src/shared/catalog.ts";
+import { fixture } from "../analysis/testing/fixture.ts";
 import { digest, publish } from "./publish.ts";
 
-test("publisher emits coherent base, atomic delta and canonical compaction", async () => {
+test("publisher emits coherent base, atomic delta and canonical compaction", async (t) => {
+  const f = fixture(t);
+  const analysis = await f.prepare();
+  const provenance = analysis.provenance();
   const files = await publish(
     Array.from({ length: 4 }, (_, key) => ({
       key,
@@ -17,13 +21,21 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
       license: "CC-BY-SA-4.0",
       changes: "Extracted questions",
     },
-    (rows) => rows.map(({ key, text }) => ({ key, order: key, texts: [text] })),
+    {
+      analyze(rows) {
+        const result = analysis.analyze(rows);
+        f.policy(2);
+        return result;
+      },
+      provenance: analysis.provenance,
+    },
   );
 
   const json = (name: string) =>
     JSON.parse(new TextDecoder().decode(files.get(name)));
 
   const info = release(json("release.json"));
+  assert.deepEqual(json("analysis.json"), provenance);
   const manifests = info.stages.map(
     (stage) => json(stage.manifest) as Manifest,
   );
@@ -62,6 +74,14 @@ test("publisher emits coherent base, atomic delta and canonical compaction", asy
     }
 
     assert.equal(root.search("更新例", { countTotal: true }).length, 4);
+    assert.equal(
+      root.search("old/1/A/D", { countTotal: true, maxAmbig: 0 }).length,
+      4,
+    );
+    assert.equal(
+      root.search("old/2/A/D", { countTotal: true, maxAmbig: 0 }).length,
+      0,
+    );
 
     for (const stage of info.stages) {
       const data = files.get(stage.catalog);

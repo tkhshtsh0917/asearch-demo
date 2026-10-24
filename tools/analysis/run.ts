@@ -1,4 +1,4 @@
-/** Sends original questions to the offline Rust analyzer and verifies its output. */
+/** Captures one immutable analysis generation for all batches and their provenance. */
 import {
   mkdtempSync,
   readFileSync,
@@ -9,61 +9,124 @@ import {
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
+import type { Doc } from "asearch-wasm";
 import type { Question } from "../../src/shared/catalog.ts";
 import { digest } from "./cache.ts";
 import { documents } from "./documents.ts";
-import { nativeCLI, runNative } from "./native.ts";
+import {
+  type NativeRunner,
+  nativeCLI,
+  runNative,
+  writeNative,
+} from "./native.ts";
 import {
   dictionaryPath,
-  resourceDirectory,
-  resourceLock,
-  root,
+  type ResourceLock,
+  type ResourcePaths,
+  resourcePaths,
 } from "./pins.ts";
 
-/** Rejects stale preparation instead of silently mixing resource versions. */
-function prepared() {
-  const info = JSON.parse(
-    readFileSync(new URL(".analysis/ready.json", root), "utf8"),
-  ) as {
-    resourceLockSha256: string;
-    compiledSha256: string;
-    compiledFile: string;
-    analyzerCliSha256: string;
-  };
-  if (
-    info.resourceLockSha256 !==
-      digest(readFileSync(new URL("resources.lock.json", import.meta.url))) ||
-    info.analyzerCliSha256 !== digest(readFileSync(nativeCLI)) ||
-    !/^[a-f0-9]{64}$/.test(info.compiledSha256) ||
-    info.compiledFile !== `${info.compiledSha256}.resources.json` ||
-    digest(readFileSync(new URL(info.compiledFile, resourceDirectory))) !==
-      info.compiledSha256
-  )
-    throw new Error("Analysis preparation is stale; run analysis:prepare");
-  return info;
+interface Prepared {
+  resourceLockSha256: string;
+  compiledSha256: string;
+  compiledFile: string;
+  analyzerCliSha256: string;
 }
 
-/** Builds ASIX-compatible texts with one native tokenizer per publication snapshot. */
-export function analyzeQuestions(rows: Question[]) {
-  const info = prepared();
-  const input = rows
-    .map(({ key, text }) => JSON.stringify({ key, texts: [text] }))
-    .join("\n");
-  if (Buffer.byteLength(input) > 16 * 1024 * 1024 || rows.length > 20000)
-    throw new Error("Analysis input exceeds byte or record limit");
+export interface AnalysisProvenance extends Prepared {
+  format: "asearch-demo-analysis/1";
+  resources: ResourceLock;
+  policy: unknown;
+  policySha256: string;
+}
+
+export interface Analysis {
+  analyze(rows: Question[]): Doc[];
+  provenance(): AnalysisProvenance;
+}
+
+export interface AnalysisPaths extends ResourcePaths {
+  policy: URL;
+  cli: string;
+}
+
+const defaults: AnalysisPaths = {
+  ...resourcePaths,
+  policy: new URL("policy.json", import.meta.url),
+  cli: nativeCLI,
+};
+
+/** Rejects mismatched preparation using the captured lock, not a later disk version. */
+function prepared(paths: AnalysisPaths, lock: Uint8Array, cli: Uint8Array) {
+  const info = JSON.parse(readFileSync(paths.ready, "utf8")) as Prepared;
+  if (
+    info.resourceLockSha256 !== digest(lock) ||
+    info.analyzerCliSha256 !== digest(cli) ||
+    !/^[a-f0-9]{64}$/.test(info.compiledSha256) ||
+    info.compiledFile !== `${info.compiledSha256}.resources.json`
+  )
+    throw new Error("Analysis preparation is stale; run analysis:prepare");
+
+  const compiled = readFileSync(new URL(info.compiledFile, paths.directory));
+  if (digest(compiled) !== info.compiledSha256)
+    throw new Error("Analysis preparation is stale; run analysis:prepare");
+  return { info, compiled };
+}
+
+/** Captures bytes once; later pin, policy, ready and CLI updates affect only new generations. */
+export function createAnalysis(
+  paths: AnalysisPaths = defaults,
+  execute: NativeRunner = runNative,
+): Analysis {
+  const lock = readFileSync(paths.lock),
+    cli = readFileSync(paths.cli);
+  const resources: ResourceLock = JSON.parse(lock.toString());
+  const { info, compiled } = prepared(paths, lock, cli);
+  const policy = readFileSync(paths.policy);
+  const provenance: AnalysisProvenance = {
+    ...info,
+    format: "asearch-demo-analysis/1",
+    resources,
+    policy: JSON.parse(policy.toString()),
+    policySha256: digest(policy),
+  };
+  const dictionary = fileURLToPath(dictionaryPath(resources, paths.directory));
+
+  return {
+    analyze: (rows) =>
+      analyzeBatch(rows, dictionary, cli, compiled, policy, execute),
+    provenance: () => structuredClone(provenance),
+  };
+}
+
+/** Runs a batch from private captured files while the content-addressed dictionary stays immutable. */
+function analyzeBatch(
+  rows: Question[],
+  dictionary: string,
+  cli: Uint8Array,
+  compiled: Uint8Array,
+  policy: Uint8Array,
+  execute: NativeRunner,
+): Doc[] {
+  if (rows.length > 20000) throw new Error("Analysis record limit");
+  if (rows.length === 0) return [];
+  const input = `${rows.map(({ key, text }) => JSON.stringify({ key, texts: [text] })).join("\n")}\n`;
+  if (Buffer.byteLength(input) > 16 * 1024 * 1024)
+    throw new Error("Analysis input byte limit");
+
   const directory = mkdtempSync(join(tmpdir(), "asearch-analysis-"));
   try {
     const source = join(directory, "questions.jsonl"),
-      output = join(directory, "documents.jsonl");
-    writeFileSync(source, `${input}\n`);
-    runNative([
-      "analyze",
-      fileURLToPath(dictionaryPath()),
-      fileURLToPath(new URL(info.compiledFile, resourceDirectory)),
-      fileURLToPath(new URL("policy.json", import.meta.url)),
-      source,
-      output,
-    ]);
+      output = join(directory, "documents.jsonl"),
+      resourceFile = join(directory, "resources.json"),
+      policyFile = join(directory, "policy.json");
+    writeFileSync(source, input);
+    writeFileSync(resourceFile, compiled);
+    writeFileSync(policyFile, policy);
+    execute(
+      ["analyze", dictionary, resourceFile, policyFile, source, output],
+      writeNative(directory, cli),
+    );
     if (statSync(output).size > 64 * 1024 * 1024)
       throw new Error("Analysis output byte limit");
     return documents(
@@ -76,17 +139,4 @@ export function analyzeQuestions(rows: Question[]) {
   } finally {
     rmSync(directory, { recursive: true, force: true });
   }
-}
-
-/** Records exact resource/compiler identities without machine-specific paths. */
-export async function analysisProvenance() {
-  return {
-    format: "asearch-demo-analysis/1",
-    resources: resourceLock,
-    policy: JSON.parse(
-      readFileSync(new URL("policy.json", import.meta.url), "utf8"),
-    ),
-    policySha256: digest(readFileSync(new URL("policy.json", import.meta.url))),
-    ...prepared(),
-  };
 }

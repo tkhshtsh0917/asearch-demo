@@ -70,6 +70,8 @@ BASE_PATH=/asearch-demo/ mise exec -- pnpm build
 
 Rustの公開前に明示的に検証する場合は、`ASEARCH_ANALYZER_CLI`へビルド済みネイティブCLIを指定できます。隣接checkoutは暗黙に参照せず、実行ファイルのSHA-256を記録します。CIでは検証済みのRelease AssetsのCLIを使います。未加工の`public/data/questions.jsonl`とそのデータセットハッシュは維持し、`documents.jsonl`は原文だけを使うCLI入力例として残します。配信用の補助表現付きASIXは別途生成します。
 
+準備では変換前にpinファイルとCLIを取得し、検証済みテキストの専用コピーを変換します。最後の確認でpinやCLIの変更を検出した場合は、以前の準備済み参照を維持して失敗します。公開処理は整合する準備済み情報・pin・policy・変換済みリソース・CLIを一度だけ取得し、base・差分・圧縮・来歴で同じ世代を共有します。CLIの実行には取得済みバイト列の専用コピーを使い、その後の更新は次の公開処理から反映します。ライセンスの選択にも同じpinを使います。取得済みの世代がまだ実行可能な間は、古いハッシュ付きシステム辞書も変更・削除しません。
+
 サイトの`data/analysis.json`へ、同義語のrevision・サイズ・SHA-256・フィルタ設定・変換済みリソースのSHA・ネイティブ解析CLIのSHAを記録します。`licenses/SudachiDict-LICENSE-2.0.txt`と`licenses/SudachiDict-LEGAL`へライセンス・帰属情報を同梱し、フィルタの帰属情報は`licenses/elasticsearch-sudachi-LICENSE`へ置きます。AutoWikiQA自体のCC BY-SA 4.0については[データの出典](data.md)を参照してください。
 
 実辞書の回帰テストでは、Beatlesの双方向対応、展開フラグ、フィルタ、追加上限の解除、ASIX読み込み、差分による旧表現の無効化、圧縮を検証します。Playwrightでは7種類の表記、原文表示、合成IMEイベントを3ブラウザエンジンとモバイルプロファイルで確認します。実機やOSのIME自体を検証するものではありません。
