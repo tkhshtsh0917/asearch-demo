@@ -13,13 +13,15 @@ export interface SearchResult {
   levels: Uint8Array;
   refs: Uint32Array;
   orders: Uint32Array;
+  /** Present only for positional ranking; 0xffffffff means no consumed symbol. */
+  starts?: Uint32Array;
   length: number;
   totals?: Uint32Array;
   stats: SearchStats;
   copy(): SearchResult;
 }
 
-export function unpack(packed: Uint32Array): SearchResult {
+export function unpack(packed: Uint32Array, positional = false): SearchResult {
   const length = packed[0];
   const totalsLength = packed[1];
   const ids = new Uint32Array(length);
@@ -32,24 +34,36 @@ export function unpack(packed: Uint32Array): SearchResult {
     refs[i] = packed[10 + i * 4];
     levels[i] = packed[11 + i * 4];
   }
-  const totals = totalsLength ? packed.slice(8 + length * 4) : undefined;
-  return result(ids, levels, refs, orders, totals, {
-    engine:
-      packed[5] === 4
-        ? "dag"
-        : packed[5] === 3
-          ? "mixed"
-          : packed[5] === 2
-            ? "narrowing"
-            : packed[5] === 1
-              ? "incremental"
-              : "transposed-blocked",
-    segments: packed[6],
-    blocks: packed[2],
-    earlyExitBlocks: packed[3],
-    reusedRows: packed[4],
-    ...(packed[5] === 2 || packed[7] > 0 ? { narrowedTexts: packed[7] } : {}),
-  });
+  const end = 8 + length * 4;
+  const totals = totalsLength
+    ? packed.slice(end, end + totalsLength)
+    : undefined;
+  const starts = positional ? packed.slice(end + totalsLength) : undefined;
+  return result(
+    ids,
+    levels,
+    refs,
+    orders,
+    totals,
+    {
+      engine:
+        packed[5] === 4
+          ? "dag"
+          : packed[5] === 3
+            ? "mixed"
+            : packed[5] === 2
+              ? "narrowing"
+              : packed[5] === 1
+                ? "incremental"
+                : "transposed-blocked",
+      segments: packed[6],
+      blocks: packed[2],
+      earlyExitBlocks: packed[3],
+      reusedRows: packed[4],
+      ...(packed[5] === 2 || packed[7] > 0 ? { narrowedTexts: packed[7] } : {}),
+    },
+    starts,
+  );
 }
 
 function result(
@@ -59,6 +73,7 @@ function result(
   orders: Uint32Array,
   totals: Uint32Array | undefined,
   stats: SearchStats,
+  starts?: Uint32Array,
 ): SearchResult {
   return {
     ids,
@@ -68,6 +83,7 @@ function result(
     length: ids.length,
     ...(totals ? { totals } : {}),
     stats,
+    ...(starts ? { starts } : {}),
     copy() {
       return result(
         ids.slice(),
@@ -76,6 +92,7 @@ function result(
         orders.slice(),
         totals?.slice(),
         { ...stats },
+        starts?.slice(),
       );
     },
   };

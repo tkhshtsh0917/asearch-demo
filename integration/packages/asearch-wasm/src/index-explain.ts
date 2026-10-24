@@ -40,10 +40,20 @@ export function explainSearch(
   const ref = integer(reference, "reference", 0, 0xffffffff);
   checkKeys(
     options,
-    ["mode", "wrap", "maxAmbig", "limit", "countTotal", "engine", "original"],
+    [
+      "mode",
+      "wrap",
+      "maxAmbig",
+      "limit",
+      "countTotal",
+      "engine",
+      "original",
+      "ranking",
+    ],
     "explain options",
   );
-  const { mode, wrap, maxAmbig, limit, countTotal, engine, original } = options;
+  const { mode, wrap, maxAmbig, limit, countTotal, engine, original, ranking } =
+    options;
   if (original !== undefined && typeof original !== "string")
     throw inputTypeError("original must be a primitive string");
   if (original !== undefined && original.length > 65535)
@@ -55,6 +65,7 @@ export function explainSearch(
     limit,
     countTotal,
     engine,
+    ranking,
   });
   const keys = prepareSearch(handle, pattern, prepared, maxUnits, profile);
   call(() =>

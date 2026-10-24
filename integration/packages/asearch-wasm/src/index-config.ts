@@ -119,7 +119,7 @@ export function searchConfig(options: SearchOptions = {}): {
 } {
   checkKeys(
     options,
-    ["mode", "wrap", "maxAmbig", "limit", "countTotal", "engine"],
+    ["mode", "wrap", "maxAmbig", "limit", "countTotal", "engine", "ranking"],
     "search options",
   );
   const mode = integer(
@@ -154,6 +154,10 @@ export function searchConfig(options: SearchOptions = {}): {
           policy.unit === "utf16" ? 2 : policy.unit === "code-point" ? 1 : 0,
           +(policy.includeWildcards ?? false),
         ];
+  const ranking = optional(options.ranking, "stable");
+  if (ranking !== "stable" && ranking !== "position")
+    fail("INVALID_INPUT", "Invalid ranking");
+  if (ranking === "position") config.push(1);
   return { config: Uint32Array.from(config), limit, countTotal, callback };
 }
 
