@@ -54,6 +54,10 @@ The UI always displays the catalog question. If a different text matched, it dis
 
 The default application limits are 256 synonym texts per question and 131,072 UTF-16 units per document. Set either `maxSynonymTexts` or `maxDocumentUnits` to `-1` in `policy.json` to disable that application limit. ASIX still limits each text to 65,535 units. The demo caps analysis input/output at 16/64 MiB, 20,000 records and 120 seconds per subprocess; the native CLI independently caps JSONL input at 64 MiB and 1 MiB per line. Native CLI limits and the existing Worker memory/query limits remain enforced. No cap silently truncates alternatives.
 
+The synonym quota counts only unique texts added after the original, normalized words, reading and romanizations. Repeated dictionary entries and synonyms identical to those basic forms spend no synonym quota; the document unit budget counts all final texts once.
+
+Sudachi additionally limits the source to 49,149 UTF-8 bytes before its input plugins and the rewritten input to 65,535 UTF-8 bytes. These byte limits are separate from ASIX UTF-16 units and remain active with `-1`. For example, 16,384 copies of `あ` exceed the source byte limit. Input normalization can expand a shorter source past the rewritten-input limit. Either violation fails without truncation.
+
 ## Reproduction and provenance
 
 After the [normal setup](../README.md), prepare the offline build environment:
