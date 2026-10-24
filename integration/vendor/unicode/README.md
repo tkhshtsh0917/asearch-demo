@@ -1,5 +1,7 @@
 # Unicode data for ja-basic-v1
 
+[日本語](README.ja.md)
+
 The generated kana tables use Unicode 17.0.0's [UnicodeData.txt](https://www.unicode.org/Public/17.0.0/ucd/UnicodeData.txt), SHA-256 `2e1efc1dcb59c575eedf5ccae60f95229f706ee6d031835247d843c11d96470c`.
 
 Only U+FF61–FF9F's narrow decompositions and kana canonical compositions with U+3099/U+309A are extracted. The complete UCD is not bundled or downloaded during builds. Runtime normalization does not depend on Python, the browser's ICU or a general NFKC library.

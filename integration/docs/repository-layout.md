@@ -1,19 +1,19 @@
-# リポジトリ構成と依存方向
+# Repository layout and dependency direction
 
-`asearch`はRustコア・CLI・WASM境界・Rustテスト・fuzzを管理します。タグCIはRustの品質検証後にOS別のWASM/CLI/ライセンスbundleとSHA256SUMSをRelease Assetsへ公開します。
+[日本語](ja/repository-layout.md)
 
-`asearch-demo`は固定タグのAssetsを取得し、SHA-256照合、JSグルー生成、TS APIのビルド、回帰テスト、画面E2Eの順に実行し、成功したものだけPagesへ配信します。Rustソースの取得・再ビルドは行いません。
+`asearch` owns Rust matching, formats, native analysis/building, CLI, WASM boundaries, Rust tests and fuzzing. After Rust quality checks, tag CI publishes WASM/CLI/license bundles for each OS with SHA256SUMS.
 
-このintegration workspaceの配置は以下のとおりです。
+`asearch-demo` retrieves pinned Assets, verifies SHA-256, generates JS glue and the TS API, runs regressions and UI E2E, then deploys successful builds to Pages. Ordinary builds do not retrieve or rebuild Rust sources.
 
-- `packages/asearch-wasm/src`: TS APIと環境別初期化。
-- `packages/asearch-wasm/test`: API・型・配布物の回帰テスト。nativeとの比較とfixture生成には取得したCLIを使用。
-- `tests/browser`: WASM/Worker/ブラウザ境界の検証。
-- `tests/fixtures`: CLIによるNode/ブラウザ回帰用のASIX準備。配布物には含めない。
-- `tools/build`: wasm-bindgenと最適化・JS配布物の生成。
-- `tools/fixtures`, `tools/reference`, `vendor/upstream`: 独立oracleと互換fixture生成。原本のライセンス・ハッシュを保持。
-- `tools/bench`: ネイティブCLI・Node・ブラウザの計測。
-- `fixtures`: JS回帰用の固定入力。Rust側にも独立テスト用の同一fixtureを保持する。
-- `.engine/release`: 検証済みのRelease Assets。生成物としてGit追跡しない。
+- `packages/asearch-wasm/src`: TS API and environment initialization.
+- `packages/asearch-wasm/test`: API/type/distribution regressions; downloaded CLI for native comparisons and fixtures.
+- `tests/browser`: WASM, Worker and browser-boundary verification.
+- `tests/fixtures`: CLI-based ASIX setup for Node/browser tests, excluded from distributions.
+- `tools/build`: wasm-bindgen, optimization and JS distribution generation.
+- `tools/fixtures`, `tools/reference`, `vendor/upstream`: Independent oracles and compatibility fixtures, retaining original licenses and hashes.
+- `tools/bench`: Native CLI, Node and browser measurements.
+- `fixtures`: Fixed JS regression inputs; Rust keeps identical fixtures for independent tests.
+- `.engine/release`: Verified, Git-ignored Release Assets.
 
-画面・IME・コーパス・配信資産の生成はデモrepoルートの`src`と`tools`に置きます。Rustの検索・正規化の別実装は作りません。ライセンスは配布単位ごとに保持します。npmへは公開しません。
+The demo root's `src` and `tools` own UI, IME, corpus and publication assets. They do not reimplement Rust matching or normalization. The UI may apply bounded server-generated query lookup data as an explicit query policy. Retain licenses in each distribution. Nothing is published to npm.

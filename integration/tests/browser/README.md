@@ -1,14 +1,16 @@
-# ブラウザ統合テスト
+# Browser integration tests
 
-公開API・初期化・配布物をPlaywrightのChromium/Firefox/WebKitで検証するためのハーネスです。利用者向けのUIデモではありません。Rust製品やnpm配布物からは依存しません。
+[日本語](README.ja.md)
 
-| 配置                  | 責務                                                 |
-| --------------------- | ---------------------------------------------------- |
-| *.spec.ts             | ブラウザでの互換照合・初期化失敗と再試行・配布物検証 |
-| fixtures/             | テスト専用HTMLとmodule Worker                        |
-| server.mjs            | loopback限定の配信とtarballの一時展開                |
-| playwright.config.mts | 実行対象・ブラウザ・server起動の設定                 |
+This harness verifies the public API, initialization and packed distribution in Playwright Chromium/Firefox/WebKit. It is not the user-facing demo. Rust product code and packed runtime artifacts do not depend on it.
 
-リポジトリルートで`mise exec -- pnpm build`後、`mise exec -- pnpm test:browser`を実行してください。ブラウザ導入は[ルートREADME](../../README.md)を参照します。fixturesは製品の`dist/web.mjs`を読み、テストのために別のRust/WASMを実装しません。
+| Location              | Responsibility                                                           |
+| --------------------- | ------------------------------------------------------------------------ |
+| *.spec.ts             | Browser matching, initialization failures/retry and distribution checks. |
+| fixtures/             | Test-only HTML and module Workers.                                       |
+| server.mjs            | Loopback-only serving and temporary tarball extraction.                  |
+| playwright.config.mts | Test targets, engines and server startup.                                |
 
-UIデモを追加する場合はルートの`examples/`へ置き、公開APIを呼び出す利用者として実装します。テスト用の障害注入・fixture生成・配信用ハーネスはここへ残します。
+From the integration root, run mise exec -- pnpm build, then mise exec -- pnpm test:browser. See the [root README](../../README.md) for browser installation. Fixtures load the actual dist/web.mjs and do not implement another Rust/WASM engine.
+
+The product UI lives in the demo repository root's src/. Fault injection, CLI fixtures and loopback serving remain test-only here.

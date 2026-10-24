@@ -1,10 +1,10 @@
 # WASM integration workspace
 
-[日本語版](README.ja.md)
+[日本語](README.ja.md)
 
-このworkspaceはTS/JS API、wasm-bindgenグルー生成、ブラウザ回帰テスト、互換oracle、計測ツールを管理します。Rustのビルド元は[asearch](https://github.com/tkhshtsh0917/asearch)です。
+This workspace owns the TS/JS API, wasm-bindgen glue generation, browser regression tests, compatibility oracles and measurement tools. Rust sources live in [asearch](https://github.com/tkhshtsh0917/asearch).
 
-ルートの`release.lock.json`に公開済みタグとOS別Release AssetのSHA-256を記録してから、デモrepoルートで`pnpm engine:build`を実行してください。Rustソースの取得やCargoビルドは行いません。
+Record a published tag and OS-specific Release Asset checksums in the root `release.lock.json`, then run `pnpm engine:build` from the demo repository root. This workspace neither retrieves Rust source nor runs Cargo builds.
 
 ```sh
 pnpm install --frozen-lockfile
@@ -17,4 +17,4 @@ pnpm test:bench
 pnpm fixtures:check
 ```
 
-APIの契約は[仕様](docs/spec/README.md)、利用法は[パッケージREADME](packages/asearch-wasm/README.md)を参照してください。WASMとCLIは`.engine/release`に検証済みのものを配置します。独立した計測値の詳細は公開READMEの性能保証へ転用しません。
+See the [specifications](docs/spec/README.md) for API contracts and the [package README](packages/asearch-wasm/README.md) for usage. Verified WASM and CLI artifacts reside in `.engine/release`. Detailed standalone measurements must not be presented as public README performance guarantees.

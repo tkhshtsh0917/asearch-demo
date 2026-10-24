@@ -1,20 +1,22 @@
-# 実行可能な参照モデル
+# Executable reference models
 
-製品から独立したPython/Nodeのモデルです。意味論・アルゴリズムの検証に使い、速度比較の対象にはしません。現在のRust製品テストは`crates/asearch-engine/tests`、JS製品テストは`packages/asearch-wasm/test`です。
+[日本語](README.ja.md)
 
-| ファイル                         | 責務                                         |
-| -------------------------------- | -------------------------------------------- |
-| ref.py                           | 上流のbit遷移、Idealの素朴DP、転置DPのモデル |
-| oracle.js                        | 同梱上流の公開JSを実行                       |
-| verify.py                        | レプリカ・転置DP・素朴DP・上流を差分検証     |
-| characterize.py / first_level.py | 非単調levelと最初の一致levelの性質を検証     |
-| verify_ext.py                    | DAG、OSA、増分行と独立oracleを比較           |
-| check_lib_quirks.js              | 上流の既知の境界挙動を確認                   |
-| src_oracle.cjs                   | TypeScript 5.9.3で上流ソース意味論を実行     |
+These Python/Node models are independent of the product and verify semantics/algorithms, not speed. Rust product tests live in the Rust repository's crates/asearch-engine/tests; JS tests live in this workspace's packages/asearch-wasm/test.
 
-## 実行方法
+| File                             | Responsibility                                                        |
+| -------------------------------- | --------------------------------------------------------------------- |
+| ref.py                           | Upstream bit transitions, naive Ideal DP and transposed DP.           |
+| oracle.js                        | Execute vendored published upstream JS.                               |
+| verify.py                        | Differentially check replica/transposed/naive/upstream results.       |
+| characterize.py / first_level.py | Characterize nonmonotonic levels and first accepted levels.           |
+| verify_ext.py                    | Compare DAG, OSA and incremental-row models with independent oracles. |
+| check_lib_quirks.js              | Check known upstream boundary behavior.                               |
+| src_oracle.cjs                   | Run upstream source semantics using TypeScript 5.9.3.                 |
 
-Python 3.10以上とNodeが必要です。リポジトリルートで実行してください。`-I -B`はPythonの環境依存とcache出力を抑えます。
+## Usage
+
+Python 3.10+ and Node are required. Run from the integration root. -I -B reduces Python environment dependence and cache output.
 
 ```sh
 mise exec -- node tools/reference/check_lib_quirks.js vendor/upstream/asearch.ts/lib/index.js
@@ -25,10 +27,10 @@ python3 -I -B tools/reference/verify_ext.py
 mise exec -- node tools/reference/src_oracle.cjs vendor/upstream
 ```
 
-ソースoracleは`tools/fixtures`へ隔離したTypeScript 5.9.3を使います。上流のコード・出典・ハッシュは[vendor](../../vendor/README.md)、規範は[仕様索引](../../docs/spec/README.md)を参照してください。
+The source oracle uses TypeScript 5.9.3 isolated in tools/fixtures. See [vendor](../../vendor/README.md) for originals/sources/hashes and the [specifications](../../docs/spec/README.md) for contracts.
 
-## 検証の限界
+## Limits
 
-DAGや転置DPのモデルが通っても、製品にその機能が実装済みになるわけではありません。バイナリ形式、資源上限、更新とセッションの整合性は製品テストでも検証します。廃止したクライアントoverlay案の検証コードは現行モデルへ含めません。
+Passing DAG/transposed model tests does not implement those features in the product. Model checks also need product tests for format, resource limits, updates and sessions. Obsolete client-overlay experiments are excluded from current models.
 
-JSとPythonの大小文字変換の一致を全Unicodeに一般化しません。locale依存はJSで生成したmaskと製品fixtureで別途確認します。
+Do not generalize Python/JS casing agreement to all Unicode. JS-generated masks and product fixtures separately verify locale behavior.

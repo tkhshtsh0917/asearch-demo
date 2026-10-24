@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readdir, readFile, stat } from "node:fs/promises";
 import { dirname, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { validatePair } from "./language.mjs";
 
 // Checks both source and Japanese documentation without depending on the cwd.
 const integration = fileURLToPath(new URL("../../", import.meta.url));
@@ -36,17 +37,40 @@ const files = [
         "vendor/unicode/README.md",
         "packages/asearch-wasm/README.md",
       ]
-  ).map((path) => resolve(root, path)),
+  ).flatMap((path) =>
+    path.endsWith("/README.md")
+      ? [
+          resolve(root, path),
+          resolve(root, path.replace(/README\.md$/, "README.ja.md")),
+        ]
+      : [resolve(root, path)],
+  ),
 ];
-// Each source document has a complete Japanese counterpart, not a redirect.
+// Require pairs in both directions and verify language/structure/example consistency.
 for (const file of files) {
   const prefix = `${resolve(root, "docs")}${sep}`;
-  if (!file.startsWith(prefix)) continue;
-  const relative = file.slice(prefix.length);
-  if (relative.startsWith(`ja${sep}`)) continue;
-  assert.ok(
-    (await stat(resolve(root, "docs/ja", relative))).isFile(),
-    `Missing Japanese document: ${relative}`,
+  let counterpart;
+  if (file === resolve(root, "README.md"))
+    counterpart = resolve(root, "README.ja.md");
+  else if (file.startsWith(prefix)) {
+    const relative = file.slice(prefix.length);
+    if (relative.startsWith(`ja${sep}`)) {
+      assert.ok(
+        (await stat(resolve(root, "docs", relative.slice(3)))).isFile(),
+        `Orphan Japanese document: ${relative}`,
+      );
+      continue;
+    }
+    counterpart = resolve(root, "docs/ja", relative);
+  }
+  if (!counterpart && file.endsWith(`${sep}README.md`))
+    counterpart = resolve(dirname(file), "README.ja.md");
+  if (!counterpart) continue;
+  assert.ok((await stat(counterpart)).isFile(), `Missing translation: ${file}`);
+  validatePair(
+    await readFile(file, "utf8"),
+    await readFile(counterpart, "utf8"),
+    file,
   );
 }
 

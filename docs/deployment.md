@@ -1,22 +1,22 @@
-# ビルド成果物と静的配信
+# Build artifacts and static hosting
 
-## バージョン固定と記録
+[日本語](ja/deployment.md)
 
-CIは開始時に、指定タグまたはGitHubの最新正式Releaseを一度だけ解決し、同じReleaseの`SHA256SUMS`から3 OSのbundle SHAを取得する。取得Asset自体のSHAも既存のprepare処理で検査する。検証対象をbranchや途中で変化するlatestへ切り替えない。
+## Pins and provenance
 
-`release.lock.json`と生成tarballに対応するルート`pnpm-lock.yaml`は、その実行の作業コピーで更新する。依存パッケージの指定版は保持し、更新後にfrozen installと全テストを行う。自動commitやnpm公開は行わない。`release-inputs` artifactにはそのpin、lockfile、`release.json`を保存する。配信サイトの`release.json`でもRustのタグ・各OSのSHAとdemoのcommit・run IDを確認できる。
+At startup, CI resolves the selected tag or latest stable Release exactly once and reads all three OS bundle checksums from that Release's `SHA256SUMS`. Preparation verifies the downloaded bundle too. It does not switch to a branch or a moving latest target during validation.
 
-repoにあるpinはローカル開発用。CIの配信版は実行artifactとサイトの`release.json`で確認する。ローカルで同じ版へ揃える手順:
+The run updates `release.lock.json` and the generated adapter's root `pnpm-lock.yaml` in its working copy. Dependency versions are retained; frozen installation and all tests follow. No automatic commit or npm publication occurs. The `release-inputs` artifact records pins, lockfile and `release.json`. The deployed `release.json` also identifies the Rust tag/OS checksums and demo commit/run ID.
+
+The committed pin is for local development. Inspect run artifacts and the deployed `release.json` for the actual deployment version. To align local development after publishing the selected release:
 
 ```sh
-mise exec -- node tools/engine/select.ts v0.1.0
+mise exec -- node tools/engine/select.ts v0.3.0
 mise exec -- pnpm engine:build
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
 ```
 
-この操作で変更したpin/lockfileをレビューしてcommitできる。初期pinのnullは未公開AssetのSHAを捏造しないための値で、既存のprepare処理は引き続き拒否する。CIも公開Releaseがまだなければ失敗し、未検証バイナリへfallbackしない。
+Review and commit intentional pin/lockfile changes. Missing or null checksums are rejected rather than invented. CI fails if no suitable published Release exists; it does not fall back to unverified binaries.
 
-GitHub側のApp/Secret/Pages設定と、実Releaseからのhosted実行はローカル検証と別の有効化作業になる。
-
-現在の画面の読み・同義語生成には、解析CLIを持つRust v0.2.0以降が必要です。手動指定でもこの互換条件を検証し、旧版などで失敗した場合は現在のPagesを維持します。リソースのpinと生成結果は`release-inputs` artifactの`analysis.json`でも確認できます。
+The current UI requires Rust CLI and WASM 0.3+ for native query-rule export and positional ranking. Older or incompatible manual selections fail tests and preserve current Pages. Language-resource pins and generated provenance also appear in `analysis.json` in the `release-inputs` artifact. Until 0.3 is published, these new features can only be verified locally with explicitly supplied development artifacts.
