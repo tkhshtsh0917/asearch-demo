@@ -18,6 +18,14 @@ The generated adapter changes the root package checksum. After an intentional up
 
 ## Published metadata
 
-Root `release.json` identifies the built Rust tag, bundle checksums, demo commit and build run. `data/release.json` is a different file: it describes the base/delta/compacted data stages and their shared query rules. `data/analysis.json` records the language-resource snapshot and filtering policy. Inspect these files when reproducing a site; a committed local pin alone does not identify a deployed build.
+An ordinary `pnpm build` includes `data/release.json` and `data/analysis.json`. The first describes the base/delta/compacted data stages and their shared query rules; the second records the language-resource snapshot and filtering policy.
+
+Root `release.json` is a separate provenance record. CI adds it after build validation by running `tools/engine/provenance.ts`; it is not an output of `pnpm build`. To add the same record to a prepared local build, run this command after the build finishes:
+
+```sh
+mise exec -- node tools/engine/provenance.ts
+```
+
+The record copies the selected Rust tag and all three OS bundle checksums from `release.lock.json`. `demoCommit` and `runId` come from `GITHUB_SHA` and `GITHUB_RUN_ID`; without those CI values, both fields are `null`. The command records build inputs, not independent proof that a served artifact used them. Prepare verified assets as described in the README, and run it again after rebuilding because Vite clears `dist/`. Inspect the served metadata and validated artifacts when reproducing a site; a committed local pin alone does not identify a deployed build.
 
 Validation records pins and lockfiles, then checks the actual transferred site artifact against its captured file hashes and Release metadata. Source tests, build checks and the served metadata answer different questions. The [security guide](security.md) describes the trust boundaries; [Contributing](../CONTRIBUTING.md) lists reproducible validation commands.
