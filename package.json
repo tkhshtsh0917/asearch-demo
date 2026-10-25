@@ -35,7 +35,7 @@
     "hyparquet": "1.31.5",
     "prettier": "3.9.10",
     "typescript": "7.0.2",
-    "vite": "8.1.6"
+    "vite": "8.3.5"
   },
   "dependencies": {
     "asearch-wasm": "file:vendor/asearch-wasm-0.1.0.tgz"
