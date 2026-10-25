@@ -4,6 +4,8 @@
 
 After a successful Rust Release publication, `asearch`'s `notify-demo` starts this repository's `release-update.yml`. It verifies that tag's Assets and deploys to GitHub Pages only after all library/UI regressions succeed. Ordinary push/PR runs validate the latest stable Release without overwriting a manually selected deployment.
 
+Main-branch and PR validation also upload the actual Pages tar and download it again without deploying. Every published file is checked against its pre-upload SHA-256, and the downloaded release metadata must match the recorded Release pin. Changed, missing, extra, hidden or linked files fail validation. Automatic and manual deployments use this same round-trip gate before publishing the validated artifact.
+
 ## Initial configuration
 
 1. Merge both repositories' workflows to main, and set this repository's Settings → Pages → Source to GitHub Actions.

@@ -6,6 +6,8 @@ RustのReleaseからPages配信までの連携、GitHub Appの設定、手動で
 
 RustのRelease公開が成功すると、`asearch`の`notify-demo`がこのrepoの`release-update.yml`を起動する。対象タグのAssetsを検証し、ライブラリと画面の全回帰が成功した場合だけGitHub Pagesへ反映する。通常のpush/PRは最新の正式Releaseで検証だけを行い、手動で選んだ配信版を上書きしない。
 
+mainとPRの検証でも、配信せずに実際のPages tarをアップロード・ダウンロードする。公開対象の全ファイルを転送前のSHA-256と照合し、ダウンロードしたRelease情報が記録済みのpinと一致することを確認する。変更・欠落・余分なファイル、隠しファイル、リンクがあると検証を失敗させる。自動配信と手動配信も、同じ往復検証を通過したArtifactを公開する。
+
 ## 初回の設定
 
 1. 両repoのworkflowを先にmainへ反映し、このrepoのSettings → Pages → SourceをGitHub Actionsにする。
