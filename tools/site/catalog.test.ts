@@ -10,7 +10,14 @@ test("catalog accepts bounded Unicode excerpts and rejects malformed or oversize
     catalog([{ ...row, snippet: "😀".repeat(160) }])[0]?.snippet,
     "😀".repeat(160),
   );
-  for (const snippet of [42, null, {}, "x".repeat(161), "😀".repeat(161)])
+  for (const snippet of [
+    42,
+    null,
+    {},
+    "x".repeat(161),
+    "😀".repeat(161),
+    "x".repeat(1024 * 1024),
+  ])
     assert.throws(
       () => catalog([{ ...row, snippet }]),
       /Invalid catalog entry/,

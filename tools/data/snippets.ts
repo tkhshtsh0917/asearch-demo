@@ -45,6 +45,7 @@ export function attachSnippets(
       !Number.isInteger(row.key) ||
       byKey.has(row.key) ||
       typeof row.snippet !== "string" ||
+      row.snippet.length > MAX_SNIPPET_CODE_POINTS * 2 ||
       Array.from(row.snippet).length > MAX_SNIPPET_CODE_POINTS
     )
       throw new Error("Invalid snippet record");

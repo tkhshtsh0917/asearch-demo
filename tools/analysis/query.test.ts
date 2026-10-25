@@ -37,6 +37,7 @@ test("mixed IME lookup uses longest rules, preserves unknown letters and bounds 
   assert.equal(policy.romanize("にh"), "nih");
   assert.equal(policy.romanize("beatles"), undefined);
   assert.equal(policy.romanize("び".repeat(65)), undefined);
+  assert.equal(policy.romanize("に".repeat(1024 * 1024)), undefined);
 });
 
 test("query rules reject duplicate, chained, excessive and malformed data", () => {
