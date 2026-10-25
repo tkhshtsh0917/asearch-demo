@@ -14,6 +14,7 @@ const rules = {
     ["ー", "-"],
     ["きゃ", "kya"],
     ["んあ", "n'a"],
+    ["に", "ni"],
   ] as [string, string][],
 };
 
@@ -29,12 +30,13 @@ test("whole-term normalization preserves unknown context, negatives and whitespa
 
 test("mixed IME lookup uses longest rules, preserves unknown letters and bounds expansion", () => {
   const policy = new QueryPolicy(rules);
-  assert.equal(policy.fallback("びーt"), "bi-t");
-  assert.equal(policy.fallback("ビーT"), "bi-T");
-  assert.equal(policy.fallback("きゃt"), "kyat");
-  assert.equal(policy.fallback("んあ"), "n'a");
-  assert.equal(policy.fallback("beatles"), undefined);
-  assert.equal(policy.fallback("び".repeat(65)), undefined);
+  assert.equal(policy.romanize("びーt"), "bi-t");
+  assert.equal(policy.romanize("ビーT"), "bi-T");
+  assert.equal(policy.romanize("きゃt"), "kyat");
+  assert.equal(policy.romanize("んあ"), "n'a");
+  assert.equal(policy.romanize("にh"), "nih");
+  assert.equal(policy.romanize("beatles"), undefined);
+  assert.equal(policy.romanize("び".repeat(65)), undefined);
 });
 
 test("query rules reject duplicate, chained, excessive and malformed data", () => {

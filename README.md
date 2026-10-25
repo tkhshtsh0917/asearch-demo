@@ -6,7 +6,7 @@ A Japanese search demo built from the Rust Asearch Release Assets. `integration/
 
 Search runs during IME composition and follows the latest value after commit, candidate replacement or cancellation. It preserves input text and selection. Browser coverage consists of Playwright tests, including synthetic IME events.
 
-The server-only Rust analyzer generates readings, romanizations, synonyms and query lookup data. Original questions remain unchanged; auxiliary `texts` use ASIX v1. Whole-term verb normalization makes `食べた` and `食べる` search the same query. Mixed input such as `びーt` retries as `bi-t` only after zero literal hits. Corpus results rank by edit distance, match start, order and key. See [search analysis](docs/search-analysis.md) for scope and limits.
+The server-only Rust analyzer generates readings, romanizations, synonyms and query lookup data. Original questions remain unchanged; auxiliary `texts` use ASIX v1. Whole-term verb normalization makes `食べた` and `食べる` search the same query. Whenever bounded conversion changes an input, mixed input such as `びーt` → `bi-t` or `にh` → `nih` searches both forms and deduplicates their candidates. Corpus results rank by edit distance, match start, order and key. See [search analysis](docs/search-analysis.md) for scope and limits.
 
 These features require Rust CLI and WASM 0.3+. Until that release is published, local verification requires explicitly supplied development artifacts. `ASEARCH_ANALYZER_CLI` can name a built analyzer CLI; it does not replace the WASM artifact. Switch to published Release pins after publication.
 

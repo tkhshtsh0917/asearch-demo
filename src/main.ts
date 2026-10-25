@@ -97,7 +97,7 @@ function handleResults(
     if (!accepted()) return;
     renderRows(results, message.rows);
     metrics.textContent = input.value.trim()
-      ? `${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
+      ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
       : "質問やキーワードを入力してください";
   });
 }

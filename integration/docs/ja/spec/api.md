@@ -28,17 +28,17 @@ JSが単一記号の大小文字候補`[c,c.toLocaleLowerCase(),c.toUpperCase()]
 
 ### 12.3 不変索引と結果
 
-| API                                               | 責務                                                              |
-| ------------------------------------------------- | ----------------------------------------------------------------- |
-| AsearchIndex.fromBytes / fromStream               | サーバーのASIXを検証・ロードし、任意でexpected記述子・SRIも照合。 |
-| index.search / index.session                      | 共有する不変内容を単発、または独立予算の繰り返し検索で照合。      |
-| session.update / reset / free                     | 入力更新、再利用checkpointの破棄、セッション解放。                |
-| index.explain                                     | 所有するrefから予算付き整列を取得。                               |
-| index.addSegment / replaceSegments                | 単一セグメントの追記、または完全な置換列の原子的採用。            |
-| index.segments / free                             | セグメント情報の確認、またはrootと子sessionの解放。               |
-| IntentIndex.fromEntries / search / explain / free | 上限付き意図DAGの構築、非展開検索、説明、解放。                   |
-| diffManifest                                      | 純粋な検証・比較。取得・状態変更を行わない。                      |
-| mergeResults                                      | 静的Worker分割を重複排除し、所有元ごとのrefを保持。               |
+| API                                               | 責務                                                                      |
+| ------------------------------------------------- | ------------------------------------------------------------------------- |
+| AsearchIndex.fromBytes / fromStream               | サーバーのASIXを検証・ロードし、任意でexpected記述子・SRIも照合。         |
+| index.search / index.session                      | 共有する不変内容を単発、または独立予算の繰り返し検索で照合。              |
+| session.update / reset / free                     | 入力更新、再利用checkpointの破棄、セッション解放。                        |
+| index.explain                                     | 所有するrefから予算付き整列を取得。                                       |
+| index.addSegment / replaceSegments                | 単一セグメントの追記、または完全な置換列の原子的採用。                    |
+| index.segments / free                             | セグメント情報の確認、またはrootと子sessionの解放。                       |
+| IntentIndex.fromEntries / search / explain / free | 上限付き意図DAGの構築、非展開検索、説明、解放。                           |
+| diffManifest                                      | 純粋な検証・比較。取得・状態変更を行わない。                              |
+| mergeResults                                      | 固定カタログの互換ストリームを重複排除し、所有元／クエリごとのrefを保持。 |
 
 ランタイムにfromDocs・fromStrings・buildIndex・buildDelta・toBytesやクライアント編集APIはありません。これらの補助機能を持つnative CLIアダプターはテスト準備だけに存在し、pack配布物には含めません。
 
@@ -46,7 +46,7 @@ JSが単一記号の大小文字候補`[c,c.toLocaleLowerCase(),c.toUpperCase()]
 
 結果はJS所有のids・levels・refs・orders配列、length、任意の正確な最小level別totals、stats、copy()を持ちます。位置順位は任意のstartsを加え、既定順序は維持します。totalsはlimitとは独立に生存する一意keyを数えます。limit=0は有効です。空クエリをライブラリで暗黙に抑制せず、選択した意味論で評価します。UI側で抑制することは可能です。
 
-`mergeResults`はstructured clone対応の最大256 partを受けます。呼び出し元のプロパティを取得し終えてから、配列の実際の型・長さ・順位を検証します。位置順位は全partにstartsが必須で、モード混在は失敗します。出力型配列の上限は256 MiBで、JS heap全体ではありません。重複時の同点は入力part・順序で決め、refはparts[i]が示す所有元に属します。統合totalsは返しません。共有bufferの並行変更は呼び出し元が防ぎます。更新／tombstoneの列は1つのWorkerに保持し、v1にはWorkerをまたぐ更新プロトコルを設けません。Worker生成・通信・スケジューリング・描画は呼び出し元の責務です。
+`mergeResults`は同じ固定カタログsnapshotに対するstructured clone対応の最大256 partを受け、静的Worker分割とクエリの別表記ストリームを含みます。クエリごとのストリームでは、返された所有元から説明用のrefとクエリの両方を選びます。呼び出し元のプロパティを取得し終えてから、配列の実際の型・長さ・順位を検証します。位置順位は全partにstartsが必須で、モード混在は失敗します。出力型配列の上限は256 MiBで、JS heap全体ではありません。重複時の同点は入力part・順序で決め、refはparts[i]が示す所有元に属します。統合totalsは返しません。共有bufferの並行変更は呼び出し元が防ぎます。更新／tombstoneの列は1つのWorkerに保持し、v1にはWorkerをまたぐ更新プロトコルを設けません。Worker生成・通信・スケジューリング・描画は呼び出し元の責務です。
 
 <a id="section-12-4"></a>
 
