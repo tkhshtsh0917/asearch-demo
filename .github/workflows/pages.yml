@@ -1,6 +1,7 @@
 name: Validate playground
 on:
   push:
+    branches: [main]
   pull_request:
 permissions:
   contents: read
@@ -10,3 +11,5 @@ concurrency:
 jobs:
   validate:
     uses: ./.github/workflows/validate.yml
+    with:
+      upload_pages: true

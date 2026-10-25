@@ -2,6 +2,8 @@
 
 [日本語](ja/deployment.md)
 
+Main-branch and PR validation also upload the actual Pages tar and download it again without deploying. Every published file is checked against its pre-upload SHA-256, and the downloaded release metadata must match the recorded Release pin. Changed, missing, extra, hidden or linked files fail validation. Automatic and manual deployments use this same round-trip gate before publishing the validated artifact.
+
 ## Pins and provenance
 
 At startup, CI resolves the selected tag or latest stable Release exactly once and reads all three OS bundle checksums from that Release's `SHA256SUMS`. Preparation verifies the downloaded bundle too. It does not switch to a branch or a moving latest target during validation.

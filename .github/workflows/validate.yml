@@ -67,6 +67,8 @@ jobs:
       - run: pnpm test:dev
       - run: pnpm test:e2e
       - run: node tools/engine/provenance.ts
+      - run: node tools/ci/pages-artifact.ts create dist pages-files.json
+        if: inputs.upload_pages
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
         with:
           name: release-inputs
@@ -77,7 +79,29 @@ jobs:
             dist/data/analysis.json
             tools/analysis/resources.lock.json
             tools/analysis/policy.json
-      - uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
+            pages-files.json
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
         if: inputs.upload_pages
         with:
           path: dist
+  artifact-roundtrip:
+    if: inputs.upload_pages
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24.22.1
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: github-pages
+          path: .artifact-download/pages
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: release-inputs
+          path: .artifact-download/inputs
+      - run: bash .github/scripts/verify-pages-artifact.sh
