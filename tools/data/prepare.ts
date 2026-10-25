@@ -1,12 +1,14 @@
 import { createHash } from "node:crypto";
 import { mkdir, readFile, rename, writeFile } from "node:fs/promises";
 import { parquetReadObjects } from "hyparquet";
+import { MAX_SNIPPET_CODE_POINTS } from "../../src/shared/snippets.ts";
 import {
   questionsFromRows,
   serializeDocs,
   serializeQuestions,
 } from "./corpus.ts";
 import { rangeFile } from "./range-file.ts";
+import { serializeSnippets, snippetsFromRows } from "./snippets.ts";
 
 const root = new URL("../../", import.meta.url);
 const source = JSON.parse(
@@ -21,10 +23,14 @@ const source = JSON.parse(
   rowStart: number;
   rows: number;
   outputSha256: string;
+  snippetsSha256: string;
+  snippetCodePoints: number;
 };
 if (
   !/^[a-f0-9]{40}$/.test(source.revision) ||
   !/^[a-f0-9]{64}$/.test(source.outputSha256) ||
+  !/^[a-f0-9]{64}$/.test(source.snippetsSha256) ||
+  source.snippetCodePoints !== MAX_SNIPPET_CODE_POINTS ||
   !Number.isSafeInteger(source.rows) ||
   source.rows < 1 ||
   source.rows > 10_000 ||
@@ -39,7 +45,7 @@ if (
 const sourceUrl = `https://huggingface.co/datasets/${source.dataset}/resolve/${source.revision}/${source.file}`;
 const rows = await parquetReadObjects({
   file: rangeFile(sourceUrl, source.fileBytes),
-  columns: ["passage_id", "query", "title", "url"],
+  columns: ["passage_id", "query", "title", "url", "text"],
   rowStart: source.rowStart,
   rowEnd: source.rowStart + source.rows,
 });
@@ -51,6 +57,11 @@ const sha256 = createHash("sha256").update(content).digest("hex");
 if (source.outputSha256 !== sha256) {
   throw new Error("Prepared questions do not match the pinned SHA-256");
 }
+const snippets = serializeSnippets(snippetsFromRows(rows, questions));
+if (
+  createHash("sha256").update(snippets).digest("hex") !== source.snippetsSha256
+)
+  throw new Error("Prepared snippets do not match the pinned SHA-256");
 
 const output = new URL("public/data/", root);
 await mkdir(output, { recursive: true });
@@ -58,6 +69,7 @@ const temporary = new URL("questions.jsonl.tmp", output);
 await writeFile(temporary, content);
 await rename(temporary, new URL("questions.jsonl", output));
 await writeFile(new URL("documents.jsonl", output), serializeDocs(questions));
+await writeFile(new URL("snippets.jsonl", output), snippets);
 await writeFile(
   new URL("attribution.json", output),
   `${JSON.stringify(
@@ -70,7 +82,7 @@ await writeFile(
       creator: "CL Research Group in Nagoya, Japan / AutoWikiQA contributors",
       upstream: "https://huggingface.co/datasets/hpprc/jawiki",
       changes:
-        "Selected physical rows and extracted query, title, passage_id and url; omitted answer and source passage.",
+        "Selected physical rows and extracted query, title, passage_id and url; display-only source-text excerpts collapse whitespace and are limited to 160 Unicode code points. Answers and full source passages are omitted.",
       rows: rows.length,
       sha256,
     },

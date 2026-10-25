@@ -3,6 +3,7 @@ import { catalog } from "../../src/shared/catalog.ts";
 import { verifyBytes } from "../analysis/cache.ts";
 import { resourcePath } from "../analysis/pins.ts";
 import { createAnalysis } from "../analysis/run.ts";
+import { attachSnippets } from "../data/snippets.ts";
 import { digest, publish } from "./publish.ts";
 
 const root = new URL("../../", import.meta.url);
@@ -15,13 +16,26 @@ const text = await readFile(
 );
 if (digest(text) !== lock.outputSha256)
   throw new Error("Question corpus digest mismatch");
-const rows = catalog(
+const questions = catalog(
   text
     .trimEnd()
     .split("\n")
     .map((line) => JSON.parse(line)),
 );
-if (rows.length !== lock.rows) throw new Error("Question count mismatch");
+if (questions.length !== lock.rows) throw new Error("Question count mismatch");
+const snippets = await readFile(
+  new URL("public/data/snippets.jsonl", root),
+  "utf8",
+);
+if (digest(snippets) !== lock.snippetsSha256)
+  throw new Error("Snippet digest mismatch");
+const rows = attachSnippets(
+  questions,
+  snippets
+    .trimEnd()
+    .split("\n")
+    .map((line) => JSON.parse(line)),
+);
 const attribution = JSON.parse(
   await readFile(new URL("public/data/attribution.json", root), "utf8"),
 );

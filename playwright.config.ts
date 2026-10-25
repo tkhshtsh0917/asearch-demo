@@ -7,6 +7,7 @@ export default defineConfig({
     "delivery.spec.ts",
     "recovery.spec.ts",
     "restore.spec.ts",
+    "snippets.spec.ts",
   ],
   fullyParallel: true,
   workers: 3,
