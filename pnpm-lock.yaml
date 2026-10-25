@@ -659,7 +659,7 @@ packages:
     os: [win32]
 
   asearch-wasm@file:vendor/asearch-wasm-0.1.0.tgz:
-    resolution: {integrity: sha512-q82bAklfVt1bcmtPY8YBGoskVsiOdqSk13fVVISeNeWuA0yz2xSwD7s0jANjQX3fQX99XAy4xkduMkV3aBMx2w==, tarball: file:vendor/asearch-wasm-0.1.0.tgz}
+    resolution: {integrity: sha512-SG4dvRG5LPdSCwNblzAWh6/GNGxqXYTKJjd6Cf5oAYH82M1WYdXxlb+EYakYvwaspIg0j8Ha59O3R9siwn2onw==, tarball: file:vendor/asearch-wasm-0.1.0.tgz}
     version: 0.1.0
     engines: {node: '>=22.23.4 <23 || >=24.22.1 <25'}
 
