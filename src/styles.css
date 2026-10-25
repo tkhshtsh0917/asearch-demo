@@ -71,11 +71,6 @@ label {
   font-size: 14px;
 }
 
-.mode-label {
-  font-weight: 400;
-  font-size: 12px;
-}
-
 select {
   max-width: 100%;
   font: inherit;

@@ -2,8 +2,7 @@
 
 import type { Question } from "../shared/catalog.ts";
 import type { ChangeKind } from "../shared/changes.ts";
-import { intents } from "../shared/intents.ts";
-import type { Mode, Row } from "../shared/protocol.ts";
+import type { Row } from "../shared/protocol.ts";
 import { searchOptions } from "./options.ts";
 import type { SearchContext } from "./search.ts";
 
@@ -24,26 +23,21 @@ export function questionRow(source: Question, change?: ChangeKind): Row {
 
 export function row(
   context: SearchContext,
-  mode: Mode,
   effective: string,
   key: number,
   ref: number,
   level: number,
 ): Row {
-  const source = context.questions.get(key),
-    entry = intents.find((entry) => entry.key === key);
-  let text = mode === "corpus" ? (source?.text ?? "") : (entry?.expr ?? ""),
+  const source = context.questions.get(key);
+  if (!source) throw new Error("Missing result question");
+  let text = source.text,
     spans: [number, number][] = [];
   let alias: Row["alias"];
 
   try {
-    const detail = (mode === "corpus" ? context.root : context.intent).explain(
-      ref,
-      effective,
-      searchOptions,
-    );
+    const detail = context.root.explain(ref, effective, searchOptions);
     if (detail) {
-      if (mode === "corpus" && detail.text !== text) {
+      if (detail.text !== text) {
         alias = { text: detail.text, spans: detail.spans };
       } else {
         text = detail.text;
@@ -59,7 +53,7 @@ export function row(
       throw error;
   }
 
-  const change = mode === "corpus" ? context.changes?.get(key) : undefined;
+  const change = context.changes?.get(key);
 
   return {
     key,
@@ -68,11 +62,8 @@ export function row(
     level,
     ...(alias ? { alias } : {}),
     ...(change ? { change } : {}),
-    ...(mode === "corpus" && source?.snippet
-      ? { snippet: source.snippet }
-      : {}),
-    title:
-      mode === "corpus" ? (source?.title ?? "") : "意図表現から選ばれた展開",
-    url: mode === "corpus" ? (source?.url ?? "") : "",
+    ...(source.snippet ? { snippet: source.snippet } : {}),
+    title: source.title,
+    url: source.url,
   };
 }

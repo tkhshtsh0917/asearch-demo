@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { open, query } from "./helpers.ts";
 
-test("source excerpts stay separate from original questions and intent results", async ({
+test("source excerpts stay separate from original questions", async ({
   page,
 }) => {
   await open(page);
@@ -15,10 +15,6 @@ test("source excerpts stay separate from original questions and intent results",
     "本文抜粋",
   );
   await expect(page.locator("#results .question").first()).toBeVisible();
-  await page.locator("#mode").selectOption("intent");
-  await query(page, "電球交換");
-  await expect(page.locator("#results")).toContainText("電球交換");
-  await expect(page.locator("#results .snippet")).toHaveCount(0);
 });
 
 test("excerpt markup is displayed as text even when the catalog digest is valid", async ({

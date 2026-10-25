@@ -1,8 +1,7 @@
 /** Verifies real server analysis through the released CLI and read-only WASM. */
 import assert from "node:assert/strict";
 import test from "node:test";
-import { AsearchIndex, IntentIndex } from "asearch-wasm";
-import { intents } from "../../src/shared/intents.ts";
+import { AsearchIndex } from "asearch-wasm";
 import { QueryPolicy } from "../../src/shared/query.ts";
 import { corpusOptions, searchOptions } from "../../src/worker/options.ts";
 import { search } from "../../src/worker/search.ts";
@@ -30,10 +29,6 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
   const root = AsearchIndex.fromBytes(segments.base);
   const compact = AsearchIndex.fromBytes(segments.compact);
   const session = root.session(searchOptions);
-  const intent = IntentIndex.fromEntries(intents, {
-    profile: "ideal",
-    normalizer: "ja-basic-v1",
-  });
   const variants = [
     "ビートルズ",
     "びーとるず",
@@ -47,16 +42,11 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
     for (const query of variants) {
       assert.deepEqual([...root.search(query).ids], [0, 1, 2], query);
     }
-    const message = search(
-      { kind: "query", id: 1, pattern: "Beatles", mode: "corpus" },
-      0,
-      {
-        root,
-        session,
-        intent,
-        questions: new Map(rows.map((row) => [row.key, row])),
-      },
-    );
+    const message = search({ kind: "query", id: 1, pattern: "Beatles" }, 0, {
+      root,
+      session,
+      questions: new Map(rows.map((row) => [row.key, row])),
+    });
     assert.equal(message.kind, "results");
     if (message.kind !== "results") throw new Error("Missing results");
     const original = message.rows.find((row) => row.key === 0);
@@ -71,7 +61,6 @@ test("readings and directed synonyms survive ASIX v1, deltas and compaction", as
     }
   } finally {
     session.free();
-    intent.free();
     root.free();
     compact.free();
   }
@@ -116,7 +105,6 @@ test("mixed input merges literal hits with romanized matches and keeps the winni
   const docs = analysis.analyze(rows);
   const parts = await buildSegments(docs, [], [], docs);
   const first = await buildSegments(docs.slice(0, 1), [], [], docs.slice(0, 1));
-  const intent = IntentIndex.fromEntries(intents);
   try {
     for (const [bytes, expected] of [
       [parts.base, [0, 1]],
@@ -125,17 +113,12 @@ test("mixed input merges literal hits with romanized matches and keeps the winni
       const root = AsearchIndex.fromBytes(bytes),
         session = root.session(corpusOptions);
       try {
-        const response = search(
-          { kind: "query", id: 1, pattern: "びーt", mode: "corpus" },
-          0,
-          {
-            root,
-            session,
-            intent,
-            questions: new Map(rows.map((row) => [row.key, row])),
-            policy,
-          },
-        );
+        const response = search({ kind: "query", id: 1, pattern: "びーt" }, 0, {
+          root,
+          session,
+          questions: new Map(rows.map((row) => [row.key, row])),
+          policy,
+        });
         if (response.kind !== "results") throw new Error("Missing results");
         assert.deepEqual(
           response.rows.map((row) => row.key),
@@ -154,7 +137,6 @@ test("mixed input merges literal hits with romanized matches and keeps the winni
       }
     }
   } finally {
-    intent.free();
   }
 });
 
@@ -181,17 +163,15 @@ test("a literal H-II match cannot suppress Japan through deltas and compaction",
   );
   const root = AsearchIndex.fromBytes(parts.base),
     session = root.session(corpusOptions);
-  const intent = IntentIndex.fromEntries(intents);
   const context = {
     root,
     session,
-    intent,
     questions: new Map(rows.map((row) => [row.key, row])),
     policy,
   };
   const keys = () => {
     const response = search(
-      { kind: "query", id: 1, pattern: "にh", mode: "corpus" },
+      { kind: "query", id: 1, pattern: "にh" },
       0,
       context,
     );
@@ -210,7 +190,6 @@ test("a literal H-II match cannot suppress Japan through deltas and compaction",
     assert.deepEqual(keys(), [2, 1]);
   } finally {
     session.free();
-    intent.free();
     root.free();
   }
 });
@@ -227,11 +206,9 @@ test("native article filtering retrieves matching IDs beyond the global display 
   const parts = await buildSegments(docs, [], [], docs);
   const root = AsearchIndex.fromBytes(parts.base),
     session = root.session(corpusOptions);
-  const intent = IntentIndex.fromEntries(intents);
   const context = {
     root,
     session,
-    intent,
     questions: new Map(rows.map((row) => [row.key, row])),
   };
   try {
@@ -239,7 +216,6 @@ test("native article filtering retrieves matching IDs beyond the global display 
       kind: "query",
       id: 1,
       pattern: "大学",
-      mode: "corpus",
     } as const;
     const global = search(request, 0, context);
     if (global.kind !== "results") throw new Error("Missing results");
@@ -255,7 +231,6 @@ test("native article filtering retrieves matching IDs beyond the global display 
     assert.equal(filtered.totalIsExact, true);
   } finally {
     session.free();
-    intent.free();
     root.free();
   }
 });

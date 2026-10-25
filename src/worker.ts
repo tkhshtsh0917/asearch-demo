@@ -3,7 +3,6 @@
 import {
   AsearchIndex,
   diffManifest,
-  IntentIndex,
   type Manifest,
   ready,
   type SearchSession,
@@ -11,7 +10,6 @@ import {
 import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
 import { articleFacets } from "./shared/facets.ts";
-import { intents } from "./shared/intents.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { MAX_QUERY_RULE_BYTES, QueryPolicy } from "./shared/query.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
@@ -26,7 +24,6 @@ let base: URL,
   info: Release,
   root: AsearchIndex,
   session: SearchSession,
-  intent: IntentIndex,
   current: Manifest;
 let policy: QueryPolicy;
 
@@ -66,7 +63,6 @@ function run() {
       search(last, epoch, {
         root,
         session,
-        intent,
         questions,
         changes: updates.byKey,
         policy,
@@ -110,11 +106,6 @@ async function init(url: string) {
     session = root.session({
       ...corpusOptions,
       maxCacheBytes: 16 * 1024 * 1024,
-    });
-    intent = IntentIndex.fromEntries(intents, {
-      profile: "ideal",
-      normalizer: "ja-basic-v1",
-      limits,
     });
   } catch (error) {
     root.free();
@@ -207,8 +198,7 @@ scope.onmessage = (event: MessageEvent<Request>) => {
         !Number.isSafeInteger(request.id) ||
         request.id < 1 ||
         typeof request.pattern !== "string" ||
-        request.pattern.length > 128 ||
-        !["corpus", "intent"].includes(request.mode)
+        request.pattern.length > 128
       )
         throw new Error("Invalid query");
       last = request;

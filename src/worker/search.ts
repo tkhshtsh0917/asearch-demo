@@ -1,5 +1,5 @@
 /** Applies bounded query policy, invokes WASM and returns display-only results. */
-import type { AsearchIndex, IntentIndex, SearchSession } from "asearch-wasm";
+import type { AsearchIndex, SearchSession } from "asearch-wasm";
 import type { Question } from "../shared/catalog.ts";
 import type { ChangeKind } from "../shared/changes.ts";
 import type { Request, Response } from "../shared/protocol.ts";
@@ -12,7 +12,6 @@ export interface SearchContext {
   root: Pick<AsearchIndex, "search" | "explain">;
   /** Created with corpusOptions, including positional ranking and total counts. */
   session: Pick<SearchSession, "update" | "reset">;
-  intent: Pick<IntentIndex, "search" | "explain">;
   questions: ReadonlyMap<number, Question>;
   changes?: ReadonlyMap<number, ChangeKind>;
   policy?: QueryPolicy;
@@ -24,13 +23,13 @@ export function search(
   epoch: number,
   context: SearchContext,
 ): Response {
-  const { id, pattern, mode, title } = request;
+  const { id, pattern, title } = request;
   if (
     title !== undefined &&
     (typeof title !== "string" || title.length > 65535)
   )
     throw new Error("Invalid article filter");
-  const filtering = mode === "corpus" && title !== undefined;
+  const filtering = title !== undefined;
   const started = performance.now();
   if (!pattern.trim()) {
     context.session.reset();
@@ -42,7 +41,6 @@ export function search(
     return {
       kind: "results",
       id,
-      mode,
       epoch,
       rows: questions
         .slice(0, searchOptions.limit)
@@ -54,7 +52,6 @@ export function search(
   }
   const { hits, patterns, total, totalIsExact, stats } = evaluate(
     pattern,
-    mode,
     context,
     title,
   );
@@ -76,12 +73,11 @@ export function search(
       effective === undefined
     )
       throw new Error("Invalid search result");
-    rows.push(row(context, mode, effective, key, ref, level));
+    rows.push(row(context, effective, key, ref, level));
   }
   return {
     kind: "results",
     id,
-    mode,
     epoch,
     rows,
     total: filtering ? indexes.length : total,

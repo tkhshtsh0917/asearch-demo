@@ -2,10 +2,9 @@
 import type { SearchStats } from "asearch-wasm";
 import type { ChangeKind, ChangeSummary } from "./changes.ts";
 import type { ArticleFacet } from "./facets.ts";
-export type Mode = "corpus" | "intent";
 export type Request =
   | { kind: "init"; base: string }
-  | { kind: "query"; id: number; pattern: string; mode: Mode; title?: string }
+  | { kind: "query"; id: number; pattern: string; title?: string }
   | { kind: "advance" }
   | { kind: "restore" };
 export interface Row {
@@ -38,7 +37,6 @@ export type Response =
   | {
       kind: "results";
       id: number;
-      mode: Mode;
       epoch: number;
       rows: Row[];
       total: number;

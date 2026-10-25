@@ -48,7 +48,7 @@ test("an article candidate beyond global top-20 is retrieved before filtering", 
     return result(hits);
   };
   assert.ok(!run(context, "大学").rows.some((row) => row.key === 29));
-  const filtered = run(context, "大学", "corpus", "対象の記事");
+  const filtered = run(context, "大学", "対象の記事");
   assert.deepEqual(
     filtered.rows.map((row) => row.key),
     [29],
@@ -75,7 +75,7 @@ test("alternate-query duplicates use the winning rank before article filtering",
   );
   context.root.search = (pattern) =>
     pattern === "にh" ? primary : alternative;
-  const filtered = run(context, "にh", "corpus", "日本");
+  const filtered = run(context, "にh", "日本");
   assert.deepEqual(
     filtered.rows.map((row) => row.key),
     [5, 6],
@@ -90,7 +90,7 @@ test("article filtering rejects unexpectedly truncated native results", () => {
   const { context } = fixture(partial);
   context.root.search = () => partial;
   assert.throws(
-    () => run(context, "大学", "corpus", "その他"),
+    () => run(context, "大学", "その他"),
     /Incomplete article search results/,
   );
 });
@@ -115,7 +115,7 @@ test("blank article queries browse at most 20 catalog records and preserve exact
   context.root.search = () => {
     throw new Error("Unexpected matcher call");
   };
-  const response = run(context, "", "corpus", "記事");
+  const response = run(context, "", "記事");
   assert.equal(response.total, 30);
   assert.equal(response.rows.length, 20);
   assert.deepEqual(
@@ -124,9 +124,9 @@ test("blank article queries browse at most 20 catalog records and preserve exact
   );
   assert.equal(response.rows[0]?.snippet, "元の本文");
   assert.deepEqual(calls, ["reset"]);
-  assert.equal(run(context, "", "corpus", "削除済み").total, 0);
+  assert.equal(run(context, "", "削除済み").total, 0);
   assert.throws(
-    () => run(context, "大学", "corpus", "x".repeat(65536)),
+    () => run(context, "大学", "x".repeat(65536)),
     /Invalid article filter/,
   );
 });

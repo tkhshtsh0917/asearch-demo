@@ -4,7 +4,6 @@ import {
   type SearchResult,
   type SearchStats,
 } from "asearch-wasm";
-import type { Mode } from "../shared/protocol.ts";
 import { corpusOptions, searchOptions } from "./options.ts";
 import type { SearchContext } from "./search.ts";
 
@@ -58,29 +57,22 @@ function stats(results: readonly SearchResult[]): SearchStats {
 /** Keeps the primary session incremental and uses temporary WASM state for an alternative. */
 export function evaluate(
   pattern: string,
-  mode: Mode,
   context: SearchContext,
   title?: string,
 ) {
-  const filtering = mode === "corpus" && title !== undefined;
+  const filtering = title !== undefined;
   const options = filtering
     ? { ...corpusOptions, limit: Math.max(1, context.questions.size) }
     : corpusOptions;
-  const effective =
-    mode === "corpus"
-      ? (context.policy?.normalize(pattern) ?? pattern)
-      : pattern;
+  const effective = context.policy?.normalize(pattern) ?? pattern;
   const patterns = [effective];
   const results = [
-    mode === "corpus"
-      ? filtering
-        ? context.root.search(effective, options)
-        : context.session.update(effective)
-      : context.intent.search(effective, searchOptions),
+    filtering
+      ? context.root.search(effective, options)
+      : context.session.update(effective),
   ];
 
-  const alternative =
-    mode === "corpus" ? context.policy?.romanize(effective) : undefined;
+  const alternative = context.policy?.romanize(effective);
   if (alternative !== undefined) {
     patterns.push(alternative);
     results.push(context.root.search(alternative, options));

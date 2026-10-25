@@ -8,7 +8,7 @@ import {
 } from "../tools/bench/observe.ts";
 import { open, query } from "./helpers.ts";
 
-test("WASM search, explanations, intent DAG and attribution run without console errors", async ({
+test("WASM question search, explanations and attribution run without console errors", async ({
   page,
 }, testInfo) => {
   const errors: string[] = [];
@@ -41,12 +41,10 @@ test("WASM search, explanations, intent DAG and attribution run without console 
       path: testInfo.outputPath("search.png"),
       fullPage: true,
     });
-  await page.locator("#mode").selectOption("intent");
-  await page.locator("#query").fill("電球交換");
-  await expect(page.locator("#results")).toContainText("電球交換");
-  await expect(page.locator("#metrics")).toContainText("dag");
-  await page.locator("#query").fill("<img src=x onerror=alert(1)>");
-  await expect(page.locator("#metrics")).toContainText("件一致");
+  await expect(page.getByRole("combobox", { includeHidden: true })).toHaveCount(
+    1,
+  );
+  await query(page, "<img src=x onerror=alert(1)>");
   await expect(page.locator("#results img")).toHaveCount(0);
   expect(errors).toEqual([]);
   expect(
@@ -56,22 +54,20 @@ test("WASM search, explanations, intent DAG and attribution run without console 
   ).toBe(true);
 });
 
-test("query examples select the matching mode and intent results never inherit corpus badges", async ({
+test("query examples preserve the adopted publication and show matching questions", async ({
   page,
 }) => {
   await open(page);
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 2");
-  await page.locator('[data-query="電球交換"]').click();
-  await expect(page.locator("#mode")).toHaveValue("intent");
-  await expect(page.locator("#results")).toContainText("電球交換");
-  await expect(page.locator("#results [data-change]")).toHaveCount(0);
-  await expect(page.locator("#change-legend")).toBeHidden();
-
   await page.locator('[data-query="更新例"]').click();
-  await expect(page.locator("#mode")).toHaveValue("corpus");
   await expect(page.locator("#results .change-badge")).toHaveCount(4);
   await expect(page.locator("#change-legend")).toBeVisible();
+
+  await page.locator('[data-query="Beatles"]').click();
+  await expect(page.locator("#results")).toContainText("ビートルズ");
+  await expect(page.locator("#results [data-change]")).toHaveCount(0);
+  await expect(page.locator("#status")).toContainText("世代 2");
 });
 
 test("search page has no serious accessibility violations", async ({

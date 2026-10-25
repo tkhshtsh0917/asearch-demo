@@ -86,20 +86,13 @@ test("article-only browsing preserves a zero-count selection through restore and
   await expect(page.locator("#article")).toHaveValue(JSON.stringify(title));
 });
 
-test("intent mode disables article controls and examples clear an existing filter", async ({
-  page,
-}) => {
+test("query examples clear an existing article filter", async ({ page }) => {
   await open(page);
   await page.locator(".article-filter > summary").click();
   await page.locator("#article-search").fill("アンパサンド");
   await page.locator("#article").selectOption(JSON.stringify("アンパサンド"));
   await expect(page.locator("#results .question").first()).toBeVisible();
-  await page.locator("#mode").selectOption("intent");
-  await expect(page.locator("#article")).toBeDisabled();
-  await query(page, "電球交換");
-  await expect(page.locator("#results")).toContainText("電球交換");
   await page.locator('[data-query="Beatles"]').click();
-  await expect(page.locator("#mode")).toHaveValue("corpus");
   await expect(page.locator("#article")).toBeEnabled();
   await expect(page.locator("#article")).toHaveValue("");
   await expect(page.locator("#results")).toContainText("ビートルズ");

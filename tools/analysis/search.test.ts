@@ -79,15 +79,14 @@ test("overlapping truncated streams report a lower bound without summing totals"
   assert.equal(single.totalIsExact, true);
 });
 
-test("unchanged, oversized and intent queries do not trigger a second search", () => {
-  for (const [pattern, mode, expected] of [
-    ["日本", "corpus", ["primary:日本"]],
-    ["び".repeat(65), "corpus", [`primary:${"び".repeat(65)}`]],
-    ["にh", "intent", []],
-    ["  ", "corpus", ["reset"]],
+test("unchanged and oversized queries do not trigger a second search", () => {
+  for (const [pattern, expected] of [
+    ["日本", ["primary:日本"]],
+    ["び".repeat(65), [`primary:${"び".repeat(65)}`]],
+    ["  ", ["reset"]],
   ] as const) {
     const { context, calls } = fixture(result([]));
-    run(context, pattern, mode);
+    run(context, pattern);
     assert.deepEqual(calls, expected);
   }
 });

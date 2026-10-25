@@ -1,5 +1,5 @@
 /** Coordinates IME input, Worker generations and rendering of accepted responses. */
-import type { Mode, Request, Response } from "./shared/protocol.ts";
+import type { Request, Response } from "./shared/protocol.ts";
 import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
 import { ArticleFilter } from "./view/facets.ts";
 import { renderRows } from "./view/results.ts";
@@ -12,7 +12,6 @@ function element<T extends HTMLElement>(id: string): T {
 }
 
 const input = element<HTMLInputElement>("query"),
-  mode = element<HTMLSelectElement>("mode"),
   status = element("status"),
   results = element("results"),
   metrics = element("metrics"),
@@ -55,13 +54,12 @@ function send(request: Request) {
 /** Searches the current input value, including uncommitted IME text. */
 function query() {
   latest = ++serial;
-  changeLegend.hidden = stage === 0 || mode.value !== "corpus";
+  changeLegend.hidden = stage === 0;
   if (!loaded) return;
   send({
     kind: "query",
     id: latest,
     pattern: input.value,
-    mode: mode.value as Mode,
     ...(articleFilter.title === undefined
       ? {}
       : { title: articleFilter.title }),
@@ -87,7 +85,7 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
 
   loaded = true;
   articleFilter.update(message.facets ?? []);
-  articleFilter.setEnabled(mode.value === "corpus");
+  articleFilter.setEnabled(true);
   renderDelivery(delivery, message);
 
   element("creator").textContent = message.creator;
@@ -103,18 +101,14 @@ function handleResults(
   generation: number,
 ) {
   const accepted = () =>
-    generation === run &&
-    message.id === latest &&
-    message.mode === mode.value &&
-    message.epoch === epoch;
+    generation === run && message.id === latest && message.epoch === epoch;
   if (!accepted()) return;
 
   requestAnimationFrame(() => {
     if (!accepted()) return;
     renderRows(results, message.rows);
     metrics.textContent =
-      input.value.trim() ||
-      (mode.value === "corpus" && articleFilter.title !== undefined)
+      input.value.trim() || articleFilter.title !== undefined
         ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
         : "質問やキーワードを入力してください";
   });
@@ -204,10 +198,6 @@ function bindEvents() {
     composing = false;
     schedule();
   });
-  mode.addEventListener("change", () => {
-    articleFilter.setEnabled(loaded && mode.value === "corpus");
-    query();
-  });
   advance.addEventListener("click", () => {
     error.textContent = "";
     advance.disabled = true;
@@ -225,8 +215,7 @@ function bindEvents() {
     button.addEventListener("click", () => {
       input.value = button.dataset.query ?? "";
       articleFilter.reset();
-      if (button.dataset.mode) mode.value = button.dataset.mode;
-      articleFilter.setEnabled(loaded && mode.value === "corpus");
+      articleFilter.setEnabled(loaded);
       query();
       input.focus();
     });
