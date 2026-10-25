@@ -45,4 +45,7 @@ export type Response =
       elapsed: number;
       stats: SearchStats | null;
     }
-  | { kind: "error"; message: string; fatal: boolean; id?: number };
+  | ({ kind: "error"; message: string; fatal: boolean } & (
+      | { id: number; epoch: number }
+      | { id?: never; epoch?: never }
+    ));

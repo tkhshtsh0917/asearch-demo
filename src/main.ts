@@ -1,6 +1,7 @@
 /** Coordinates IME input, Worker generations and rendering of accepted responses. */
 import type { Request, Response } from "./shared/protocol.ts";
 import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
+import { SearchErrors } from "./view/errors.ts";
 import { ArticleFilter } from "./view/facets.ts";
 import { renderRows } from "./view/results.ts";
 import "./styles.css";
@@ -15,8 +16,8 @@ const input = element<HTMLInputElement>("query"),
   status = element("status"),
   results = element("results"),
   metrics = element("metrics"),
-  advance = element<HTMLButtonElement>("advance"),
-  error = element("error");
+  advance = element<HTMLButtonElement>("advance");
+const errors = new SearchErrors(element("error"));
 
 const delivery: DeliveryView = {
   status,
@@ -90,7 +91,7 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
 
   element("creator").textContent = message.creator;
   element("changes").textContent = message.changes;
-  if (changed) error.textContent = "";
+  if (changed) errors.clearOperation();
 
   query();
 }
@@ -111,6 +112,7 @@ function handleResults(
       input.value.trim() || articleFilter.title !== undefined
         ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
         : "質問やキーワードを入力してください";
+    errors.accept({ id: message.id, epoch: message.epoch, generation });
   });
 }
 
@@ -123,7 +125,8 @@ function stopWorker(message: string, statusText: string) {
   worker.terminate();
   advance.disabled = true;
   delivery.restore.disabled = true;
-  error.textContent = message;
+  errors.clear();
+  errors.operationFailed(message);
   status.textContent = statusText;
   delivery.detail.textContent =
     "再読み込みで検索Workerを起動し直してください。";
@@ -138,7 +141,7 @@ function start() {
   epoch = 0;
   stage = 0;
   latest = ++serial;
-  error.textContent = "";
+  errors.clear();
   renderDelivery(delivery);
   changeLegend.hidden = true;
   renderRows(results, []);
@@ -159,14 +162,24 @@ function start() {
       return;
     }
     if (message.kind === "error") {
-      if (message.id !== undefined && message.id !== latest) return;
-      error.textContent = `処理できませんでした: ${message.message}`;
+      if (
+        message.id !== undefined &&
+        (message.id !== latest || message.epoch !== epoch)
+      )
+        return;
+      const text = `処理できませんでした: ${message.message}`;
       if (message.fatal) {
         stopWorker(
-          error.textContent,
+          text,
           "読み込みに失敗しました。再読み込みで再試行できます。",
         );
-      }
+      } else if (message.id !== undefined) {
+        errors.queryFailed(text, {
+          id: message.id,
+          epoch: message.epoch,
+          generation,
+        });
+      } else errors.operationFailed(text);
       return;
     }
     if (message.kind === "state") {
@@ -199,12 +212,12 @@ function bindEvents() {
     schedule();
   });
   advance.addEventListener("click", () => {
-    error.textContent = "";
+    errors.clearOperation();
     advance.disabled = true;
     send({ kind: "advance" });
   });
   delivery.restore.addEventListener("click", () => {
-    error.textContent = "";
+    errors.clearOperation();
     delivery.restore.disabled = true;
     send({ kind: "restore" });
   });

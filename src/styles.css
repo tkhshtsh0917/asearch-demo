@@ -173,6 +173,7 @@ button:disabled {
 #error {
   color: #a12537;
   font-size: 14px;
+  white-space: pre-line;
 }
 
 #error:empty {

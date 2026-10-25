@@ -58,7 +58,8 @@ function state() {
 
 /** Replays the latest validated query after initialization or an atomic update. */
 function run() {
-  if (last && initialized)
+  if (!last || !initialized) return;
+  try {
     post(
       search(last, epoch, {
         root,
@@ -68,6 +69,22 @@ function run() {
         policy,
       }),
     );
+  } catch (error) {
+    reportError(error, last);
+  }
+}
+
+/** Attributes search failures to their request and snapshot, including update replays. */
+function reportError(
+  error: unknown,
+  query?: Extract<Request, { kind: "query" }>,
+) {
+  post({
+    kind: "error",
+    message: error instanceof Error ? error.message : "Worker failed",
+    fatal: !initialized,
+    ...(query ? { id: query.id, epoch } : {}),
+  });
 }
 
 /** Loads the initial segment and creates query handles before exposing readiness. */
@@ -208,12 +225,7 @@ scope.onmessage = (event: MessageEvent<Request>) => {
     if (request.kind === "advance") await advance();
     if (request.kind === "restore") await restore();
   })().catch((error) =>
-    post({
-      kind: "error",
-      message: error instanceof Error ? error.message : "Worker failed",
-      fatal: !initialized,
-      ...(request.kind === "query" ? { id: request.id } : {}),
-    }),
+    reportError(error, request.kind === "query" ? request : undefined),
   );
 };
 

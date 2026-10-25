@@ -8,7 +8,9 @@ interface QueryHarness {
   requests: { worker: Worker; request: Query }[];
   replies: number;
   frames: number;
-  reply(index?: number): void;
+  reply(index?: number, epoch?: number): void;
+  fail(index?: number, message?: string, epoch?: number): void;
+  operationError(message: string): void;
   paint(): void;
 }
 
@@ -31,14 +33,14 @@ export function installQueryWorker(): void {
     get frames() {
       return frames.length;
     },
-    reply(index = harness.requests.length - 1) {
+    reply(index = harness.requests.length - 1, epoch = 0) {
       const entry = harness.requests[index];
       if (!entry) throw new Error("Missing held query");
       const { request, worker } = entry;
       (worker as unknown as ControlledWorker).emit({
         kind: "results",
         id: request.id,
-        epoch: 0,
+        epoch,
         total: 85,
         totalIsExact: false,
         elapsed: 0,
@@ -55,6 +57,26 @@ export function installQueryWorker(): void {
         ],
       });
       harness.replies++;
+    },
+    fail(index = harness.requests.length - 1, message = "検索失敗", epoch = 0) {
+      const entry = harness.requests[index];
+      if (!entry) throw new Error("Missing held query");
+      (entry.worker as unknown as ControlledWorker).emit({
+        kind: "error",
+        id: entry.request.id,
+        epoch,
+        message,
+        fatal: false,
+      });
+    },
+    operationError(message) {
+      const entry = harness.requests.at(-1);
+      if (!entry) throw new Error("Missing active Worker");
+      (entry.worker as unknown as ControlledWorker).emit({
+        kind: "error",
+        message,
+        fatal: false,
+      });
     },
     paint() {
       const frame = frames.shift();

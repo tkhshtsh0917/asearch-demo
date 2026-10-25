@@ -5,6 +5,7 @@ export default defineConfig({
     "search.spec.ts",
     "query.spec.ts",
     "query-wait.spec.ts",
+    "query-errors.spec.ts",
     "delivery.spec.ts",
     "recovery.spec.ts",
     "restore.spec.ts",
