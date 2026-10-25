@@ -166,6 +166,6 @@ test("literal rocket hits do not hide Japan during composition", async ({
   await page.locator("#query").dispatchEvent("compositionend");
 
   await query(page, "に");
-  await expect(page.locator("#metrics")).toContainText("少なくとも");
+  await expect(page.locator("#metrics")).not.toContainText("少なくとも");
   await expect(page.locator("#error")).toBeEmpty();
 });

@@ -43,13 +43,21 @@ export function installQueryWorker(): void {
         epoch,
         total: 85,
         totalIsExact: false,
+        facets: {
+          articles: [{ title: `記事:${request.pattern}`, count: 85 }],
+          changes: [
+            { kind: "unchanged", count: 85 },
+            { kind: "added", count: 0 },
+            { kind: "updated", count: 0 },
+          ],
+        },
         elapsed: 0,
         stats: null,
         rows: [
           {
             key: 1,
             text: `候補:${request.pattern}`,
-            title: "記事",
+            title: `記事:${request.pattern}`,
             url: "",
             level: 0,
             spans: [],
@@ -123,7 +131,6 @@ export function installQueryWorker(): void {
             updates: { added: 0, updated: 0, removed: 0 },
             creator: "Test corpus",
             changes: "Test snapshot",
-            facets: [],
           }),
         );
       }

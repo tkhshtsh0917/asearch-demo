@@ -1,5 +1,7 @@
 /** Validates publication metadata and safe question/source records before display. */
 import { MAX_SNIPPET_CODE_POINTS } from "./snippets.ts";
+export const MAX_CATALOG_QUESTIONS = 20000;
+
 export interface Question {
   key: number;
   text: string;
@@ -44,7 +46,7 @@ export function sourceUrl(value: unknown): string {
 }
 
 export function catalog(value: unknown): Question[] {
-  if (!Array.isArray(value) || value.length > 20000)
+  if (!Array.isArray(value) || value.length > MAX_CATALOG_QUESTIONS)
     throw new Error("Invalid catalog size");
   const keys = new Set<number>();
   return value.map((row: unknown) => {

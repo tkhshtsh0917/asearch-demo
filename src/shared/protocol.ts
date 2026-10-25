@@ -1,10 +1,10 @@
 /** Defines typed commands and responses exchanged by the UI and search Worker. */
 import type { SearchStats } from "asearch-wasm";
 import type { ChangeKind, ChangeSummary } from "./changes.ts";
-import type { ArticleFacet } from "./facets.ts";
+import type { Facets, SearchFilters } from "./facets.ts";
 export type Request =
   | { kind: "init"; base: string }
-  | { kind: "query"; id: number; pattern: string; title?: string }
+  | { kind: "query"; id: number; pattern: string; filters?: SearchFilters }
   | { kind: "advance" }
   | { kind: "restore" };
 export interface Row {
@@ -32,7 +32,6 @@ export type Response =
       updates: ChangeSummary;
       creator: string;
       changes: string;
-      facets?: ArticleFacet[];
     }
   | {
       kind: "results";
@@ -40,6 +39,7 @@ export type Response =
       epoch: number;
       rows: Row[];
       total: number;
+      facets: Facets;
       /** False when overlapping truncated query streams establish only a lower bound. */
       totalIsExact?: boolean;
       elapsed: number;

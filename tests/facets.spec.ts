@@ -1,9 +1,34 @@
-/** Verifies article filtering before top-N and selection across publication transitions. */
+/** Checks sidebar drill-down, disjunctive counts, selection lifetime and responsive access. */
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import { open, query } from "./helpers.ts";
+import { open, query, searchAction } from "./helpers.ts";
+import {
+  articleCheckbox,
+  openFacets,
+  selectArticle,
+} from "./support/facets.ts";
 
-test("article search reaches candidates outside global top-20 and clearing restores results", async ({
+test("facets appear only on the results screen and stay on the left on desktop", async ({
+  page,
+}, testInfo) => {
+  await open(page);
+  await expect(page.locator("#filters")).toBeHidden();
+  await query(page, "大学");
+  await expect(page.locator("#filters")).toBeVisible();
+  await openFacets(page);
+  await expect(page.getByRole("group", { name: "出典記事" })).toBeVisible();
+  await expect(page.getByRole("group", { name: "更新状態" })).toBeVisible();
+  if (!testInfo.project.name.includes("profile")) {
+    const side = await page.locator("#filters").boundingBox(),
+      results = await page.locator(".results-pane").boundingBox();
+    expect(side && results && side.x + side.width <= results.x).toBeTruthy();
+  }
+  await query(page, "");
+  await expect(page.locator("#filters")).toBeHidden();
+  await expect(page.locator("#results li")).toHaveCount(0);
+});
+
+test("article drill-down reaches candidates beyond top-20 and counts only matching questions", async ({
   page,
   request,
 }, testInfo) => {
@@ -22,14 +47,8 @@ test("article search reaches candidates outside global top-20 and clearing resto
   const target = rows.find(
     (row) => row.text.includes("大学") && !displayed.includes(row.title),
   );
-  expect(target).toBeTruthy();
   if (!target) throw new Error("No out-of-top-20 article fixture");
-
-  await page.locator(".article-filter > summary").click();
-  await expect(page.locator("#article-summary")).toContainText("収録質問数");
-  expect(await page.locator("#article option").count()).toBeLessThanOrEqual(52);
-  await page.locator("#article-search").fill(target.title);
-  await page.locator("#article").selectOption(JSON.stringify(target.title));
+  await selectArticle(page, target.title);
   await page.waitForFunction((title) => {
     const rows = Array.from(
       document.querySelectorAll<HTMLElement>("#results li"),
@@ -39,6 +58,12 @@ test("article search reaches candidates outside global top-20 and clearing resto
     );
   }, target.title);
   await expect(page.locator("#metrics")).not.toContainText("少なくとも");
+  await expect(page.locator("#article-summary")).toContainText(
+    "キーワードと更新状態",
+  );
+  expect(
+    await page.locator("#article-options input").count(),
+  ).toBeLessThanOrEqual(100);
   if (["chromium", "iphone-profile"].includes(testInfo.project.name)) {
     const report = await new AxeBuilder({ page }).analyze();
     expect(
@@ -47,53 +72,139 @@ test("article search reaches candidates outside global top-20 and clearing resto
       ),
     ).toEqual([]);
   }
+  await searchAction(page, () => page.locator("#filters-clear").click());
+  await expect(page.locator("#results li")).toHaveCount(20);
+  await expect(page.locator("#active-filters")).toBeHidden();
+});
+
+test("multiple articles form a union and a chip removes just one choice", async ({
+  page,
+}) => {
+  await open(page);
+  await query(page, "大学");
+  await openFacets(page);
+  const options = await page
+    .locator("#article-options label")
+    .evaluateAll((labels) =>
+      labels.map((label) => ({
+        title: label.querySelector("input")?.value ?? "",
+        count: Number(
+          label
+            .querySelector(".facet-count")
+            ?.textContent?.replace(/[^0-9]/g, ""),
+        ),
+      })),
+    );
+  const [left, right] = options.slice(-2);
+  if (!left || !right || left.title === right.title)
+    throw new Error("Two article fixtures required");
+  const first = left.title,
+    second = right.title;
+  await selectArticle(page, first);
+  await selectArticle(page, second);
+  await page.waitForFunction(
+    (titles) => {
+      const rows = [...document.querySelectorAll<HTMLElement>("#results li")];
+      return (
+        rows.length > 0 &&
+        rows.every((row) => titles.includes(row.dataset.article ?? ""))
+      );
+    },
+    [first, second],
+  );
+  await expect(page.locator("#metrics")).toHaveText(
+    new RegExp(`^${(left.count + right.count).toLocaleString("en-US")}件一致`),
+  );
+  await expect(page.locator("#active-filters button")).toHaveCount(2);
+  await searchAction(page, () =>
+    page
+      .getByRole("button", {
+        name: `記事：${first}の絞り込みを解除`,
+        exact: true,
+      })
+      .click(),
+  );
+  await expect(page.locator("#metrics")).toHaveText(
+    new RegExp(`^${right.count.toLocaleString("en-US")}件一致`),
+  );
+  await expect(page.locator("#results li")).toHaveCount(
+    Math.min(20, right.count),
+  );
+  expect(
+    await page
+      .locator("#results li")
+      .evaluateAll((rows) => [
+        ...new Set(rows.map((row) => (row as HTMLElement).dataset.article)),
+      ]),
+  ).toEqual([second]);
+  await expect(page.locator("#active-filters button")).toHaveCount(1);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
-  await page.locator("#article-clear").click();
-  await expect(page.locator("#article")).toHaveValue("");
-  await expect(page.locator("#results li")).toHaveCount(20);
 });
 
-test("article-only browsing preserves a zero-count selection through restore and restart", async ({
+test("article and update filters combine and remain selected at zero through restore", async ({
   page,
 }) => {
   await open(page);
+  await query(page, "更新例");
+  await expect(page.locator("#results li")).toHaveCount(0);
   await page.locator("#advance").click();
-  await expect(page.locator("#status")).toContainText("世代 2");
-  await page.locator(".article-filter > summary").click();
-  const title = "デモ用の合成質問";
-  await page.locator("#article-search").fill(title);
-  await page.locator("#article").selectOption(JSON.stringify(title));
-  await expect(page.locator("#query")).toHaveValue("");
+  await expect(page.locator("#results .change-badge")).toHaveCount(4);
+  await openFacets(page);
+  const added = page
+    .locator("#change-options")
+    .getByRole("checkbox", { name: /^追加された質問\s*（1件）$/ });
+  await searchAction(page, () => added.check());
+  await expect(page.locator("#results [data-change='added']")).toHaveCount(1);
   await expect(page.locator("#results li")).toHaveCount(1);
-  await expect(page.locator("#metrics")).toContainText("1件一致");
+  const title = "デモ用の合成質問";
+  await selectArticle(page, title);
+  await expect(page.locator("#active-filters button")).toHaveCount(2);
+  await query(page, "");
+  await expect(page.locator("#results li")).toHaveCount(1);
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 3");
   await expect(page.locator("#results li")).toHaveCount(1);
   await page.locator("#restore").click();
   await expect(page.locator("#status")).toContainText("世代 1");
   await expect(page.locator("#results li")).toHaveCount(0);
-  await expect(page.locator("#article")).toHaveValue(JSON.stringify(title));
-  await expect(page.locator("#article option:checked")).toContainText("0件");
+  const retained = await articleCheckbox(page, title);
+  await expect(retained).toBeChecked();
+  await expect(retained).toBeEnabled();
+  await expect(retained.locator("..")).toContainText("0件");
+  await expect(
+    page.locator("#change-options input[value='added']"),
+  ).toBeChecked();
+  await page.locator("#reset").click();
+  await expect(page.locator("#status")).toContainText("検索できます");
+  await expect(page.locator("#results li")).toHaveCount(0);
+  await openFacets(page);
+  await expect(
+    page.locator("#change-options input[value='added']"),
+  ).toBeChecked();
   await page.locator("#advance").click();
   await expect(page.locator("#results [data-change='added']")).toHaveCount(1);
-  await page.locator("#reset").click();
-  await expect(page.locator("#status")).toContainText("世代 1");
-  await expect(page.locator("#results li")).toHaveCount(0);
-  await expect(page.locator("#article")).toHaveValue(JSON.stringify(title));
 });
 
-test("query examples clear an existing article filter", async ({ page }) => {
+test("native checkbox focus survives count updates and examples clear all filters", async ({
+  page,
+}) => {
   await open(page);
-  await page.locator(".article-filter > summary").click();
-  await page.locator("#article-search").fill("アンパサンド");
-  await page.locator("#article").selectOption(JSON.stringify("アンパサンド"));
-  await expect(page.locator("#results .question").first()).toBeVisible();
+  await query(page, "大学");
+  const title = await page
+    .locator("#results li")
+    .first()
+    .getAttribute("data-article");
+  if (!title) throw new Error("Article fixture missing");
+  const checkbox = await articleCheckbox(page, title);
+  await checkbox.focus();
+  await searchAction(page, () => checkbox.press("Space"));
+  await expect(checkbox).toBeChecked();
+  await expect(checkbox).toBeFocused();
   await page.locator('[data-query="Beatles"]').click();
-  await expect(page.locator("#article")).toBeEnabled();
-  await expect(page.locator("#article")).toHaveValue("");
+  await expect(page.locator("#active-filters")).toBeHidden();
   await expect(page.locator("#results")).toContainText("ビートルズ");
 });

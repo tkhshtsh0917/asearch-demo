@@ -2,7 +2,7 @@
 import type { Request, Response } from "./shared/protocol.ts";
 import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
 import { SearchErrors } from "./view/errors.ts";
-import { ArticleFilter } from "./view/facets.ts";
+import { SearchFacets } from "./view/facets.ts";
 import { renderRows } from "./view/results.ts";
 import "./styles.css";
 
@@ -27,13 +27,19 @@ const delivery: DeliveryView = {
   steps: [...document.querySelectorAll<HTMLElement>("[data-stage]")],
 };
 const changeLegend = element("change-legend");
-const articleFilter = new ArticleFilter(
+const facets = new SearchFacets(
   {
     filter: element<HTMLInputElement>("article-search"),
-    select: element<HTMLSelectElement>("article"),
-    clear: element<HTMLButtonElement>("article-clear"),
+    panel: element("filters"),
+    layout: element("search-layout"),
+    toggle: element<HTMLButtonElement>("filters-toggle"),
+    articles: element("article-options"),
+    changes: element("change-options"),
+    clear: element<HTMLButtonElement>("filters-clear"),
     summary: element("article-summary"),
-    current: element("article-current"),
+    selected: element("filters-selected"),
+    chips: element("active-filters"),
+    focusTarget: input,
   },
   query,
 );
@@ -61,9 +67,7 @@ function query() {
     kind: "query",
     id: latest,
     pattern: input.value,
-    ...(articleFilter.title === undefined
-      ? {}
-      : { title: articleFilter.title }),
+    filters: facets.filters,
   });
 }
 
@@ -85,8 +89,7 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
   epoch = message.epoch;
 
   loaded = true;
-  articleFilter.update(message.facets ?? []);
-  articleFilter.setEnabled(true);
+  facets.setEnabled(true);
   renderDelivery(delivery, message);
 
   element("creator").textContent = message.creator;
@@ -107,9 +110,13 @@ function handleResults(
 
   requestAnimationFrame(() => {
     if (!accepted()) return;
+    facets.update(
+      message.facets,
+      Boolean(input.value.trim()) || facets.count > 0,
+    );
     renderRows(results, message.rows);
     metrics.textContent =
-      input.value.trim() || articleFilter.title !== undefined
+      input.value.trim() || facets.count > 0
         ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
         : "質問やキーワードを入力してください";
     errors.accept({ id: message.id, epoch: message.epoch, generation });
@@ -119,7 +126,7 @@ function handleResults(
 /** Invalidates queued responses and disables commands until a fresh Worker starts. */
 function stopWorker(message: string, statusText: string) {
   loaded = false;
-  articleFilter.setEnabled(false);
+  facets.setEnabled(false);
   ++run;
   latest = ++serial;
   worker.terminate();
@@ -137,9 +144,10 @@ function start() {
   worker?.terminate();
   const generation = ++run;
   loaded = false;
-  articleFilter.setEnabled(false);
+  facets.setEnabled(false);
   epoch = 0;
   stage = 0;
+  facets.show(false);
   latest = ++serial;
   errors.clear();
   renderDelivery(delivery);
@@ -227,8 +235,8 @@ function bindEvents() {
   ))
     button.addEventListener("click", () => {
       input.value = button.dataset.query ?? "";
-      articleFilter.reset();
-      articleFilter.setEnabled(loaded);
+      facets.reset();
+      facets.setEnabled(loaded);
       query();
       input.focus();
     });

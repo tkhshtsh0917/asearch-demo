@@ -3,7 +3,11 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AsearchIndex } from "asearch-wasm";
 import { QueryPolicy } from "../../src/shared/query.ts";
-import { corpusOptions, searchOptions } from "../../src/worker/options.ts";
+import {
+  corpusOptions,
+  facetOptions,
+  searchOptions,
+} from "../../src/worker/options.ts";
 import { search } from "../../src/worker/search.ts";
 import { buildSegments } from "../site/segments.ts";
 import { createAnalysis } from "./run.ts";
@@ -111,7 +115,7 @@ test("mixed input merges literal hits with romanized matches and keeps the winni
       [first.base, [0]],
     ] as const) {
       const root = AsearchIndex.fromBytes(bytes),
-        session = root.session(corpusOptions);
+        session = root.session(facetOptions);
       try {
         const response = search({ kind: "query", id: 1, pattern: "びーt" }, 0, {
           root,
@@ -162,7 +166,7 @@ test("a literal H-II match cannot suppress Japan through deltas and compaction",
     [...docs.slice(1), ...upserts],
   );
   const root = AsearchIndex.fromBytes(parts.base),
-    session = root.session(corpusOptions);
+    session = root.session(facetOptions);
   const context = {
     root,
     session,
@@ -205,7 +209,7 @@ test("native article filtering retrieves matching IDs beyond the global display 
   const docs = analysis.analyze(rows);
   const parts = await buildSegments(docs, [], [], docs);
   const root = AsearchIndex.fromBytes(parts.base),
-    session = root.session(corpusOptions);
+    session = root.session(facetOptions);
   const context = {
     root,
     session,
@@ -221,7 +225,11 @@ test("native article filtering retrieves matching IDs beyond the global display 
     if (global.kind !== "results") throw new Error("Missing results");
     assert.equal(global.rows.length, 20);
     assert.ok(!global.rows.some((row) => row.key === 29));
-    const filtered = search({ ...request, title: "対象の記事" }, 0, context);
+    const filtered = search(
+      { ...request, filters: { articles: ["対象の記事"], changes: [] } },
+      0,
+      context,
+    );
     if (filtered.kind !== "results") throw new Error("Missing results");
     assert.deepEqual(
       filtered.rows.map((row) => row.key),

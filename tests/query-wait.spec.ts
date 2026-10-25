@@ -51,9 +51,15 @@ test("a response and superseded render frame cannot stand in for the latest DOM 
   await page.evaluate(() => window.__queryHarness.paint());
   await waiting;
   await expect(page.locator(".question")).toHaveText("候補:にh");
+  await expect(page.locator("#article-options .facet-name")).toHaveText(
+    "記事:にh",
+  );
 
   await page.evaluate(() => window.__queryHarness.paint());
   await expect(page.locator(".question")).toHaveText("候補:最新");
+  await expect(page.locator("#article-options .facet-name")).toHaveText(
+    "記事:最新",
+  );
   await page.waitForFunction(() => {
     const observed = (window as unknown as { __asearchBench: Observation })
       .__asearchBench;

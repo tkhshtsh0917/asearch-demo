@@ -57,26 +57,22 @@ test("edit distance precedes match start across literal and romanized candidates
   );
 });
 
-test("overlapping truncated streams report a lower bound without summing totals", () => {
+test("facets require complete streams and count an overlapping union once", () => {
   const left = Array.from({ length: 20 }, (_, key) => ({ key, start: key }));
   const right = Array.from({ length: 20 }, (_, key) => ({
     key: key + 10,
     start: key,
   }));
-  const bounded = run(fixture(result(left, 200), result(right, 180)).context);
-  assert.equal(bounded.total, 200);
-  assert.equal(bounded.totalIsExact, false);
-  assert.equal(bounded.rows.length, 20);
-  assert.equal(new Set(bounded.rows.map((row) => row.key)).size, 20);
-
+  assert.throws(
+    () => run(fixture(result(left, 200), result(right, 180)).context),
+    /Incomplete facet search results/,
+  );
   const complete = run(fixture(result(left), result(right)).context);
   assert.equal(complete.total, 30);
   assert.equal(complete.totalIsExact, true);
   assert.equal(complete.rows.length, 20);
-
-  const single = run(fixture(result(left, 200)).context);
-  assert.equal(single.total, 200);
-  assert.equal(single.totalIsExact, true);
+  assert.equal(complete.facets?.articles[0]?.count, 30);
+  assert.equal(new Set(complete.rows.map((row) => row.key)).size, 20);
 });
 
 test("unchanged and oversized queries do not trigger a second search", () => {

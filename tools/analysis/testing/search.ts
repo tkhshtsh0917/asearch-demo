@@ -1,5 +1,6 @@
 /** Creates JS-owned ranked results and narrow Worker dependencies for offline tests. */
 import type { SearchResult } from "asearch-wasm";
+import type { SearchFilters } from "../../../src/shared/facets.ts";
 import { QueryPolicy } from "../../../src/shared/query.ts";
 import { type SearchContext, search } from "../../../src/worker/search.ts";
 
@@ -70,13 +71,17 @@ export function fixture(primary: SearchResult, alternative = result([])) {
   return { context, calls, explanations };
 }
 
-export function run(context: SearchContext, pattern = "にh", title?: string) {
+export function run(
+  context: SearchContext,
+  pattern = "にh",
+  filters?: SearchFilters,
+) {
   const response = search(
     {
       kind: "query",
       id: 1,
       pattern,
-      ...(title === undefined ? {} : { title }),
+      ...(filters === undefined ? {} : { filters }),
     },
     3,
     context,

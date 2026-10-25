@@ -45,36 +45,13 @@
             <p id="hint">
               打鍵ごとに検索 · 最大128 UTF-16単位 · 空白はワイルドカード
             </p>
-            <details class="article-filter">
-              <summary>記事で絞り込む<span id="article-current"></span></summary>
-              <div class="article-fields">
-                <label for="article-search">記事名を探す
-                  <input id="article-search" type="search" maxlength="128" placeholder="例：日本" autocomplete="off" disabled />
-                </label>
-                <label for="article">対象の記事
-                  <select id="article" disabled><option value="">すべての記事</option></select>
-                </label>
-                <button id="article-clear" type="button" disabled>絞り込みを解除</button>
-              </div>
-              <p id="article-summary" role="status">記事一覧を準備しています。</p>
-            </details>
           </form>
         </search>
         <section class="samples" aria-label="検索例">
-          <button type="button" data-query="日本 歴史">
-            日本 歴史
-          </button>
-          <button type="button" data-query="大学">
-            大学
-          </button>
-          <button type="button" data-query="Beatles">
-            Beatles
-          </button>
-          <button
-            type="button"
-            data-query="更新例"
-            class="sample-update"
-          >
+          <button type="button" data-query="日本 歴史">日本 歴史</button>
+          <button type="button" data-query="大学">大学</button>
+          <button type="button" data-query="Beatles">Beatles</button>
+          <button type="button" data-query="更新例" class="sample-update">
             更新例 <span>差分の前後で比べる</span>
           </button>
         </section>
@@ -111,13 +88,76 @@
           </p>
         </section>
         <p id="error" role="alert"></p>
-        <p id="metrics" role="status"></p>
-        <p id="change-legend" hidden>
-          <span class="legend-added">追加</span
-          ><span class="legend-updated">変更</span>
-          最初の索引からの変化です。圧縮後も同じ質問に表示します。
-        </p>
-        <ol id="results" aria-label="検索結果"></ol>
+        <div id="search-layout" class="search-layout" data-active="false">
+          <aside
+            id="filters"
+            class="facets"
+            data-open="false"
+            aria-labelledby="filters-title"
+            hidden
+          >
+            <div class="facets-heading">
+              <h2 id="filters-title">絞り込み</h2>
+              <span id="filters-selected">未選択</span>
+              <button
+                id="filters-toggle"
+                type="button"
+                aria-expanded="false"
+                aria-controls="facet-body"
+              >
+                条件を開く
+              </button>
+            </div>
+            <div id="facet-body" class="facet-body">
+              <button id="filters-clear" type="button" disabled>
+                すべて解除
+              </button>
+              <fieldset>
+                <legend>出典記事</legend>
+                <label class="facet-search" for="article-search"
+                  >記事名で探す</label
+                >
+                <input
+                  id="article-search"
+                  type="search"
+                  maxlength="128"
+                  placeholder="例：日本"
+                  autocomplete="off"
+                  disabled
+                />
+                <p id="article-summary" class="facet-help">
+                  記事の候補を準備しています。
+                </p>
+                <div id="article-options" class="facet-options"></div>
+              </fieldset>
+              <fieldset>
+                <legend>更新状態</legend>
+                <p class="facet-help">
+                  キーワードと選択した記事による候補数です。
+                </p>
+                <div id="change-options" class="facet-options"></div>
+              </fieldset>
+              <p class="facet-help">
+                同じ項目の選択は「いずれか」、記事と更新状態の組み合わせは「両方」で絞り込みます。
+              </p>
+            </div>
+          </aside>
+          <section class="results-pane" aria-label="検索結果の一覧">
+            <fieldset
+              id="active-filters"
+              class="filter-chips"
+              aria-label="選択中の絞り込み"
+              hidden
+            ></fieldset>
+            <p id="metrics" role="status"></p>
+            <p id="change-legend" hidden>
+              <span class="legend-added">追加</span
+              ><span class="legend-updated">変更</span>
+              最初の索引からの変化です。圧縮後も同じ質問に表示します。
+            </p>
+            <ol id="results" aria-label="検索結果"></ol>
+          </section>
+        </div>
       </section>
       <section class="notes" aria-label="仕組みと出典">
         <div>
@@ -153,7 +193,9 @@
         </p>
         <details>
           <summary>データへの変更内容</summary>
-          <p id="changes">質問文・出典メタデータ・短い本文抜粋を抽出しています。</p>
+          <p id="changes">
+            質問文・出典メタデータ・短い本文抜粋を抽出しています。
+          </p>
         </details>
         <p>
           ブラウザ互換性はPlaywrightのエンジン・モバイルプロファイルによる検証範囲です。実機の性能や動作は保証しません。<a

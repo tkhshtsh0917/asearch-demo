@@ -39,7 +39,7 @@ test("WASM question search, explanations and attribution run without console err
       fullPage: true,
     });
   await expect(page.getByRole("combobox", { includeHidden: true })).toHaveCount(
-    1,
+    0,
   );
   await query(page, "<img src=x onerror=alert(1)>");
   await expect(page.locator("#results img")).toHaveCount(0);

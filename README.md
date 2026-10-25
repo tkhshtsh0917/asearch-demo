@@ -12,7 +12,7 @@ The server-only Rust analyzer generates readings, romanizations, synonyms and qu
 
 The committed setup uses the published Rust CLI and WASM **v0.4.0** Release Assets. Native query-rule export and positional ranking require compatible 0.3+ artifacts; updating the version requires checksum verification and regression tests.
 
-Filter results by source article with a searchable title selector, or browse an article without a keyword. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
+On the results screen, a left sidebar provides article and update-status checkboxes, with multiple choices and keyword-dependent counts. Mobile screens offer a collapsible panel. Selected filters remain visible as removable chips, including zero-count selections after restore. See [facets](docs/data.md#article-facets) for the OR/AND rules and limits. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
 
 ## Setup
 

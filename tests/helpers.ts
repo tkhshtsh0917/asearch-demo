@@ -13,14 +13,31 @@ export async function open(page: Page, options: { observe?: boolean } = {}) {
 
 /** Requires a response and DOM mutation for this input, including identical repeated text. */
 export async function query(page: Page, text: string, timeout?: number) {
+  await searchAction(
+    page,
+    async () => {
+      const input = page.locator("#query");
+      if ((await input.inputValue()) === text)
+        await input.dispatchEvent("input");
+      else await input.fill(text);
+    },
+    { pattern: text, timeout },
+  );
+}
+
+/** Waits for the new accepted render caused by an input or facet action. */
+export async function searchAction(
+  page: Page,
+  action: () => Promise<unknown>,
+  options: { pattern?: string; timeout?: number | undefined } = {},
+) {
   const before = await page.evaluate(
     () =>
       (window as unknown as { __asearchBench: Observation }).__asearchBench
         .queries,
   );
-  const input = page.locator("#query");
-  if ((await input.inputValue()) === text) await input.dispatchEvent("input");
-  else await input.fill(text);
+  await action();
+  const text = options.pattern ?? (await page.locator("#query").inputValue());
 
   await page.waitForFunction(
     ({ before, text }) => {
@@ -35,6 +52,6 @@ export async function query(page: Page, text: string, timeout?: number) {
       );
     },
     { before, text },
-    timeout === undefined ? {} : { timeout },
+    options.timeout === undefined ? {} : { timeout: options.timeout },
   );
 }

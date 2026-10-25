@@ -1,7 +1,8 @@
 /** Checks real source excerpts and safe rendering of coherent but hostile metadata. */
 import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { open, query } from "./helpers.ts";
+import { open, query, searchAction } from "./helpers.ts";
+import { openFacets } from "./support/facets.ts";
 
 test("source excerpts stay separate from original questions", async ({
   page,
@@ -10,14 +11,16 @@ test("source excerpts stay separate from original questions", async ({
   await query(page, "大学");
   const snippet = page.locator("#results .snippet-text").first();
   await expect(snippet).toBeVisible();
-  expect(Array.from(await snippet.innerText()).length).toBeLessThanOrEqual(160);
+  const text = await snippet.textContent();
+  expect(text).toBeTruthy();
+  expect(Array.from(text ?? "").length).toBeLessThanOrEqual(160);
   await expect(page.locator("#results .snippet-label").first()).toHaveText(
     "本文抜粋",
   );
   await expect(page.locator("#results .question").first()).toBeVisible();
 });
 
-test("excerpt markup is displayed as text even when the catalog digest is valid", async ({
+test("catalog markup stays text in excerpts, facets and selection chips", async ({
   page,
   request,
 }) => {
@@ -26,7 +29,11 @@ test("excerpt markup is displayed as text even when the catalog digest is valid"
   const rows = await (await request.get(`data/${stage.catalog}`)).json();
   const hostile = '<img src=x onerror="window.snippetExecuted=true">';
   const bytes = JSON.stringify(
-    rows.map((row: Record<string, unknown>) => ({ ...row, snippet: hostile })),
+    rows.map((row: Record<string, unknown>) => ({
+      ...row,
+      title: hostile,
+      snippet: hostile,
+    })),
   );
   stage.catalogSha256 = createHash("sha256").update(bytes).digest("hex");
   await page.route("**/data/release.json", (route) =>
@@ -40,6 +47,16 @@ test("excerpt markup is displayed as text even when the catalog digest is valid"
   await expect(page.locator("#results .snippet-text").first()).toHaveText(
     hostile,
   );
-  await expect(page.locator("#results img")).toHaveCount(0);
+  await openFacets(page);
+  await expect(page.locator("#article-options .facet-name")).toHaveText(
+    hostile,
+  );
+  await searchAction(page, () =>
+    page.locator("#article-options input").check(),
+  );
+  await expect(page.locator("#active-filters button")).toContainText(hostile);
+  await expect(
+    page.locator("#results img, #filters img, #active-filters img"),
+  ).toHaveCount(0);
   expect(await page.evaluate(() => "snippetExecuted" in window)).toBe(false);
 });

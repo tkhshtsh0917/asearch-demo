@@ -9,11 +9,10 @@ import {
 } from "asearch-wasm";
 import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
-import { articleFacets } from "./shared/facets.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { MAX_QUERY_RULE_BYTES, QueryPolicy } from "./shared/query.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
-import { corpusOptions } from "./worker/options.ts";
+import { facetOptions } from "./worker/options.ts";
 import { search } from "./worker/search.ts";
 import { candidate } from "./worker/stage.ts";
 
@@ -52,7 +51,6 @@ function state() {
     updates: updates.summary,
     creator: info.attribution.creator,
     changes: info.attribution.changes,
-    facets: articleFacets(questions),
   });
 }
 
@@ -121,7 +119,7 @@ async function init(url: string) {
 
   try {
     session = root.session({
-      ...corpusOptions,
+      ...facetOptions,
       maxCacheBytes: 16 * 1024 * 1024,
     });
   } catch (error) {
