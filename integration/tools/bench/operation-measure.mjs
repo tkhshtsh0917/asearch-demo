@@ -2,16 +2,9 @@
 
 import { measureExplanations } from "./explain-measure.mjs";
 import { pairedOperations as paired } from "./operation-pairs.mjs";
+import { resultSnapshot } from "./result-snapshot.mjs";
 import { comparisonSettings } from "./search-settings.mjs";
 import { measureSessions } from "./session-measure.mjs";
-
-function snapshot(result) {
-  return JSON.stringify(
-    [result.ids, result.levels, result.orders, result.totals].map((v) => [
-      ...v,
-    ]),
-  );
-}
 
 async function descriptor(bytes) {
   const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
@@ -35,7 +28,10 @@ function measureLoad(apis, bytes, expected, options, now) {
     const index = apis[side].AsearchIndex.fromBytes(bytes, { expected });
     const elapsed = now() - start;
     try {
-      const value = snapshot(index.search(pattern, settings[side]));
+      const value = resultSnapshot(
+        index.search(pattern, settings[side]),
+        options.ranking === "position",
+      );
       reference ??= value;
       if (value !== reference) throw new Error("Load result mismatch");
       return elapsed;
@@ -72,7 +68,11 @@ function measureNarrowing(apis, bytes, options, now) {
     iterations > 16384
   )
     throw new RangeError("Invalid narrowing batch workload");
-  const searchOptions = comparisonSettings({ baselineEngine, candidateEngine });
+  const searchOptions = comparisonSettings({
+    ...options,
+    baselineEngine,
+    candidateEngine,
+  });
   const indexes = [],
     sessions = [];
   try {
@@ -83,7 +83,7 @@ function measureNarrowing(apis, bytes, options, now) {
     }
     let reference;
     const verify = (result) => {
-      const value = snapshot(result);
+      const value = resultSnapshot(result, options.ranking === "position");
       reference ??= value;
       if (value !== reference || result.stats.engine !== "narrowing")
         throw new Error("Narrowing result or selected engine mismatch");

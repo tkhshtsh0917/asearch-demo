@@ -1,3 +1,4 @@
+import { resultSnapshot } from "./result-snapshot.mjs";
 import { comparisonSettings } from "./search-settings.mjs";
 import { timingSummary as summary } from "./timing-summary.mjs";
 // Complete update calls, including JS/WASM transfers and result copies.
@@ -8,14 +9,6 @@ export const sequences = [
   ["ｶ", "ｶﾞ", "ｶﾞｸ", "ｶﾞ", "ｶ", ""],
 ];
 
-function snapshot(result) {
-  return JSON.stringify([
-    ...["ids", "levels", "orders", "totals"].map((key) =>
-      result[key] === undefined ? null : [...result[key]],
-    ),
-  ]);
-}
-
 export function measureSessions(
   api,
   bytes,
@@ -25,6 +18,8 @@ export function measureSessions(
     warmup = 10,
     inputs = sequences,
     kind = "session",
+    ranking,
+    limit = 30,
     candidateApi = api,
     baselineEngine = "transposed-blocked",
     candidateEngine = "auto",
@@ -63,6 +58,8 @@ export function measureSessions(
     const searchOptions = comparisonSettings({
       baselineEngine,
       candidateEngine,
+      ranking,
+      limit,
     });
     const prepare = (index, settings) =>
       kind === "session"
@@ -78,7 +75,9 @@ export function measureSessions(
     candidate = prepare(candidateIndex, searchOptions.candidate);
     const expected = inputs.map((sequence) => {
       blocked.reset();
-      return sequence.map((pattern) => snapshot(blocked.update(pattern)));
+      return sequence.map((pattern) =>
+        resultSnapshot(blocked.update(pattern), ranking === "position"),
+      );
     });
     const engines = {};
     function execute(session, samples, countEngines) {
@@ -91,7 +90,7 @@ export function measureSessions(
           if (!Number.isFinite(elapsed) || elapsed < 0)
             throw new Error("Non-monotonic timer");
           if (samples) samples.push(elapsed);
-          if (snapshot(result) !== expected[s][q])
+          if (resultSnapshot(result, ranking === "position") !== expected[s][q])
             throw new Error("Session/full result mismatch");
           if (countEngines)
             engines[result.stats.engine] =
@@ -121,7 +120,7 @@ export function measureSessions(
     return {
       category: `Individual ${kind === "session" ? "session.update" : "index.search"} latency, JS/WASM and copied results included; reset excluded`,
       correctness:
-        "ids/levels/orders/exact totals checked outside each timing interval",
+        "ids/levels/orders/exact totals and optional starts checked outside each timing interval",
       kind,
       comparison: {
         baselineEngine,

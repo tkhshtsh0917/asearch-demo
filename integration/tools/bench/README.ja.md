@@ -59,3 +59,28 @@ mise exec -- pnpm bench:segments OUTPUT_JSON browser
 固定の合成1万文書・2万textを1〜8segmentへ分割し、同じフル索引とAB/BA順で照合します。各segment数・各経路1,300回（13入力×5run×20round）のsearch呼出時間を保存し、ids/levels/orders/exact totalsとcompaction bytesを照合します。現行のクライアント計測はロード・更新のみ。索引準備とCLI圧縮は計時外で行う。以下は移行前の計測記録である。ロード・圧縮・更新は新しいrootで3回のウォームアップ後に各30回計測します。取得元はメモリ上のbytesで、HTTP通信時間ではありません。先頭の単独観測値は診断用で、30標本の分布とは区別します。ロードと更新にはexpectedのSHA-384検査を含みます。8segment後の更新は圧縮base＋deltaへの全量置換なので、他のappendと処理量が異なります。
 
 WASM memoryのbyteLengthは縮まないページ数の観測です。同じinstanceで先行シナリオも実行するため、現在のlive allocationや厳密な操作別ピークと同一視しません。合成データの結果を実データの検索品質・端末性能へ一般化しません。小さなdeltaと定期圧縮を組み合わせる方針を維持し、既定の圧縮目安を全用途の最適閾値として保証しません。
+
+## 位置順位の比較
+
+`compare-session.mjs`は任意のworkload JSONで`ranking`（`stable`または`position`）と`limit`を明示できます。このoptionに対応しない旧成果物を比較する場合は`ranking`を省略します。両方へ同じ設定を渡し、位置順位の比較ではids・levels・orders・厳密totalsに加え、`starts`を必須として照合します。不透明な参照は所有元に固有なので除外します。ロード・反復narrowing・説明の比較も同じ結果snapshotを使います。
+
+```json
+{
+  "kind": "search",
+  "ranking": "position",
+  "limit": 20,
+  "runs": 5,
+  "rounds": 30,
+  "warmup": 3,
+  "inputs": [
+    ["日", "日本", "日本の大学"],
+    ["bi", "beatles"]
+  ]
+}
+```
+
+```sh
+mise exec -- node tools/bench/compare-session.mjs BASELINE_DIST CANDIDATE_DIST INPUT_ASIX OUTPUT_JSON BASELINE_COMMIT CANDIDATE_COMMIT auto node WORKLOAD_JSON
+```
+
+`node`を`browser`にするとChromium・Firefox・WebKitを順番に比較します。実際のsource revision・toolchain・配布物hash・ASIX hashを記録してください。任意のworkloadのhashと、共有snapshotのソースhashもレポートに含めます。これは照合・APIの計測であり、UIのクエリ変換・記事フィルタ・描画は含めません。順位や結果上限を変えると測定負荷も変わります。

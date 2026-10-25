@@ -1,6 +1,7 @@
 // Compare explanations of equivalent ranked results without comparing opaque refs.
 
 import { pairedOperations } from "./operation-pairs.mjs";
+import { resultSnapshot } from "./result-snapshot.mjs";
 import { comparisonSettings } from "./search-settings.mjs";
 
 export function measureExplanations(apis, bytes, options, now) {
@@ -21,9 +22,11 @@ export function measureExplanations(apis, bytes, options, now) {
     const results = indexes.map((index, side) =>
       index.search(pattern, settings[side]),
     );
-    const snapshot = (r) =>
-      JSON.stringify([r.ids, r.levels, r.orders, r.totals].map((v) => [...v]));
-    if (snapshot(results[0]) !== snapshot(results[1]) || !results[0].length)
+    if (
+      resultSnapshot(results[0], options.ranking === "position") !==
+        resultSnapshot(results[1], options.ranking === "position") ||
+      !results[0].length
+    )
       throw new Error("Explanation search mismatch or empty workload");
     const explain = (side) =>
       [...results[side].refs].map((ref) =>

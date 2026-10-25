@@ -63,6 +63,8 @@ if (workloadPath) {
   workloadHash = sha(workloadBytes);
   const {
     inputs,
+    ranking,
+    limit,
     runs,
     rounds,
     warmup,
@@ -75,6 +77,8 @@ if (workloadPath) {
   measurement = Object.fromEntries(
     Object.entries({
       inputs,
+      ranking,
+      limit,
       runs,
       rounds,
       warmup,
@@ -93,6 +97,7 @@ const harness = {};
 for (const name of [
   "compare-session.mjs",
   "session-measure.mjs",
+  "result-snapshot.mjs",
   "search-settings.mjs",
   "operation-measure.mjs",
   "operation-pairs.mjs",

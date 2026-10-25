@@ -59,3 +59,28 @@ mise exec -- pnpm bench:segments OUTPUT_JSON browser
 Split a fixed synthetic 10,000-document/20,000-text corpus into 1–8 segments and compare with the same full index in AB/BA order. Record 1,300 searches per segment count/path (13 inputs × five runs × 20 rounds), checking ids/levels/orders/exact totals and compacted bytes. Current client lifecycle timing measures load/update only; CLI fixture construction/compaction is outside timing. Historical pre-separation measurements timed load/compaction/update 30 times on fresh roots after three warmups. Sources are in-memory bytes, not HTTP. Initial standalone observations are diagnostic, separate from the 30-sample distributions. Load/update include expected SHA-384 validation. After eight segments, updates replace the whole column with compacted base plus delta, unlike append cases.
 
 WASM memory byteLength reports nonshrinking pages. Earlier scenarios in the same instance affect it; it is not live allocation or an exact operation peak. Synthetic results do not establish real-data relevance or device performance. Small deltas plus periodic compaction remain the policy; provisional thresholds are not universally optimal.
+
+## Positional ranking comparisons
+
+`compare-session.mjs` accepts an optional workload JSON with explicit `ranking` (`stable` or `position`) and `limit`. Omit `ranking` when comparing older artifacts that do not support that option. Both sides receive the same settings; positional comparisons require and compare `starts` as well as ids, levels, orders and exact totals. Opaque references remain local to their owner and are excluded. Loading, repeated narrowing and explanation comparisons use this same result snapshot.
+
+```json
+{
+  "kind": "search",
+  "ranking": "position",
+  "limit": 20,
+  "runs": 5,
+  "rounds": 30,
+  "warmup": 3,
+  "inputs": [
+    ["日", "日本", "日本の大学"],
+    ["bi", "beatles"]
+  ]
+}
+```
+
+```sh
+mise exec -- node tools/bench/compare-session.mjs BASELINE_DIST CANDIDATE_DIST INPUT_ASIX OUTPUT_JSON BASELINE_COMMIT CANDIDATE_COMMIT auto node WORKLOAD_JSON
+```
+
+Use `browser` instead of `node` to compare Chromium, Firefox and WebKit sequentially. Record the actual source revisions, toolchain, distribution hashes and ASIX hash. The optional workload hash and shared snapshot source hash are included in the report. These are matching/API measurements, excluding UI query conversion, article filtering and rendering; changing the rank or result limit changes the workload.

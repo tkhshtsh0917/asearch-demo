@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { measureSessions } from "./session-measure.mjs";
 
-function fixture({ mismatch = false } = {}) {
+function fixture({ mismatch = false, startMismatch = false } = {}) {
   const released = [];
   return {
     released,
@@ -24,6 +24,7 @@ function fixture({ mismatch = false } = {}) {
                     ),
                     levels: Uint8Array.of(0),
                     orders: Uint32Array.of(0),
+                    starts: Uint32Array.of(startMismatch && candidate ? 1 : 0),
                     totals: Uint32Array.of(1),
                     stats: {
                       engine: candidate ? "incremental" : "transposed-blocked",
@@ -183,5 +184,21 @@ test("bulk mode calls search without creating sessions", () => {
   assert.throws(
     () => measureSessions(api, new Uint8Array(), { kind: "unknown" }),
     RangeError,
+  );
+});
+
+test("equal IDs and edit levels cannot hide a positional-rank mismatch", () => {
+  const { api } = fixture({ startMismatch: true });
+  assert.throws(
+    () =>
+      measureSessions(api, new Uint8Array(), {
+        ranking: "position",
+        limit: 20,
+        runs: 1,
+        rounds: 1,
+        warmup: 1,
+        inputs: [["ab"]],
+      }),
+    /mismatch/,
   );
 });
