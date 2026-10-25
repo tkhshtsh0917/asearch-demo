@@ -8,19 +8,19 @@ IMEの変換中も現在の入力値で検索し、確定・候補の置換・�
 
 サーバー専用のRust解析器が読み・ローマ字・同義語・クエリ変換表を生成します。質問原文を維持し、補助`texts`にはASIX v1を使います。語単位の動詞正規化により`食べた`と`食べる`は同じクエリで検索し、上限内の変換で入力が変わる場合は、`びーt`→`bi-t`や`にh`→`nih`のように両方の表記で検索し、候補を重複排除して統合します。コーパスの順位は編集距離、一致開始位置、order、keyの順です。範囲と上限は[検索用解析](docs/ja/search-analysis.md)を参照してください。
 
-コミット済みの構成は、公開済みのRust CLI・WASM **v0.3.1**のRelease Assetsを使います。ネイティブのクエリ変換表出力と位置順位には互換性のある0.3以降の成果物が必要で、版を更新する際はハッシュ検証と回帰テストを行います。
+コミット済みの構成は、公開済みのRust CLI・WASM **v0.4.0**のRelease Assetsを使います。ネイティブのクエリ変換表出力と位置順位には互換性のある0.3以降の成果物が必要で、版を更新する際はハッシュ検証と回帰テストを行います。
 
 記事名を検索して結果を絞り込み、キーワードなしで記事内の質問を閲覧できます。元の`text`段落から作った短いプレーンテキストの抜粋で内容を把握でき、生成回答や追加の検索対象としては扱いません。
 
 ## セットアップ
 
-Node/pnpmはmise、システム辞書の展開に`unzip`、wasm-bindgen-cliは選択したRust Releaseに対応する0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。`release.lock.json`は公開済みv0.3.1と3 OSすべてのbundleのSHAを固定しています。以下のコマンドは`tools/engine/select.ts`で同じReleaseを選び、未設定のOSのSHAがあれば準備を停止します。
+Node/pnpmはmise、システム辞書の展開に`unzip`、wasm-bindgen-cliは選択したRust Releaseに対応する0.2.129を使います。デモ側で検索エンジンのRustソースをビルドしません。`release.lock.json`は公開済みv0.4.0と3 OSすべてのbundleのSHAを固定しています。以下のコマンドは`tools/engine/select.ts`で同じReleaseを選び、未設定のOSのSHAがあれば準備を停止します。
 
 ```sh
 mise install
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 mise exec -- pnpm --dir integration install --frozen-lockfile
-mise exec -- node tools/engine/select.ts v0.3.1
+mise exec -- node tools/engine/select.ts v0.4.0
 mise exec -- node tools/engine/build.ts
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
