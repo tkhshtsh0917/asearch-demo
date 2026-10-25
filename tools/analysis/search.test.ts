@@ -18,6 +18,16 @@ test("literal hits do not suppress a convertible query and positional ranking is
   assert.equal(response.totalIsExact, true);
   assert.equal(response.stats?.blocks, 2);
   assert.equal(response.stats?.segments, 1);
+  assert.equal(response.stats?.engine, "transposed-blocked");
+});
+
+test("different matching backends are reported as mixed without duplicating segment counts", () => {
+  const primary = result([{ key: 1, start: 0 }]);
+  primary.stats.engine = "incremental";
+  const { context } = fixture(primary, result([{ key: 2, start: 1 }]));
+  const response = run(context);
+  assert.equal(response.stats?.engine, "mixed");
+  assert.equal(response.stats?.segments, 1);
 });
 
 test("the best duplicate owns its explanation, with literal preference only on an exact rank tie", () => {

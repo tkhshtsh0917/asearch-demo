@@ -43,7 +43,11 @@ function stats(results: readonly SearchResult[]): SearchStats {
   const sum = (field: "blocks" | "earlyExitBlocks" | "reusedRows") =>
     results.reduce((total, result) => total + result.stats[field], 0);
   return {
-    engine: "mixed",
+    engine: results.every(
+      (result) => result.stats.engine === first.stats.engine,
+    )
+      ? first.stats.engine
+      : "mixed",
     segments: first.stats.segments,
     blocks: sum("blocks"),
     earlyExitBlocks: sum("earlyExitBlocks"),
