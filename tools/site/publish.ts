@@ -7,6 +7,7 @@ import {
   type Release,
 } from "../../src/shared/catalog.ts";
 import { type Analysis, createAnalysis } from "../analysis/run.ts";
+import { encodeQueryRules } from "./query-rules.ts";
 import { buildSegments } from "./segments.ts";
 
 export const digest = (bytes: Uint8Array | string) =>
@@ -73,7 +74,7 @@ export async function publish(
       [...questions, ...changed, added].map((row) => [row.text, row]),
     ).values(),
   ].map((row, key) => ({ ...row, key }));
-  const rulesBytes = encode(analysis.queryRules(querySources));
+  const rulesBytes = encodeQueryRules(analysis.queryRules(querySources));
   const rules = {
     url: put("query-rules", "json", rulesBytes),
     sha256: digest(rulesBytes),
