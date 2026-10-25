@@ -2,10 +2,7 @@
 
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
-import {
-  installObservation,
-  type Observation,
-} from "../tools/bench/observe.ts";
+import type { Observation } from "../tools/bench/observe.ts";
 import { open, query } from "./helpers.ts";
 
 test("WASM question search, explanations and attribution run without console errors", async ({
@@ -115,7 +112,6 @@ test("redistributed code carries its own and dependency license notices", async 
 test("benchmark observer correlates Worker messages with accepted DOM changes", async ({
   page,
 }) => {
-  await page.addInitScript(installObservation);
   await open(page);
   await expect(page.locator("#metrics")).toContainText("入力してください");
   await query(page, "大学");

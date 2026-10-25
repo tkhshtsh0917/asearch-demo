@@ -1,9 +1,6 @@
 /** Query spelling, composition, normalization and ranking regressions. */
 import { expect, test } from "@playwright/test";
-import {
-  installObservation,
-  type Observation,
-} from "../tools/bench/observe.ts";
+import type { Observation } from "../tools/bench/observe.ts";
 import { open, query } from "./helpers.ts";
 
 test("composition searches intermediate text and subsequent typing wins", async ({
@@ -66,7 +63,6 @@ test("IME replacement and cancellation search the entire restored value", async 
 test("script, case, romaji and synonym queries display the same original questions", async ({
   page,
 }) => {
-  await page.addInitScript(installObservation);
   await open(page);
   let originals: string[] | undefined;
 
@@ -79,14 +75,7 @@ test("script, case, romaji and synonym queries display the same original questio
     "biitoruzu",
     "bi-toruzu",
   ]) {
-    await page.locator("#query").fill(pattern);
-    await page.waitForFunction(
-      (value) =>
-        (
-          window as unknown as { __asearchBench: Observation }
-        ).__asearchBench.samples.at(-1)?.pattern === value,
-      pattern,
-    );
+    await query(page, pattern);
     const questions = await page
       .locator("#results .question")
       .allTextContents();
@@ -104,7 +93,6 @@ test("script, case, romaji and synonym queries display the same original questio
 test("mixed composition alternatives and verb normalization preserve the visible query", async ({
   page,
 }) => {
-  await page.addInitScript(installObservation);
   await open(page);
   await page.locator("#query").evaluate((element) => {
     const input = element as HTMLInputElement;
@@ -128,14 +116,7 @@ test("mixed composition alternatives and verb normalization preserve the visible
 
   const questions: string[][] = [];
   for (const value of ["食べた", "食べる", "食べました"]) {
-    await page.locator("#query").fill(value);
-    await page.waitForFunction(
-      (pattern) =>
-        (
-          window as unknown as { __asearchBench: Observation }
-        ).__asearchBench.samples.at(-1)?.pattern === pattern,
-      value,
-    );
+    await query(page, value);
     questions.push(await page.locator("#results .question").allTextContents());
     await expect(page.locator("#query")).toHaveValue(value);
   }
@@ -160,7 +141,6 @@ test("short roman prefixes rank ahead of interior substring aliases", async ({
 test("literal rocket hits do not hide Japan during composition", async ({
   page,
 }) => {
-  await page.addInitScript(installObservation);
   await open(page);
   await page.locator("#query").evaluate((input) => {
     input.dispatchEvent(

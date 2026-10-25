@@ -61,14 +61,23 @@ for (const [name, type] of Object.entries({ chromium, firefox, webkit })) {
         const before = await page.evaluate(
           () =>
             (window as unknown as { __asearchBench: Observation })
-              .__asearchBench.samples.length,
+              .__asearchBench.queries,
         );
         await page.locator("#query").fill(pattern);
         await page.waitForFunction(
-          (count) =>
-            (window as unknown as { __asearchBench: Observation })
-              .__asearchBench.samples.length > count,
-          before,
+          ({ before, pattern }) => {
+            const observed = (
+              window as unknown as { __asearchBench: Observation }
+            ).__asearchBench;
+            const sample = observed.samples.at(-1);
+            return (
+              sample !== undefined &&
+              sample.sequence > before &&
+              sample.sequence === observed.queries &&
+              sample.pattern === pattern
+            );
+          },
+          { before, pattern },
         );
       }
     }

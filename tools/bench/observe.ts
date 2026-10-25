@@ -1,5 +1,8 @@
-/** Observes benchmark-only Worker requests, responses and accepted DOM mutations. */
+/** Correlates current Worker responses with their accepted DOM mutations in test pages. */
+import type { Request, Response } from "../../src/shared/protocol.ts";
+
 interface Sample {
+  sequence: number;
   pattern: string;
   workerMs: number;
   roundTripMs: number;
@@ -7,36 +10,73 @@ interface Sample {
 }
 export interface Observation {
   readyMs: number | null;
+  queries: number;
   samples: Sample[];
   errors: string[];
 }
 
+/** Installs once per navigation; superseded requests and Workers never complete a sample. */
 export function installObservation(): void {
+  if (Object.hasOwn(window, "__asearchBench")) return;
   const observation: Observation = {
     readyMs: null,
+    queries: 0,
     samples: [],
     errors: [],
   };
   Object.assign(window, { __asearchBench: observation });
+
+  interface Sent {
+    worker: Worker;
+    id: number;
+    sequence: number;
+    pattern: string;
+    started: number;
+  }
+  let active: Worker | undefined;
+  let epoch: number | undefined;
+  let latest: Sent | undefined;
+  let pending: { request: Sent; sample: Sample } | undefined;
+  const invalidate = () => {
+    latest = undefined;
+    pending = undefined;
+  };
   const NativeWorker = window.Worker;
-  const sent = new Map<number, { started: number; pattern: string }>();
-  let accepted: { sample: Sample; started: number } | undefined;
 
   window.Worker = class extends NativeWorker {
     constructor(...args: ConstructorParameters<typeof Worker>) {
       super(...args);
-      this.addEventListener("message", (event) => {
+      active = this;
+      epoch = undefined;
+      invalidate();
+      this.addEventListener("error", () => {
+        if (this === active) invalidate();
+      });
+      this.addEventListener("message", (event: MessageEvent<Response>) => {
+        if (this !== active) return;
         const message = event.data;
-        if (message.kind === "error") observation.errors.push(message.message);
-        const request = sent.get(message.id);
-        if (message.kind !== "results" || !request) return;
-        sent.delete(message.id);
-        accepted = {
-          started: request.started,
+        if (message.kind === "error") {
+          observation.errors.push(message.message);
+          pending = undefined;
+        }
+        if (message.kind === "state") {
+          epoch = message.epoch;
+          pending = undefined;
+        }
+        if (
+          message.kind !== "results" ||
+          !latest ||
+          message.id !== latest.id ||
+          message.epoch !== epoch
+        )
+          return;
+        pending = {
+          request: latest,
           sample: {
-            pattern: request.pattern,
+            sequence: latest.sequence,
+            pattern: latest.pattern,
             workerMs: message.elapsed,
-            roundTripMs: performance.now() - request.started,
+            roundTripMs: performance.now() - latest.started,
             domMs: 0,
           },
         };
@@ -47,16 +87,16 @@ export function installObservation(): void {
       message: unknown,
       options?: StructuredSerializeOptions | Transferable[],
     ): void {
-      const request = message as {
-        kind?: string;
-        id: number;
-        pattern: string;
-      };
-      if (request.kind === "query") {
-        sent.set(request.id, {
-          started: performance.now(),
+      const request = message as Request;
+      if (this === active && request.kind === "query") {
+        pending = undefined;
+        latest = {
+          worker: this,
+          id: request.id,
+          sequence: ++observation.queries,
           pattern: request.pattern,
-        });
+          started: performance.now(),
+        };
       }
       super.postMessage(
         message,
@@ -64,6 +104,16 @@ export function installObservation(): void {
       );
     }
   };
+
+  // Input invalidates old responses before the app coalesces the next Worker request.
+  for (const name of ["input", "compositionstart"])
+    document.addEventListener(
+      name,
+      (event) => {
+        if (event.target === document.querySelector("#query")) invalidate();
+      },
+      true,
+    );
 
   new MutationObserver((entries) => {
     if (
@@ -73,17 +123,18 @@ export function installObservation(): void {
       observation.readyMs = performance.now();
     const metrics = document.querySelector("#metrics");
     if (
-      !accepted ||
+      !pending ||
+      pending.request !== latest ||
+      pending.request.worker !== active ||
       !metrics ||
       !entries.some(
         (entry) => entry.target === metrics || metrics.contains(entry.target),
       )
     )
       return;
-    const request = accepted;
-    request.sample.domMs = performance.now() - request.started;
-    observation.samples.push(request.sample);
-    accepted = undefined;
+    pending.sample.domMs = performance.now() - pending.request.started;
+    observation.samples.push(pending.sample);
+    pending = undefined;
   }).observe(document, {
     subtree: true,
     childList: true,

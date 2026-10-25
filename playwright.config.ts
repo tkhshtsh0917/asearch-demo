@@ -4,6 +4,7 @@ export default defineConfig({
   testMatch: [
     "search.spec.ts",
     "query.spec.ts",
+    "query-wait.spec.ts",
     "delivery.spec.ts",
     "recovery.spec.ts",
     "restore.spec.ts",
