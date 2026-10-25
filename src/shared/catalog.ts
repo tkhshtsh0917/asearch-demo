@@ -62,6 +62,7 @@ export function catalog(value: unknown): Question[] {
       title.length > 65535 ||
       (snippet !== undefined &&
         (typeof snippet !== "string" ||
+          snippet.length > MAX_SNIPPET_CODE_POINTS * 2 ||
           Array.from(snippet).length > MAX_SNIPPET_CODE_POINTS))
     )
       throw new Error("Invalid catalog entry");
