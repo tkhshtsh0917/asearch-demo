@@ -33,16 +33,9 @@ mise exec -- pnpm preview --base /asearch-demo/
 
 `engine:build`はbundleのSHA-256を検査し、WASMからJSグルーとTS APIを生成・packします。意図的に版やラッパを更新した場合は、検証後にルートのpnpm-lock.yamlも更新します。CIは利用するReleaseを固定した後にfrozen installを実行します。ローカルで同じAssetsを用意した場合は`node tools/engine/build.ts PATH_TO_ASSET_DIRECTORY`を使えます。隣接Rust checkoutは暗黙に参照しません。
 
-## 検証と配信
+## 開発
 
-```sh
-mise exec -- pnpm --dir integration typecheck
-mise exec -- pnpm --dir integration lint
-mise exec -- pnpm --dir integration test
-mise exec -- pnpm --dir integration test:browser
-mise exec -- pnpm test:dev
-mise exec -- pnpm test:e2e
-```
+検証コマンド、コードとテストの変更規則、日英ドキュメントの更新は[コントリビューションガイド](CONTRIBUTING.ja.md)を参照してください。静的サイトの成果物と版の確認は[ビルドガイド](docs/ja/deployment.md)、Worker往復・DOMの計測は[性能ガイド](docs/ja/performance.md)にあります。
 
 ## 責務
 
@@ -63,9 +56,3 @@ AutoWikiQA先頭1万質問の固定シナリオを使用し、質問文だけを
 ## 謝辞
 
 照合の着想と互換性の基準には[asearch.ts](https://github.com/teramotodaiki/asearch.ts)を参照しています。上流原本とライセンスはintegration/vendorに保持します。
-
-ブラウザ向けWASMは読み取り専用です。索引生成・圧縮は取得済みCLIが担当します。初回ReleaseやAsset更新時には、SHA固定後に`engine:build`で生成したtarballを検証し、`pnpm install --update-checksums`でルートlockfileを更新してからfrozen installと回帰検証を行います。
-
-索引生成をCLIへ分離した際の過去の同一ツールでの比較では、WASMはraw 298,174 → 285,543 byte（約4.2%減）となりました。gzip/Brotliでも縮小を確認しています。この比較は検索速度や以後の版のサイズを保証しません。
-
-Worker往復とDOM反映の計測方法は[デモ性能ガイド](docs/ja/performance.md)を参照してください。

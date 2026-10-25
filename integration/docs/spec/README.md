@@ -15,3 +15,5 @@ The [runtime contract](runtime.md) defines the current supported surface. These 
 | 14–15    | [Validation and measurement](validation.md)             |
 | 16, 18   | [Rationale and references](rationale.md)                |
 | 19       | [Compatibility boundary](compatibility.md)              |
+
+The Rust repository maintains [architecture diagrams](https://github.com/tkhshtsh0917/asearch/blob/main/docs/architecture.md), [Bitap animations](https://github.com/tkhshtsh0917/asearch/blob/main/docs/algorithm.md) and [ASIX byte layouts](https://github.com/tkhshtsh0917/asearch/blob/main/docs/asix-format.md). `crates/` refers to that Rust repository; `packages/`, `tools/` and `vendor/` refer to this workspace. See [decisions](../DECISIONS.md) and [build instructions](../../README.md).

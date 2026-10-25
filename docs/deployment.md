@@ -2,23 +2,22 @@
 
 [日本語](ja/deployment.md)
 
-Main-branch and PR validation also upload the actual Pages tar and download it again without deploying. Every published file is checked against its pre-upload SHA-256, and the downloaded release metadata must match the recorded Release pin. Changed, missing, extra, hidden or linked files fail validation. Automatic and manual deployments use this same round-trip gate before publishing the validated artifact.
+Follow the [README](../README.md#setup) to prepare verified Rust Release Assets, language resources and the corpus. `pnpm build` generates the data publication and Vite's static site in `dist/`.
 
-## Pins and provenance
+## Static output
 
-At startup, CI resolves the selected tag or latest stable Release exactly once and reads all three OS bundle checksums from that Release's `SHA256SUMS`. Preparation verifies the downloaded bundle too. It does not switch to a branch or a moving latest target during validation.
+Set `BASE_PATH` to the site's URL prefix when building, and serve `dist/` at that prefix. The README uses `/asearch-demo/`. Serve the generated directory as a whole so HTML, code, Workers and content-hashed data stay from the same build. Development caches, raw inputs and Rust sources are not site inputs.
 
-The run updates `release.lock.json` and the generated adapter's root `pnpm-lock.yaml` in its working copy. Dependency versions are retained; frozen installation and all tests follow. No automatic commit or npm publication occurs. The `release-inputs` artifact records pins, lockfile and `release.json`. The deployed `release.json` also identifies the Rust tag/OS checksums and demo commit/run ID.
+The browser loads the generated JS/WASM, ASIX segments, manifests, catalogs and query lookup data. Attribution and redistributed dependency notices are under `licenses/`. See [data and attribution](data.md) for source licenses and the fixed update scenario.
 
-The committed local-development pin is the published v0.3.1 Release. CI may select a different compatible Release; inspect run artifacts and the deployed `release.json` for the actual deployment version. To reproduce the committed local setup:
+## Release identity
 
-```sh
-mise exec -- node tools/engine/select.ts v0.3.1
-mise exec -- pnpm engine:build
-mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
-mise exec -- pnpm install --frozen-lockfile
-```
+The committed `release.lock.json` is the local setup's default. A build can explicitly select another compatible published Release with `tools/engine/select.ts`; selection records the exact tag and all three OS bundle SHA-256 values from that Release's `SHA256SUMS`. Preparation verifies the downloaded bundle before generating the adapter. Missing checksums or incompatible artifacts fail rather than falling back to unverified binaries.
 
-Review and commit intentional pin/lockfile changes. Missing or null checksums are rejected rather than invented. CI fails if no suitable published Release exists; it does not fall back to unverified binaries.
+The generated adapter changes the root package checksum. After an intentional update, regenerate the root lockfile as shown in the README, then use frozen installation and [contributor checks](../CONTRIBUTING.md). Resolving a Release does not edit the Rust repository or implicitly build a sibling checkout.
 
-The current UI requires Rust CLI and WASM 0.3+ for native query-rule export and positional ranking. Older or incompatible manual selections fail tests and preserve current Pages. Language-resource pins and generated provenance also appear in `analysis.json` in the `release-inputs` artifact. The committed v0.3.1 setup uses published Release Assets for both the CLI and WASM.
+## Published metadata
+
+Root `release.json` identifies the built Rust tag, bundle checksums, demo commit and build run. `data/release.json` is a different file: it describes the base/delta/compacted data stages and their shared query rules. `data/analysis.json` records the language-resource snapshot and filtering policy. Inspect these files when reproducing a site; a committed local pin alone does not identify a deployed build.
+
+Validation records pins and lockfiles, then checks the actual transferred site artifact against its captured file hashes and Release metadata. Source tests, build checks and the served metadata answer different questions. The [security guide](security.md) describes the trust boundaries; [Contributing](../CONTRIBUTING.md) lists reproducible validation commands.

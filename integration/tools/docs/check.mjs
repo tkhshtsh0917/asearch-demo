@@ -25,7 +25,13 @@ async function documents(directory) {
 const files = [
   ...(await documents(resolve(root, "docs"))),
   ...(demo
-    ? ["README.md", "README.ja.md", "AGENTS.md"]
+    ? [
+        "README.md",
+        "README.ja.md",
+        "CONTRIBUTING.md",
+        "CONTRIBUTING.ja.md",
+        "AGENTS.md",
+      ]
     : [
         "README.md",
         "README.ja.md",
@@ -50,8 +56,12 @@ const files = [
 for (const file of files) {
   const prefix = `${resolve(root, "docs")}${sep}`;
   let counterpart;
-  if (file === resolve(root, "README.md"))
-    counterpart = resolve(root, "README.ja.md");
+  if (
+    ["README.md", "CONTRIBUTING.md"].some(
+      (name) => file === resolve(root, name),
+    )
+  )
+    counterpart = file.replace(/\.md$/, ".ja.md");
   else if (file.startsWith(prefix)) {
     const relative = file.slice(prefix.length);
     if (relative.startsWith(`ja${sep}`)) {

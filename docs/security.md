@@ -24,4 +24,6 @@ Ordinary unit tests remain offline. Runtime-floor tests verify patch boundaries 
 
 ## Trust and reporting
 
+Retain exact Release/resource pins, digest checks, bounded transfers, safe text rendering and minimum Actions permissions. Keep credentials out of source and public artifacts, and review workflow permissions when changing CI.
+
 Use GitHub private vulnerability reporting when enabled. If unavailable, request a private contact channel without vulnerability details. Do not disclose credentials or sensitive reproductions in public issues.

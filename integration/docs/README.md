@@ -2,7 +2,7 @@
 
 [日本語](ja/README.md)
 
-This workspace documents the TypeScript boundary consuming Rust Release Assets. The [current runtime contract](spec/runtime.md) and [package README](../packages/asearch-wasm/README.md) describe supported APIs.
+This workspace documents the TypeScript boundary consuming Rust Release Assets. See the [runtime contract](spec/runtime.md) and [package README](../packages/asearch-wasm/README.md) for supported APIs, and [Contributing](../../CONTRIBUTING.md) for development and validation.
 
 | Topic                                   | Entry                                           |
 | --------------------------------------- | ----------------------------------------------- |

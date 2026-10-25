@@ -10,7 +10,7 @@ The goal is fast approximate matching in browser WASM, including loading server-
 
 Rust owns compatibility matching, bulk/session/DAG matching, mechanical normalization, ASIX validation, native building/analysis, base/delta/tombstone updates and server compaction. The TS adapter is DOM-independent and works in Workers. It is locally packed for integration, not published to npm. Browser WASM only loads/searches/adopts indexes. Tokenization, readings, romanization and synonyms run in the separate server-only analyzer; intent generation is not automatic.
 
-The original tuning target was 10^5–10^6 total UTF-16 units, mostly short texts; 10^7 units were a scale probe. Neither is a universal capacity guarantee. Each text must fit 65,535 UTF-16 units before and after normalization. Larger corpora need measured text/unit/working-memory budgets. Browser coverage uses Playwright Chromium, Firefox and WebKit, with mobile profiles; WebKit is not physical Safari and profiles are not OS IME/device verification. Node supports tooling/tests. Deno and edge runtimes are not guaranteed.
+Each text must fit 65,535 UTF-16 units before and after normalization. Larger corpora need measured text/unit/working-memory budgets. Browser coverage uses Playwright Chromium, Firefox and WebKit, with mobile profiles; WebKit is not physical Safari and profiles are not OS IME/device verification. Node supports tooling/tests. Deno and edge runtimes are not guaranteed.
 
 <a id="section-1"></a>
 

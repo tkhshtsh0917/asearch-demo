@@ -111,7 +111,7 @@ There are at most two matching passes and 20 displayed results. Unfiltered queri
 
 Corpus searches opt into Rust's global `(minimum edit distance, earliest normalized UTF-16 start, order, key)` ranking. Every live matching alias participates before top-N, so prefix matches outrank later substring matches at the same distance; offset 1 also outranks offset 2. See the [ranking contract](https://github.com/tkhshtsh0917/asearch/blob/main/docs/ranking.md). This adds positional DP and sorting work; earlier performance measurements do not include it.
 
-These features require compatible CLI and WASM 0.3+ artifacts. The committed setup uses the published v0.3.1 Release Assets, verified by their checksums. Local verification does not deploy to Pages; deployment still runs the full validation workflow.
+These features require compatible CLI and WASM 0.3+ artifacts. The committed setup uses the published v0.3.1 Release Assets, verified by their checksums. The local pin is distinct from a served site; inspect its root `release.json` for the actual built version.
 
 Publication deduplicates source question strings across all stages, including changed versions, and assigns temporary keys only for query export. Actual result keys stay unchanged. The 20,000-source limit therefore counts distinct source versions, not result documents or ASIX texts. Query rules add no ASIX texts; JSON and JavaScript lookup-map memory are outside the Rust working budget.
 

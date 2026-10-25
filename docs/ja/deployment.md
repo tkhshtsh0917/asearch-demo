@@ -1,26 +1,23 @@
 # ビルド成果物と静的配信
 
-[原文](../deployment.md) · 日本語版
+[English](../deployment.md)
 
-mainとPRの検証でも、配信せずに実際のPages tarをアップロード・ダウンロードする。公開対象の全ファイルを転送前のSHA-256と照合し、ダウンロードしたRelease情報が記録済みのpinと一致することを確認する。変更・欠落・余分なファイル、隠しファイル、リンクがあると検証を失敗させる。自動配信と手動配信も、同じ往復検証を通過したArtifactを公開する。
+[README](../../README.ja.md#セットアップ)の手順で、検証済みのRust Release Assets・言語リソース・コーパスを準備します。`pnpm build`は公開データとViteの静的サイトを`dist/`へ生成します。
 
-## バージョン固定と記録
+## 静的な出力
 
-CIは開始時に、指定タグまたはGitHubの最新正式Releaseを一度だけ解決し、同じReleaseの`SHA256SUMS`から3 OSのbundle SHAを取得する。取得Asset自体のSHAも既存のprepare処理で検査する。検証対象をbranchや途中で変化するlatestへ切り替えない。
+ビルド時に`BASE_PATH`をサイトのURLの接頭辞に設定し、その接頭辞で`dist/`を配信します。READMEでは`/asearch-demo/`を使います。HTML・コード・Worker・内容ハッシュ付きのデータを同じビルドで揃えるため、生成ディレクトリ全体を配信してください。開発用cache・生の入力・Rustソースはサイトの入力ではありません。
 
-`release.lock.json`と生成tarballに対応するルート`pnpm-lock.yaml`は、その実行の作業コピーで更新する。依存パッケージの指定版は保持し、更新後にfrozen installと全テストを行う。自動commitやnpm公開は行わない。`release-inputs` artifactにはそのpin、lockfile、`release.json`を保存する。配信サイトの`release.json`でもRustのタグ・各OSのSHAとdemoのcommit・run IDを確認できる。
+ブラウザは生成したJS/WASM・ASIXセグメント・manifest・catalog・クエリ変換表を読み込みます。帰属表示と再配布する依存のnoticeは`licenses/`にあります。出典のライセンスと固定した更新例は[データと帰属表示](data.md)を参照してください。
 
-コミット済みのローカル開発用pinは、公開済みv0.3.1のReleaseです。CIは互換性のある別のReleaseを選ぶ場合があるため、実際の配信版は実行artifactとサイトの`release.json`で確認してください。コミット済みのローカル構成を再現する手順:
+## Releaseの識別
 
-```sh
-mise exec -- node tools/engine/select.ts v0.3.1
-mise exec -- pnpm engine:build
-mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
-mise exec -- pnpm install --frozen-lockfile
-```
+コミット済み`release.lock.json`はローカル環境の既定です。ビルドでは`tools/engine/select.ts`で互換性のある別の公開Releaseを明示的に選択でき、そのReleaseの`SHA256SUMS`から正確なタグと3 OSのbundleのSHA-256を記録します。準備時に取得したbundleを検証してからアダプターを生成します。チェックサムがない場合や成果物に互換性がない場合は、未検証のバイナリへfallbackせず失敗します。
 
-この操作で変更したpin/lockfileをレビューしてcommitできる。欠落またはnullのSHAは捏造せずに拒否する。CIも公開Releaseがまだなければ失敗し、未検証バイナリへfallbackしない。
+生成したアダプターはルートpackageのチェックサムを変えます。意図的な更新後はREADMEの手順でルートlockfileを再生成し、frozen installと[Contributor向けの検証](../../CONTRIBUTING.ja.md)を行ってください。Releaseの選択はRust repoを編集せず、隣接checkoutを暗黙にビルドしません。
 
-GitHub側のApp/Secret/Pages設定と、実Releaseからのhosted実行はローカル検証と別の有効化作業になる。
+## 公開されたメタデータ
 
-現在のUIは、ネイティブのクエリ変換表出力と位置順位のため、Rust CLI・WASMとも0.3以降が必要です。旧版や互換性のない版を手動指定した場合はテストで失敗し、現在のPagesを維持します。言語リソースのpinと生成時の情報は`release-inputs` artifactの`analysis.json`でも確認できます。コミット済みv0.3.1の構成は、CLI・WASMとも公開済みのRelease Assetsを使います。
+ルートの`release.json`はビルドに使ったRustタグ・bundleのチェックサム・デモのコミット・ビルド実行を識別します。`data/release.json`は別のファイルで、base／delta／圧縮版のデータ段階と共通のクエリ変換表を記述します。`data/analysis.json`は言語リソースのsnapshotとフィルタ方針を記録します。サイトを再現するときはこれらを確認し、コミットされたローカルのpinだけで配信版を判断しないでください。
+
+検証ではpinとlockfileを記録し、実際に転送したサイト成果物を、取得済みのファイルハッシュとRelease情報に照合します。ソースのテスト・ビルドの検査・配信された情報は、それぞれ異なる問いに答えます。[セキュリティガイド](security.md)が信頼境界、[コントリビューション](../../CONTRIBUTING.ja.md)が再現できる検証コマンドを説明します。

@@ -33,16 +33,9 @@ mise exec -- pnpm preview --base /asearch-demo/
 
 `engine:build` verifies the bundle's SHA-256, generates JS glue and the TS API, and packs the adapter. After intentionally updating a version or adapter, validate and update the root pnpm-lock.yaml. CI uses frozen installation after resolving its exact release. Explicit local bundles use `node tools/engine/build.ts PATH_TO_ASSET_DIRECTORY`. A sibling Rust checkout is never used implicitly.
 
-## Validation and deployment
+## Development
 
-```sh
-mise exec -- pnpm --dir integration typecheck
-mise exec -- pnpm --dir integration lint
-mise exec -- pnpm --dir integration test
-mise exec -- pnpm --dir integration test:browser
-mise exec -- pnpm test:dev
-mise exec -- pnpm test:e2e
-```
+See [Contributing](CONTRIBUTING.md) for validation commands, code/test guidelines and documentation updates. The [build guide](docs/deployment.md) explains static-site artifacts and version identity; the [performance guide](docs/performance.md) covers Worker round trips and DOM measurements.
 
 ## Responsibilities
 
@@ -63,9 +56,3 @@ The demo is MIT. The adapter is MIT OR Apache-2.0; upstream sources and NOTICE r
 ## Acknowledgments
 
 [asearch.ts](https://github.com/teramotodaiki/asearch.ts) informed the matching design and compatibility baseline. Original upstream files and licenses remain under integration/vendor.
-
-Browser WASM is read-only. The downloaded CLI builds and compacts indexes. For an initial Release or asset update, verify the SHA-pinned tarball from `engine:build`, update the root lockfile with `pnpm install --update-checksums`, then perform frozen installation and regression checks.
-
-In a historical same-tool comparison, moving index construction to the CLI reduced raw WASM from 298,174 to 285,543 bytes (about 4.2%), with reductions under gzip/Brotli too. This does not establish search speed or the size of later versions.
-
-The [demo performance guide](docs/performance.md) explains Worker round-trip and DOM timing.

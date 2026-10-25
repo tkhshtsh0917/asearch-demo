@@ -11,6 +11,6 @@ This harness verifies the public API, initialization and packed distribution in 
 | server.mjs            | Loopback-only serving and temporary tarball extraction.                  |
 | playwright.config.mts | Test targets, engines and server startup.                                |
 
-From the integration root, run mise exec -- pnpm build, then mise exec -- pnpm test:browser. See the [root README](../../README.md) for browser installation. Fixtures load the actual dist/web.mjs and do not implement another Rust/WASM engine.
+From the integration root, run mise exec -- pnpm build, then mise exec -- pnpm test:browser. See the [Contributing](../../../CONTRIBUTING.md#development-checks) for browser installation. Fixtures load the actual dist/web.mjs and do not implement another Rust/WASM engine.
 
 The product UI lives in the demo repository root's src/. Fault injection, CLI fixtures and loopback serving remain test-only here.

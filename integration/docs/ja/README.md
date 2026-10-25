@@ -2,7 +2,7 @@
 
 [English](../README.md)
 
-このワークスペースはRust Release Assetsを利用するTypeScript境界を文書化します。対応するAPIは[現行ランタイム契約](spec/runtime.md)と[パッケージREADME](../../packages/asearch-wasm/README.ja.md)が説明し。
+このワークスペースはRust Release Assetsを利用するTypeScript境界を文書化します。対応するAPIは[ランタイム契約](spec/runtime.md)と[パッケージREADME](../../packages/asearch-wasm/README.ja.md)、開発・検証は[コントリビューションガイド](../../../CONTRIBUTING.ja.md)を参照してください。
 
 | 話題                           | 入口                                             |
 | ------------------------------ | ------------------------------------------------ |
