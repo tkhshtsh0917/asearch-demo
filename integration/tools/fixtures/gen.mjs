@@ -3,7 +3,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import vm from "node:vm";
-import ts from "typescript";
+import { transformSync } from "esbuild";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 const upstream = resolve(root, "vendor/upstream");
@@ -36,15 +36,14 @@ const lib = execute(
   await readFile(resolve(upstream, "asearch.ts/lib/index.js"), "utf8"),
 ).Asearch;
 const src = execute(
-  ts.transpileModule(
+  transformSync(
     await readFile(resolve(upstream, "asearch.ts/src/index.ts"), "utf8"),
     {
-      compilerOptions: {
-        target: ts.ScriptTarget.ES2020,
-        module: ts.ModuleKind.CommonJS,
-      },
+      loader: "ts",
+      target: "es2020",
+      format: "cjs",
     },
-  ).outputText,
+  ).code,
 ).Asearch;
 const node = execute(
   await readFile(resolve(upstream, "asearch/index.js"), "utf8"),
