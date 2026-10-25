@@ -6,7 +6,7 @@ import type { Request, Response } from "../shared/protocol.ts";
 import type { QueryPolicy } from "../shared/query.ts";
 import { evaluate } from "./evaluate.ts";
 import { searchOptions } from "./options.ts";
-import { row } from "./rows.ts";
+import { questionRow, row } from "./rows.ts";
 
 export interface SearchContext {
   root: Pick<AsearchIndex, "search" | "explain">;
@@ -24,18 +24,31 @@ export function search(
   epoch: number,
   context: SearchContext,
 ): Response {
-  const { id, pattern, mode } = request;
+  const { id, pattern, mode, title } = request;
+  if (
+    title !== undefined &&
+    (typeof title !== "string" || title.length > 65535)
+  )
+    throw new Error("Invalid article filter");
+  const filtering = mode === "corpus" && title !== undefined;
   const started = performance.now();
   if (!pattern.trim()) {
     context.session.reset();
+    const questions = filtering
+      ? Array.from(context.questions.values())
+          .filter((question) => question.title === title)
+          .sort((a, b) => a.key - b.key)
+      : [];
     return {
       kind: "results",
       id,
       mode,
       epoch,
-      rows: [],
-      total: 0,
-      elapsed: 0,
+      rows: questions
+        .slice(0, searchOptions.limit)
+        .map((source) => questionRow(source, context.changes?.get(source.key))),
+      total: questions.length,
+      elapsed: filtering ? performance.now() - started : 0,
       stats: null,
     };
   }
@@ -43,9 +56,15 @@ export function search(
     pattern,
     mode,
     context,
+    title,
+  );
+  const indexes = Array.from(hits.ids.keys()).filter(
+    (index) =>
+      !filtering ||
+      context.questions.get(hits.ids[index] ?? -1)?.title === title,
   );
   const rows = [];
-  for (let i = 0; i < Math.min(hits.ids.length, searchOptions.limit); i++) {
+  for (const i of indexes.slice(0, searchOptions.limit)) {
     const key = hits.ids[i],
       ref = hits.refs[i],
       level = hits.levels[i],
@@ -65,8 +84,8 @@ export function search(
     mode,
     epoch,
     rows,
-    total,
-    totalIsExact,
+    total: filtering ? indexes.length : total,
+    totalIsExact: filtering || totalIsExact,
     elapsed: performance.now() - started,
     stats,
   };

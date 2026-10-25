@@ -8,10 +8,12 @@ test("source excerpts stay separate from original questions and intent results",
 }) => {
   await open(page);
   await query(page, "大学");
-  const snippet = page.locator("#results .snippet").first();
+  const snippet = page.locator("#results .snippet-text").first();
   await expect(snippet).toBeVisible();
   expect(Array.from(await snippet.innerText()).length).toBeLessThanOrEqual(160);
-  await expect(snippet).toHaveAttribute("aria-label", "元の本文の抜粋");
+  await expect(page.locator("#results .snippet-label").first()).toHaveText(
+    "本文抜粋",
+  );
   await expect(page.locator("#results .question").first()).toBeVisible();
   await page.locator("#mode").selectOption("intent");
   await query(page, "電球交換");
@@ -39,7 +41,9 @@ test("excerpt markup is displayed as text even when the catalog digest is valid"
   );
   await open(page);
   await query(page, "大学");
-  await expect(page.locator("#results .snippet").first()).toHaveText(hostile);
+  await expect(page.locator("#results .snippet-text").first()).toHaveText(
+    hostile,
+  );
   await expect(page.locator("#results img")).toHaveCount(0);
   expect(await page.evaluate(() => "snippetExecuted" in window)).toBe(false);
 });

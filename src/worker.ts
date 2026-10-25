@@ -10,6 +10,7 @@ import {
 } from "asearch-wasm";
 import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
+import { articleFacets } from "./shared/facets.ts";
 import { intents } from "./shared/intents.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { MAX_QUERY_RULE_BYTES, QueryPolicy } from "./shared/query.ts";
@@ -54,6 +55,7 @@ function state() {
     updates: updates.summary,
     creator: info.attribution.creator,
     changes: info.attribution.changes,
+    facets: articleFacets(questions),
   });
 }
 
