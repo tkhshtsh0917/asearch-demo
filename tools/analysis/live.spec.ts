@@ -4,7 +4,7 @@ import test from "node:test";
 import { AsearchIndex, IntentIndex } from "asearch-wasm";
 import { intents } from "../../src/shared/intents.ts";
 import { QueryPolicy } from "../../src/shared/query.ts";
-import { searchOptions } from "../../src/worker/options.ts";
+import { corpusOptions, searchOptions } from "../../src/worker/options.ts";
 import { search } from "../../src/worker/search.ts";
 import { buildSegments } from "../site/segments.ts";
 import { createAnalysis } from "./run.ts";
@@ -100,13 +100,13 @@ test("native query forms make past and dictionary verbs share candidates without
       [...root.search(policy.normalize("食べた")).ids],
       [...root.search(policy.normalize("食べる")).ids],
     );
-    assert.equal(policy.fallback("びーt"), "bi-t");
+    assert.equal(policy.romanize("びーt"), "bi-t");
   } finally {
     root.free();
   }
 });
 
-test("mixed input retries only on zero literal results and explains the effective query", async () => {
+test("mixed input merges literal hits with romanized matches and keeps the winning explanation", async () => {
   const analysis = createAnalysis();
   const rows = [
     { key: 0, text: "ビートルズの曲は？", title: "", url: "" },
@@ -117,36 +117,100 @@ test("mixed input retries only on zero literal results and explains the effectiv
   const parts = await buildSegments(docs, [], [], docs);
   const first = await buildSegments(docs.slice(0, 1), [], [], docs.slice(0, 1));
   const intent = IntentIndex.fromEntries(intents);
-  for (const [bytes, expected] of [
-    [parts.base, 1],
-    [first.base, 0],
-  ] as const) {
-    const root = AsearchIndex.fromBytes(bytes),
-      session = root.session(searchOptions);
-    try {
-      const response = search(
-        { kind: "query", id: 1, pattern: "びーt", mode: "corpus" },
-        0,
-        {
-          root,
-          session,
-          intent,
-          questions: new Map(rows.map((row) => [row.key, row])),
-          policy,
-        },
-      );
-      assert.equal(response.kind, "results");
-      if (response.kind !== "results") throw new Error("Missing results");
-      assert.deepEqual(
-        response.rows.map((row) => row.key),
-        [expected],
-      );
-      if (expected === 0)
-        assert.ok(response.rows[0]?.alias?.text.includes("bi-toruzu"));
-    } finally {
-      session.free();
-      root.free();
+  try {
+    for (const [bytes, expected] of [
+      [parts.base, [0, 1]],
+      [first.base, [0]],
+    ] as const) {
+      const root = AsearchIndex.fromBytes(bytes),
+        session = root.session(corpusOptions);
+      try {
+        const response = search(
+          { kind: "query", id: 1, pattern: "びーt", mode: "corpus" },
+          0,
+          {
+            root,
+            session,
+            intent,
+            questions: new Map(rows.map((row) => [row.key, row])),
+            policy,
+          },
+        );
+        if (response.kind !== "results") throw new Error("Missing results");
+        assert.deepEqual(
+          response.rows.map((row) => row.key),
+          expected,
+        );
+        assert.ok(
+          response.rows
+            .find((row) => row.key === 0)
+            ?.alias?.text.includes("bi-toruzu"),
+        );
+        assert.equal(response.total, expected.length);
+        assert.equal(response.totalIsExact, true);
+      } finally {
+        session.free();
+        root.free();
+      }
     }
+  } finally {
+    intent.free();
   }
-  intent.free();
+});
+
+test("a literal H-II match cannot suppress Japan through deltas and compaction", async () => {
+  const analysis = createAnalysis();
+  const rows = [
+    { key: 0, text: "日本語の歴史は？", title: "日本語", url: "" },
+    {
+      key: 1,
+      text: "1999年(平成11年)11月にH-IIロケット8号機で打上げたが、第1段エンジンに故障が発生したため、地上からの指令によりロケットは破壊され、その残骸と、ペイロードであった本機も海中に没したのは何？",
+      title: "ロケット",
+      url: "",
+    },
+  ];
+  const added = { key: 2, text: "日本人の現在は？", title: "日本人", url: "" };
+  const policy = new QueryPolicy(analysis.queryRules([...rows, added]));
+  const docs = analysis.analyze(rows),
+    upserts = analysis.analyze([added]);
+  const parts = await buildSegments(
+    docs,
+    upserts,
+    [0],
+    [...docs.slice(1), ...upserts],
+  );
+  const root = AsearchIndex.fromBytes(parts.base),
+    session = root.session(corpusOptions);
+  const intent = IntentIndex.fromEntries(intents);
+  const context = {
+    root,
+    session,
+    intent,
+    questions: new Map(rows.map((row) => [row.key, row])),
+    policy,
+  };
+  const keys = () => {
+    const response = search(
+      { kind: "query", id: 1, pattern: "にh", mode: "corpus" },
+      0,
+      context,
+    );
+    if (response.kind !== "results") throw new Error("Missing results");
+    return response.rows.map((row) => row.key);
+  };
+  try {
+    assert.ok([...root.search("にh", corpusOptions).ids].includes(1));
+    assert.equal(policy.romanize("にh"), "nih");
+    assert.deepEqual(keys(), [0, 1]);
+    await root.addSegment(parts.delta);
+    context.questions.delete(0);
+    context.questions.set(2, added);
+    assert.deepEqual(keys(), [2, 1]);
+    await root.replaceSegments([{ source: parts.compact }]);
+    assert.deepEqual(keys(), [2, 1]);
+  } finally {
+    session.free();
+    intent.free();
+    root.free();
+  }
 });

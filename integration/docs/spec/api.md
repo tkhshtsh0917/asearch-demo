@@ -28,17 +28,17 @@ Browser ESM attempts asynchronous initialization; await the exported `ready` or 
 
 ### 12.3 Immutable indexes and results
 
-| API                                               | Responsibility                                                                    |
-| ------------------------------------------------- | --------------------------------------------------------------------------------- |
-| AsearchIndex.fromBytes / fromStream               | Validate and load server ASIX, optionally checking expected descriptors/SRI.      |
-| index.search / index.session                      | One-shot or independently budgeted repeated search over shared immutable content. |
-| session.update / reset / free                     | Update input, drop reusable checkpoints or release the session.                   |
-| index.explain                                     | Resolve an owned ref to a bounded alignment.                                      |
-| index.addSegment / replaceSegments                | Atomically append one segment or adopt a complete replacement column.             |
-| index.segments / free                             | Inspect segment metadata or dispose the root and child sessions.                  |
-| IntentIndex.fromEntries / search / explain / free | Build bounded intent DAGs, search without expansion, explain and dispose.         |
-| diffManifest                                      | Pure validation/comparison; never fetches or changes state.                       |
-| mergeResults                                      | Deduplicate static Worker partitions with owner-specific refs.                    |
+| API                                               | Responsibility                                                                      |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| AsearchIndex.fromBytes / fromStream               | Validate and load server ASIX, optionally checking expected descriptors/SRI.        |
+| index.search / index.session                      | One-shot or independently budgeted repeated search over shared immutable content.   |
+| session.update / reset / free                     | Update input, drop reusable checkpoints or release the session.                     |
+| index.explain                                     | Resolve an owned ref to a bounded alignment.                                        |
+| index.addSegment / replaceSegments                | Atomically append one segment or adopt a complete replacement column.               |
+| index.segments / free                             | Inspect segment metadata or dispose the root and child sessions.                    |
+| IntentIndex.fromEntries / search / explain / free | Build bounded intent DAGs, search without expansion, explain and dispose.           |
+| diffManifest                                      | Pure validation/comparison; never fetches or changes state.                         |
+| mergeResults                                      | Deduplicate compatible streams over a fixed catalog with owner/query-specific refs. |
 
 There is no runtime fromDocs/fromStrings/buildIndex/buildDelta/toBytes or client editing API. Native CLI adapters with those conveniences exist only in test setup and are excluded from packed distributions.
 
@@ -46,7 +46,7 @@ Bulk defaults: Ideal, ja-basic-v1, WildcardSpace, wrap=true, ByLength, limit=30,
 
 Results contain JS-owned ids/levels/refs/orders arrays, length, optional exact minimum-level totals, stats and copy(). Position ranking adds optional starts; the default stable order is unchanged. Totals count distinct live keys independently of limit. Limit zero is valid. Empty queries use the selected matching semantics rather than being silently suppressed by the library. The UI may suppress them itself.
 
-`mergeResults` accepts at most 256 structured-clone-friendly parts. It snapshots caller properties before validating intrinsic array types/lengths and rank order. Positional parts require starts on every part; mixed modes fail. Output typed arrays are capped at 256 MiB, not the whole JS heap. Deduplication ties use input part/order; refs belong to the part identified by parts[i]. No merged totals are reported. Hosts prevent concurrent shared-buffer mutation. Updating/tombstone columns must stay in one Worker; v1 has no cross-Worker update protocol. Worker creation, messaging, scheduling and rendering belong to hosts.
+`mergeResults` accepts at most 256 structured-clone-friendly parts over one fixed catalog snapshot, including static Worker partitions or alternate query streams. Query streams use the returned owner to select both the reference and the query for explanation. It snapshots caller properties before validating intrinsic array types/lengths and rank order. Positional parts require starts on every part; mixed modes fail. Output typed arrays are capped at 256 MiB, not the whole JS heap. Deduplication ties use input part/order; refs belong to the part identified by parts[i]. No merged totals are reported. Hosts prevent concurrent shared-buffer mutation. Updating/tombstone columns must stay in one Worker; v1 has no cross-Worker update protocol. Worker creation, messaging, scheduling and rendering belong to hosts.
 
 <a id="section-12-4"></a>
 

@@ -38,6 +38,8 @@ export type Response =
       epoch: number;
       rows: Row[];
       total: number;
+      /** False when overlapping truncated query streams establish only a lower bound. */
+      totalIsExact?: boolean;
       elapsed: number;
       stats: SearchStats | null;
     }

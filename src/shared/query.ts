@@ -69,8 +69,8 @@ export class QueryPolicy {
     return rewritten.length <= 128 ? rewritten : pattern;
   }
 
-  /** Called only after zero literal hits; no tokenizer or dictionary runs in the browser. */
-  fallback(pattern: string): string | undefined {
+  /** Produces at most one bounded alternative, without a browser tokenizer or dictionary. */
+  romanize(pattern: string): string | undefined {
     if (!/[\u3041-\u3096\u30a1-\u30faー]/u.test(pattern)) return undefined;
     const chars = Array.from(pattern);
     let output = "";
