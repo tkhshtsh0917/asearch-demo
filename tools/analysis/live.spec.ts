@@ -214,3 +214,48 @@ test("a literal H-II match cannot suppress Japan through deltas and compaction",
     root.free();
   }
 });
+
+test("native article filtering retrieves matching IDs beyond the global display limit", async () => {
+  const analysis = createAnalysis();
+  const rows = Array.from({ length: 30 }, (_, key) => ({
+    key,
+    text: `大学の質問${key}`,
+    title: key === 29 ? "対象の記事" : "その他",
+    url: "",
+  }));
+  const docs = analysis.analyze(rows);
+  const parts = await buildSegments(docs, [], [], docs);
+  const root = AsearchIndex.fromBytes(parts.base),
+    session = root.session(corpusOptions);
+  const intent = IntentIndex.fromEntries(intents);
+  const context = {
+    root,
+    session,
+    intent,
+    questions: new Map(rows.map((row) => [row.key, row])),
+  };
+  try {
+    const request = {
+      kind: "query",
+      id: 1,
+      pattern: "大学",
+      mode: "corpus",
+    } as const;
+    const global = search(request, 0, context);
+    if (global.kind !== "results") throw new Error("Missing results");
+    assert.equal(global.rows.length, 20);
+    assert.ok(!global.rows.some((row) => row.key === 29));
+    const filtered = search({ ...request, title: "対象の記事" }, 0, context);
+    if (filtered.kind !== "results") throw new Error("Missing results");
+    assert.deepEqual(
+      filtered.rows.map((row) => row.key),
+      [29],
+    );
+    assert.equal(filtered.total, 1);
+    assert.equal(filtered.totalIsExact, true);
+  } finally {
+    session.free();
+    intent.free();
+    root.free();
+  }
+});

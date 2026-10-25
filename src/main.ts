@@ -1,6 +1,7 @@
 /** Coordinates IME input, Worker generations and rendering of accepted responses. */
 import type { Mode, Request, Response } from "./shared/protocol.ts";
 import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
+import { ArticleFilter } from "./view/facets.ts";
 import { renderRows } from "./view/results.ts";
 import "./styles.css";
 
@@ -26,6 +27,16 @@ const delivery: DeliveryView = {
   steps: [...document.querySelectorAll<HTMLElement>("[data-stage]")],
 };
 const changeLegend = element("change-legend");
+const articleFilter = new ArticleFilter(
+  {
+    filter: element<HTMLInputElement>("article-search"),
+    select: element<HTMLSelectElement>("article"),
+    clear: element<HTMLButtonElement>("article-clear"),
+    summary: element("article-summary"),
+    current: element("article-current"),
+  },
+  query,
+);
 
 let worker: Worker,
   serial = 0,
@@ -51,6 +62,9 @@ function query() {
     id: latest,
     pattern: input.value,
     mode: mode.value as Mode,
+    ...(articleFilter.title === undefined
+      ? {}
+      : { title: articleFilter.title }),
   });
 }
 
@@ -72,6 +86,8 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
   epoch = message.epoch;
 
   loaded = true;
+  articleFilter.update(message.facets ?? []);
+  articleFilter.setEnabled(mode.value === "corpus");
   renderDelivery(delivery, message);
 
   element("creator").textContent = message.creator;
@@ -96,15 +112,18 @@ function handleResults(
   requestAnimationFrame(() => {
     if (!accepted()) return;
     renderRows(results, message.rows);
-    metrics.textContent = input.value.trim()
-      ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
-      : "質問やキーワードを入力してください";
+    metrics.textContent =
+      input.value.trim() ||
+      (mode.value === "corpus" && articleFilter.title !== undefined)
+        ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
+        : "質問やキーワードを入力してください";
   });
 }
 
 /** Invalidates queued responses and disables commands until a fresh Worker starts. */
 function stopWorker(message: string, statusText: string) {
   loaded = false;
+  articleFilter.setEnabled(false);
   ++run;
   latest = ++serial;
   worker.terminate();
@@ -121,6 +140,7 @@ function start() {
   worker?.terminate();
   const generation = ++run;
   loaded = false;
+  articleFilter.setEnabled(false);
   epoch = 0;
   stage = 0;
   latest = ++serial;
@@ -184,7 +204,10 @@ function bindEvents() {
     composing = false;
     schedule();
   });
-  mode.addEventListener("change", query);
+  mode.addEventListener("change", () => {
+    articleFilter.setEnabled(loaded && mode.value === "corpus");
+    query();
+  });
   advance.addEventListener("click", () => {
     error.textContent = "";
     advance.disabled = true;
@@ -201,7 +224,9 @@ function bindEvents() {
   ))
     button.addEventListener("click", () => {
       input.value = button.dataset.query ?? "";
+      articleFilter.reset();
       if (button.dataset.mode) mode.value = button.dataset.mode;
+      articleFilter.setEnabled(loaded && mode.value === "corpus");
       query();
       input.focus();
     });
