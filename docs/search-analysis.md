@@ -112,3 +112,5 @@ Corpus searches opt into Rust's global `(minimum edit distance, earliest normali
 These features require CLI and WASM 0.3 or newer. Until that release is published, use explicitly supplied development artifacts for local verification; do not fabricate checksums for unpublished assets or mistake local verification for a Pages deployment.
 
 Publication deduplicates source question strings across all stages, including changed versions, and assigns temporary keys only for query export. Actual result keys stay unchanged. The 20,000-source limit therefore counts distinct source versions, not result documents or ASIX texts. Query rules add no ASIX texts; JSON and JavaScript lookup-map memory are outside the Rust working budget.
+
+The 2 MiB query-rule limit counts the final UTF-8 response body. Publication serializes this asset without an appended newline and rejects excess bytes before assigning its filename and digest; a body exactly at the limit is accepted by the Worker.

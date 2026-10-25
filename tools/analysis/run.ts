@@ -11,7 +11,11 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { Doc } from "asearch-wasm";
 import type { Question } from "../../src/shared/catalog.ts";
-import { type QueryRules, queryRules } from "../../src/shared/query.ts";
+import {
+  MAX_QUERY_RULE_BYTES,
+  type QueryRules,
+  queryRules,
+} from "../../src/shared/query.ts";
 import { digest } from "./cache.ts";
 import { documents } from "./documents.ts";
 import {
@@ -164,7 +168,7 @@ function nativeBatch(
     );
     if (
       statSync(output).size >
-      (command === "query-rules" ? 2 : 64) * 1024 * 1024
+      (command === "query-rules" ? MAX_QUERY_RULE_BYTES : 64 * 1024 * 1024)
     )
       throw new Error("Analysis output byte limit");
     return readFileSync(output, "utf8");

@@ -1,4 +1,6 @@
 /** Validates server-produced lookup data and applies bounded query-only rewrites. */
+export const MAX_QUERY_RULE_BYTES = 2 * 1024 * 1024;
+
 export interface QueryRules {
   format: "asearch-query-rules/1";
   forms: [string, string][];

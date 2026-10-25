@@ -12,7 +12,7 @@ import { type Question, type Release, release } from "./shared/catalog.ts";
 import { type CatalogChanges, catalogChanges } from "./shared/changes.ts";
 import { intents } from "./shared/intents.ts";
 import type { Request, Response } from "./shared/protocol.ts";
-import { QueryPolicy } from "./shared/query.ts";
+import { MAX_QUERY_RULE_BYTES, QueryPolicy } from "./shared/query.ts";
 import { jsonAsset, segmentStream } from "./worker/load.ts";
 import { corpusOptions } from "./worker/options.ts";
 import { search } from "./worker/search.ts";
@@ -86,7 +86,7 @@ async function init(url: string) {
     await jsonAsset(
       base,
       info.queryRules.url,
-      2 * 1024 * 1024,
+      MAX_QUERY_RULE_BYTES,
       info.queryRules.sha256,
     ),
   );
