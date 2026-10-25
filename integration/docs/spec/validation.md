@@ -59,3 +59,5 @@ Use fixed real/synthetic corpora, Japanese/ASCII/non-BMP/wildcard cases, typo qu
 ### 15.2 Interpretation
 
 Do not use proxy prototypes or old corpus shapes as product guarantees. Include extraction, transport, load and updates rather than only DP rows. Position ranking intentionally changes ordering and adds work, so its overhead must be labeled separately from equivalent-result optimization comparisons. See [benchmark procedures](../../tools/bench/README.md) and [performance decisions](../performance.md).
+
+The fixture generator uses pinned esbuild to transpile the upstream TypeScript oracle; it does not depend on the TypeScript compiler JavaScript API. Regeneration must keep the checked-in compatibility fixture bytes unchanged. Project type checking continues to use TypeScript 7.

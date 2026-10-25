@@ -189,9 +189,9 @@ importers:
 
   tools/fixtures:
     dependencies:
-      typescript:
-        specifier: 7.0.2
-        version: 7.0.2
+      esbuild:
+        specifier: 0.28.2
+        version: 0.28.2
 
 packages:
 
