@@ -1,4 +1,5 @@
 /** Bounds and verifies language-resource transfers before atomic cache publication. */
+import "../security/runtime.ts";
 import { createHash, randomUUID } from "node:crypto";
 import { readFile, rename, rm, writeFile } from "node:fs/promises";
 

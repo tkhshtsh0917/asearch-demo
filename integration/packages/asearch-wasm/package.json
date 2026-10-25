@@ -35,5 +35,8 @@
   },
   "scripts": {
     "test": "node --test test/*.test.mjs"
+  },
+  "engines": {
+    "node": ">=22.23.4 <23 || >=24.22.1 <25"
   }
 }

@@ -4,7 +4,7 @@
   "type": "module",
   "packageManager": "pnpm@12.14.0",
   "engines": {
-    "node": ">=24.22.0 <25"
+    "node": ">=24.22.1 <25"
   },
   "scripts": {
     "data:prepare": "node tools/data/prepare.ts",
@@ -15,7 +15,7 @@
     "lint": "biome check .",
     "fmt": "biome check --write .",
     "docs:check": "node integration/tools/docs/check.mjs --demo && prettier --check \"*.md\" \"docs/**/*.md\" \".github/**/*.yml\"",
-    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts tools/analysis/*.test.ts tools/bench/*.test.ts",
+    "test": "node --test tools/data/*.test.ts tools/engine/*.test.ts tools/site/*.test.ts tools/analysis/*.test.ts tools/bench/*.test.ts tools/security/*.test.ts",
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check",
     "engine:prepare": "node tools/engine/prepare.ts",
     "engine:build": "node tools/engine/build.ts",
@@ -24,7 +24,8 @@
     "dev": "vite",
     "preview": "vite preview",
     "test:e2e": "playwright test",
-    "test:dev": "playwright test --config playwright.dev.config.ts"
+    "test:dev": "playwright test --config playwright.dev.config.ts",
+    "security:check": "node tools/security/runtime.ts && pnpm audit --audit-level low && pnpm --dir integration audit --audit-level low"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

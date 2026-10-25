@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import "../../../tools/security/runtime.ts";
 import { copyFile, cp, mkdir, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";

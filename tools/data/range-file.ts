@@ -1,4 +1,5 @@
 /** Adapts bounded, validated HTTP ranges to the Parquet reader interface. */
+import "../security/runtime.ts";
 import type { AsyncBuffer } from "hyparquet";
 
 /** Reject servers ignoring Range instead of downloading a complete shard.
