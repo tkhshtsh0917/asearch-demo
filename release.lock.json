@@ -1,9 +1,9 @@
 {
   "repository": "https://github.com/tkhshtsh0917/asearch",
-  "tag": "v0.1.0",
+  "tag": "v0.3.1",
   "assets": {
-    "linux-x86_64": "fa5a896d702c63972a230ae80057be0035bdb75f3dc5ae93e32a4f1d2c6e3939",
-    "macos-aarch64": "2dde8ebef5ebb787bcb9bf8d48af5b5268cdcf6f01bbc2108ef04bc8df59a393",
-    "windows-x86_64": "8b3268db56421b474ca148af59c085f3005b6c8c7fba7d1960508ae5ba8e4401"
+    "linux-x86_64": "bc56c3ccfa06546c95ca7e5c576352ef4d24c97f5df245105f3cac75df4ae11c",
+    "macos-aarch64": "6a83c5cb2b09e13d1452749e5aadc06d0ca2e522dc81bbfeb319628f2603006c",
+    "windows-x86_64": "74c5cefbd7f0948f12726a9a646650db2b110ffdfddc6f229b527f1c40c18223"
   }
 }
