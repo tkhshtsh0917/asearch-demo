@@ -7,5 +7,7 @@
   "fileSha256": "3889a32033048828cd2d75d6257648467c650065de16ec9587ecd7030d374033",
   "rowStart": 0,
   "rows": 10000,
-  "outputSha256": "48ede3ca90bdeefc2a0925cd629035bb6e369aa812b97e34ea22ed0bd386898f"
+  "outputSha256": "48ede3ca90bdeefc2a0925cd629035bb6e369aa812b97e34ea22ed0bd386898f",
+  "snippetCodePoints": 160,
+  "snippetsSha256": "3fc8f42353b278605012ce30a2fd47755d719f0639b6a3dc30602ab7c20f1b9e"
 }

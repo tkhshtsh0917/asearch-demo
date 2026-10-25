@@ -11,6 +11,15 @@ const question = (key: number, text = "質問"): Question => ({
 });
 const map = (rows: Question[]) => new Map(rows.map((row) => [row.key, row]));
 
+test("excerpt-only changes receive a badge while absent and empty excerpts are equivalent", () => {
+  const before = map([{ ...question(0), snippet: "以前の本文" }, question(1)]);
+  const after = map([
+    { ...question(0), snippet: "新しい本文" },
+    { ...question(1), snippet: "" },
+  ]);
+  assert.deepEqual([...catalogChanges(before, after).byKey], [[0, "updated"]]);
+});
+
 test("catalog change labels distinguish additions, updates and removals without marking unchanged questions", () => {
   const before = map([
     question(0),

@@ -12,9 +12,9 @@
 
 `dataset.lock.json` is authoritative for revision, files, extraction range and hashes. The initial demo deterministically takes the first 10,000 rows of the first shard. It is neither random nor representative. The distributor reports 2,377,503 total rows; whole-corpus scaling and initial-demo transfer sizes are separate concerns.
 
-Only `query` supplies searchable content. `title`, `url` and `passage_id` are retained for attribution; `answer` and `text` are excluded from retrieval. Multiple questions share an article, so `passage_id` is not a unique result key. Keys are physical row numbers in the pinned shard. Expansion to multiple shards needs a deterministic collision-free key scheme.
+Only `query` supplies searchable content. `title`, `url` and `passage_id` are retained for attribution. `text` provides display-only source-passage excerpts; neither excerpts nor `answer` are indexed. Multiple questions share an article, so `passage_id` is not a unique result key. Keys are physical row numbers in the pinned shard. Expansion to multiple shards needs a deterministic collision-free key scheme.
 
-Processing selects rows and columns and converts them to JSONL. Retrieval does not normalize or rewrite questions. Native Rust analysis adds readings, romanizations and synonyms during indexing; asearch applies search normalization. Display originals and the raw JSONL hash remain unchanged. See [search analysis](search-analysis.md). Generated `attribution.json` also records changes and sources.
+Processing selects rows and columns and converts them to JSONL. Retrieval does not normalize or rewrite questions. Native Rust analysis adds readings, romanizations and synonyms during indexing; asearch applies search normalization. Display originals and the raw question JSONL hash remain unchanged. Excerpts collapse whitespace/control characters and retain at most 160 Unicode code points, including a final ellipsis when truncated. A separate `snippetsSha256` pins this output; its one-to-one key join is checked before publishing. Full passages are not shipped to the browser. See [search analysis](search-analysis.md). Generated `attribution.json` also records changes and sources.
 
 The data is machine-generated, and its sources have publication dates. It serves as a search-demo corpus, not a guarantee of correct or current answers.
 
@@ -24,7 +24,7 @@ The data is machine-generated, and its sources have publication dates. It serves
 
 `fileSha256` is the distributor's original-shard SHA-256; partial retrieval does not verify the whole shard. Ranges use HTTPS URLs at a pinned revision, and the extracted JSONL is checked against `outputSha256`. Row count, empty questions, UTF-16 length, safe integers and Wikipedia source URLs are also validated. Invalid rows fail instead of silently changing counts or keys.
 
-`public/data/` is reproducible and excluded from Git. Pages artifacts contain questions and attribution, also visible in the UI. Indexes and attribution never embed local absolute paths, timestamps or secrets.
+`public/data/` is reproducible and excluded from Git. Pages artifacts contain questions, bounded source excerpts and attribution, also visible in the UI. Indexes and attribution never embed local absolute paths, timestamps or secrets.
 
 ## Fixed publication-update scenario
 

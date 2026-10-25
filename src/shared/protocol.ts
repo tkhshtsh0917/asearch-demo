@@ -16,6 +16,7 @@ export interface Row {
   spans: [number, number][];
   alias?: { text: string; spans: [number, number][] };
   change?: ChangeKind;
+  snippet?: string;
 }
 export type Response =
   | { kind: "boot" }
