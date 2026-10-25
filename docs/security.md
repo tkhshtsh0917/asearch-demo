@@ -4,6 +4,8 @@
 
 Use mise's pinned Node 24.22.1 for development and builds. SDK compatibility tests also use Node 22.23.4. Supported Node 22/24 releases must be at least those patch levels; older and unsupported lines are rejected by the network-tool preflight. Update pins and revalidate when subsequent security releases appear.
 
+Build-tool Node type declarations stay on the supported Node 24 major. Declarations for a newer runtime can permit APIs that the actual build runtime lacks, even if current tests pass. Dependabot keeps proposing compatible updates; its Node-type major limit must be reviewed together with a future build-runtime upgrade.
+
 ## Brotli decoder remediation
 
 [CVE-2026-111497](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases) affects Node's bundled Brotli decoder. The fix is a Node runtime update, not an npm Brotli package update. The project's Cargo/npm locks contain no separate Brotli package. Node fetch can decode compressed HTTP responses before JavaScript byte limits or digest verification, so those checks do not replace a patched runtime. Check the Node release version rather than relying on process.versions.brotli, which can retain an older label after a backport.
