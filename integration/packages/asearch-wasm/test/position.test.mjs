@@ -137,3 +137,37 @@ test("positional work exhaustion is a typed error and the session recovers", () 
     index.free();
   }
 });
+
+for (const [name, api] of [
+  ["ESM", esm],
+  ["CJS", cjs],
+]) {
+  for (const segments of [1, 2]) {
+    test(`${name}: positional sessions recover from budget failures before prefix extensions across ${segments} segments`, async () => {
+      const text = "a".repeat(32768 / segments);
+      const index = api.AsearchIndex.fromDocs([{ key: 0, texts: [text] }], {
+        limits: { maxPatternUnits: 4096 },
+      });
+      if (segments === 2)
+        await index.addSegment(api.buildDelta([{ key: 1, texts: [text] }], []));
+      const options = { ranking: "position", maxAmbig: 0, countTotal: true };
+      const session = index.session(options);
+      const excessive = "a".repeat(2049);
+      try {
+        for (const next of [`${excessive}b`, `${excessive}ab`, "b", "a"]) {
+          assert.throws(() => session.update(excessive), {
+            code: "RESOURCE_LIMIT",
+          });
+
+          const expected = index.search(next, options);
+          const actual = session.update(next);
+          for (const field of ["ids", "levels", "orders", "starts", "totals"])
+            assert.deepEqual(actual[field], expected[field]);
+        }
+      } finally {
+        session.free();
+        index.free();
+      }
+    });
+  }
+}
