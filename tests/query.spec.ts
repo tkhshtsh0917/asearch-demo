@@ -101,7 +101,7 @@ test("script, case, romaji and synonym queries display the same original questio
   await expect(page.locator("#error")).toBeEmpty();
 });
 
-test("mixed composition fallback and verb normalization preserve the visible query", async ({
+test("mixed composition alternatives and verb normalization preserve the visible query", async ({
   page,
 }) => {
   await page.addInitScript(installObservation);
@@ -155,4 +155,37 @@ test("short roman prefixes rank ahead of interior substring aliases", async ({
   await expect(page.locator("#results li").first()).not.toContainText(
     "possibility",
   );
+});
+
+test("literal rocket hits do not hide Japan during composition", async ({
+  page,
+}) => {
+  await page.addInitScript(installObservation);
+  await open(page);
+  await page.locator("#query").evaluate((input) => {
+    input.dispatchEvent(
+      new CompositionEvent("compositionstart", { bubbles: true }),
+    );
+    (input as HTMLInputElement).value = "にh";
+    input.dispatchEvent(
+      new InputEvent("input", { bubbles: true, isComposing: true }),
+    );
+  });
+  await page.waitForFunction(
+    () =>
+      (
+        window as unknown as { __asearchBench: Observation }
+      ).__asearchBench.samples.at(-1)?.pattern === "にh",
+  );
+  expect(
+    (await page.locator("#results .question").allTextContents()).some((text) =>
+      text.includes("日本"),
+    ),
+  ).toBe(true);
+  await expect(page.locator("#query")).toHaveValue("にh");
+  await page.locator("#query").dispatchEvent("compositionend");
+
+  await query(page, "に");
+  await expect(page.locator("#metrics")).toContainText("少なくとも");
+  await expect(page.locator("#error")).toBeEmpty();
 });

@@ -31,7 +31,7 @@ IDs name requirements, not test filenames. Reports must identify actual commands
 | D6  | DAG versus small full expansion, exponential choices, bounded grammar/depth/nodes and best expansion.                                      |
 | O7  | Record optional-engine decisions; adopted kernels require equivalence, capability/fallback, safety and controlled benefit.                 |
 
-New query rules add whole-term/negative/ambiguous behavior, literal-before-fallback, mixed composition, shared publication snapshots and bounds. Position ranking adds independent substring oracles, global-before-limit aliases, copied starts, shard modes, updates and transition-budget recovery. Demo tests cover initial/delta/compact/restore/restart, labels and mobile layouts.
+New query rules add whole-term/negative/ambiguous behavior, literal-plus-alternative ranking, deduplication and count bounds, mixed composition, shared publication snapshots and bounds. Position ranking adds independent substring oracles, global-before-limit aliases, copied starts, shard modes, updates and transition-budget recovery. Demo tests cover initial/delta/compact/restore/restart, labels and mobile layouts.
 
 <a id="section-15"></a>
 

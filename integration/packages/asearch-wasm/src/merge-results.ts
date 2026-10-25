@@ -59,8 +59,8 @@ function validate(value: MergePart): void {
   }
 }
 
-/** Static Worker partitions only. Never sum shard totals or reuse returned
- * refs in another shard: parts[i] selects the owner of refs[i]. */
+/** Combines rank-compatible streams over one fixed catalog snapshot. Never sum
+ * totals: parts[i] selects the owner and query associated with refs[i]. */
 export function mergeResults(
   parts: readonly MergePart[],
   limit: number,
