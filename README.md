@@ -8,19 +8,19 @@ Search runs during IME composition and follows the latest value after commit, ca
 
 The server-only Rust analyzer generates readings, romanizations, synonyms and query lookup data. Original questions remain unchanged; auxiliary `texts` use ASIX v1. Whole-term verb normalization makes `食べた` and `食べる` search the same query. Whenever bounded conversion changes an input, mixed input such as `びーt` → `bi-t` or `にh` → `nih` searches both forms and deduplicates their candidates. Corpus results rank by edit distance, match start, order and key. See [search analysis](docs/search-analysis.md) for scope and limits.
 
-These features require Rust CLI and WASM 0.3+. Until that release is published, local verification requires explicitly supplied development artifacts. `ASEARCH_ANALYZER_CLI` can name a built analyzer CLI; it does not replace the WASM artifact. Switch to published Release pins after publication.
+The committed setup uses the published Rust CLI and WASM **v0.3.1** Release Assets. Native query-rule export and positional ranking require compatible 0.3+ artifacts; updating the version requires checksum verification and regression tests.
 
 Filter results by source article with a searchable title selector, or browse an article without a keyword. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
 
 ## Setup
 
-Use mise for Node/pnpm, `unzip` for the system dictionary, and wasm-bindgen-cli 0.2.129 to match Rust's Cargo.lock. The demo does not build the engine's Rust source. Select a published tag and OS bundle checksums with `tools/engine/select.ts`; missing OS checksums stop preparation. The committed initial pin records actual v0.1.0 checksums. Do not fabricate unpublished asset checksums. The following example requires v0.3.0 to have been published.
+Use mise for Node/pnpm, `unzip` for the system dictionary, and wasm-bindgen-cli 0.2.129 to match the selected Rust Release. The demo does not build the engine's Rust source. `release.lock.json` pins published v0.3.1 and all three OS bundle checksums. The commands below select that same Release with `tools/engine/select.ts`; missing OS checksums stop preparation.
 
 ```sh
 mise install
 cargo install wasm-bindgen-cli --version 0.2.129 --locked
 mise exec -- pnpm --dir integration install --frozen-lockfile
-mise exec -- node tools/engine/select.ts v0.3.0
+mise exec -- node tools/engine/select.ts v0.3.1
 mise exec -- node tools/engine/build.ts
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile

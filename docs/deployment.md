@@ -10,10 +10,10 @@ At startup, CI resolves the selected tag or latest stable Release exactly once a
 
 The run updates `release.lock.json` and the generated adapter's root `pnpm-lock.yaml` in its working copy. Dependency versions are retained; frozen installation and all tests follow. No automatic commit or npm publication occurs. The `release-inputs` artifact records pins, lockfile and `release.json`. The deployed `release.json` also identifies the Rust tag/OS checksums and demo commit/run ID.
 
-The committed pin is for local development. Inspect run artifacts and the deployed `release.json` for the actual deployment version. To align local development after publishing the selected release:
+The committed local-development pin is the published v0.3.1 Release. CI may select a different compatible Release; inspect run artifacts and the deployed `release.json` for the actual deployment version. To reproduce the committed local setup:
 
 ```sh
-mise exec -- node tools/engine/select.ts v0.3.0
+mise exec -- node tools/engine/select.ts v0.3.1
 mise exec -- pnpm engine:build
 mise exec -- pnpm install --lockfile-only --update-checksums --ignore-scripts
 mise exec -- pnpm install --frozen-lockfile
@@ -21,4 +21,4 @@ mise exec -- pnpm install --frozen-lockfile
 
 Review and commit intentional pin/lockfile changes. Missing or null checksums are rejected rather than invented. CI fails if no suitable published Release exists; it does not fall back to unverified binaries.
 
-The current UI requires Rust CLI and WASM 0.3+ for native query-rule export and positional ranking. Older or incompatible manual selections fail tests and preserve current Pages. Language-resource pins and generated provenance also appear in `analysis.json` in the `release-inputs` artifact. Until 0.3 is published, these new features can only be verified locally with explicitly supplied development artifacts.
+The current UI requires Rust CLI and WASM 0.3+ for native query-rule export and positional ranking. Older or incompatible manual selections fail tests and preserve current Pages. Language-resource pins and generated provenance also appear in `analysis.json` in the `release-inputs` artifact. The committed v0.3.1 setup uses published Release Assets for both the CLI and WASM.
