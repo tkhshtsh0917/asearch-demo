@@ -12,3 +12,5 @@ Read the root README and current runtime contract before historical plans and de
 | [Search analysis](search-analysis.md) | Native readings, romanizations, synonyms, query rewrites, original-text separation, resource updates/pins and limits. |
 
 Current runtime contracts take precedence over historical design records. The [integration specifications](../integration/docs/spec/README.md) describe the library boundary.
+
+[Security](security.md) explains runtime ownership, dependency audits and private reporting.

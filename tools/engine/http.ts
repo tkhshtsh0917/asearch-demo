@@ -1,4 +1,6 @@
 /** Reads an HTTP body within a byte ceiling and releases failed readers. */
+import "../security/runtime.ts";
+
 export async function readBody(
   response: Response,
   maxBytes: number,

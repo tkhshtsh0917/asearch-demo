@@ -1,0 +1,23 @@
+name: Dependency security audit
+on:
+  workflow_call:
+  workflow_dispatch:
+  schedule:
+    - cron: "31 2 * * 1"
+permissions:
+  contents: read
+jobs:
+  dependencies:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24.22.1
+      - run: npm install --global pnpm@12.14.0
+      - run: node tools/security/runtime.ts
+      - run: pnpm audit --audit-level low
+      - run: pnpm --dir integration audit --audit-level low
