@@ -1,9 +1,11 @@
 /** Validates publication metadata and safe question/source records before display. */
+import { MAX_SNIPPET_CODE_POINTS } from "./snippets.ts";
 export interface Question {
   key: number;
   text: string;
   title: string;
   url: string;
+  snippet?: string;
 }
 export interface Stage {
   manifest: string;
@@ -47,7 +49,7 @@ export function catalog(value: unknown): Question[] {
   const keys = new Set<number>();
   return value.map((row: unknown) => {
     if (!row || typeof row !== "object") throw new Error("Invalid catalog row");
-    const { key, text, title, url } = row as Question;
+    const { key, text, title, url, snippet } = row as Question;
     if (
       !Number.isInteger(key) ||
       key < 0 ||
@@ -57,11 +59,20 @@ export function catalog(value: unknown): Question[] {
       !text.trim() ||
       text.length > 65535 ||
       typeof title !== "string" ||
-      title.length > 65535
+      title.length > 65535 ||
+      (snippet !== undefined &&
+        (typeof snippet !== "string" ||
+          Array.from(snippet).length > MAX_SNIPPET_CODE_POINTS))
     )
       throw new Error("Invalid catalog entry");
     keys.add(key);
-    return { key, text, title, url: sourceUrl(url) };
+    return {
+      key,
+      text,
+      title,
+      url: sourceUrl(url),
+      ...(snippet !== undefined ? { snippet } : {}),
+    };
   });
 }
 

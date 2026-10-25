@@ -51,6 +51,9 @@ export function row(
     level,
     ...(alias ? { alias } : {}),
     ...(change ? { change } : {}),
+    ...(mode === "corpus" && source?.snippet
+      ? { snippet: source.snippet }
+      : {}),
     title:
       mode === "corpus" ? (source?.title ?? "") : "意図表現から選ばれた展開",
     url: mode === "corpus" ? (source?.url ?? "") : "",

@@ -62,6 +62,8 @@ export function serializeQuestions(questions: Question[]): string {
 }
 
 /** Builder input is separate from display metadata: only query text is indexed. */
-export function serializeDocs(questions: Question[]): string {
+export function serializeDocs(
+  questions: readonly Pick<Question, "key" | "text">[],
+): string {
   return `${questions.map(({ key, text }) => JSON.stringify({ key, texts: [text] })).join("\n")}\n`;
 }

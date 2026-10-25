@@ -51,6 +51,13 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
       meta.append(link);
     }
     article.append(text);
+    if (row.snippet) {
+      const snippet = document.createElement("p");
+      snippet.className = "snippet";
+      snippet.textContent = row.snippet;
+      snippet.setAttribute("aria-label", "元の本文の抜粋");
+      article.append(snippet);
+    }
     if (row.change) {
       item.dataset.change = row.change;
       const badge = document.createElement("span");

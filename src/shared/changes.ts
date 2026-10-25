@@ -27,7 +27,8 @@ export function catalogChanges(
     } else if (
       original.text !== value.text ||
       original.title !== value.title ||
-      original.url !== value.url
+      original.url !== value.url ||
+      (original.snippet ?? "") !== (value.snippet ?? "")
     ) {
       byKey.set(key, "updated");
       summary.updated++;

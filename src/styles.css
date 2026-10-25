@@ -208,6 +208,14 @@ li {
   overflow-wrap: anywhere;
 }
 
+.snippet {
+  margin: 0 0 12px;
+  color: #696273;
+  font-size: 13px;
+  line-height: 1.65;
+  overflow-wrap: anywhere;
+}
+
 mark {
   background: #e7dfff;
   color: #302159;
