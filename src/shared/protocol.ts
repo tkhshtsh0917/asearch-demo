@@ -1,10 +1,11 @@
 /** Defines typed commands and responses exchanged by the UI and search Worker. */
 import type { SearchStats } from "asearch-wasm";
 import type { ChangeKind, ChangeSummary } from "./changes.ts";
+import type { ArticleFacet } from "./facets.ts";
 export type Mode = "corpus" | "intent";
 export type Request =
   | { kind: "init"; base: string }
-  | { kind: "query"; id: number; pattern: string; mode: Mode }
+  | { kind: "query"; id: number; pattern: string; mode: Mode; title?: string }
   | { kind: "advance" }
   | { kind: "restore" };
 export interface Row {
@@ -17,6 +18,7 @@ export interface Row {
   alias?: { text: string; spans: [number, number][] };
   change?: ChangeKind;
   snippet?: string;
+  browsing?: boolean;
 }
 export type Response =
   | { kind: "boot" }
@@ -31,6 +33,7 @@ export type Response =
       updates: ChangeSummary;
       creator: string;
       changes: string;
+      facets?: ArticleFacet[];
     }
   | {
       kind: "results";

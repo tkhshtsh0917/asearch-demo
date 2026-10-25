@@ -38,9 +38,10 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
       article = document.createElement("article"),
       text = highlightedText(row.text, row.spans, "question");
     const meta = document.createElement("div");
+    item.dataset.article = row.title;
     meta.className = "result-meta";
     const label = document.createElement("span");
-    label.textContent = `距離 ${row.level} · ${row.title}`;
+    label.textContent = `${row.browsing ? "記事内の質問" : `距離 ${row.level}`} · ${row.title}`;
     meta.append(label);
     if (row.url) {
       const link = document.createElement("a");
@@ -54,8 +55,13 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
     if (row.snippet) {
       const snippet = document.createElement("p");
       snippet.className = "snippet";
-      snippet.textContent = row.snippet;
-      snippet.setAttribute("aria-label", "元の本文の抜粋");
+      const label = document.createElement("span"),
+        content = document.createElement("span");
+      label.className = "snippet-label";
+      label.textContent = "本文抜粋";
+      content.className = "snippet-text";
+      content.textContent = row.snippet;
+      snippet.append(label, content);
       article.append(snippet);
     }
     if (row.change) {

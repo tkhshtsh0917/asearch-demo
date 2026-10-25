@@ -52,7 +52,16 @@ function stats(results: readonly SearchResult[]): SearchStats {
 }
 
 /** Keeps the primary session incremental and uses temporary WASM state for an alternative. */
-export function evaluate(pattern: string, mode: Mode, context: SearchContext) {
+export function evaluate(
+  pattern: string,
+  mode: Mode,
+  context: SearchContext,
+  title?: string,
+) {
+  const filtering = mode === "corpus" && title !== undefined;
+  const options = filtering
+    ? { ...corpusOptions, limit: Math.max(1, context.questions.size) }
+    : corpusOptions;
   const effective =
     mode === "corpus"
       ? (context.policy?.normalize(pattern) ?? pattern)
@@ -60,7 +69,9 @@ export function evaluate(pattern: string, mode: Mode, context: SearchContext) {
   const patterns = [effective];
   const results = [
     mode === "corpus"
-      ? context.session.update(effective)
+      ? filtering
+        ? context.root.search(effective, options)
+        : context.session.update(effective)
       : context.intent.search(effective, searchOptions),
   ];
 
@@ -68,11 +79,25 @@ export function evaluate(pattern: string, mode: Mode, context: SearchContext) {
     mode === "corpus" ? context.policy?.romanize(effective) : undefined;
   if (alternative !== undefined) {
     patterns.push(alternative);
-    results.push(context.root.search(alternative, corpusOptions));
+    results.push(context.root.search(alternative, options));
   }
 
-  // JS-owned results survive the second WASM call. The pool never exceeds 40 hits.
-  const hits = mergeResults(results, searchOptions.limit * results.length);
+  if (
+    filtering &&
+    results.some(
+      (result) =>
+        !result.totals ||
+        Array.from(result.totals).reduce((sum, value) => sum + value, 0) !==
+          result.length,
+    )
+  )
+    throw new Error("Incomplete article search results");
+
+  // Article filtering needs all IDs before top-N; only their displayed rows are explained.
+  const hits = mergeResults(
+    results,
+    filtering ? context.questions.size : searchOptions.limit * results.length,
+  );
   return {
     hits,
     patterns,

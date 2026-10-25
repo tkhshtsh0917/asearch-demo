@@ -52,6 +52,19 @@
             <p id="hint">
               打鍵ごとに検索 · 最大128 UTF-16単位 · 空白はワイルドカード
             </p>
+            <details class="article-filter">
+              <summary>記事で絞り込む<span id="article-current"></span></summary>
+              <div class="article-fields">
+                <label for="article-search">記事名を探す
+                  <input id="article-search" type="search" maxlength="128" placeholder="例：日本" autocomplete="off" disabled />
+                </label>
+                <label for="article">対象の記事
+                  <select id="article" disabled><option value="">すべての記事</option></select>
+                </label>
+                <button id="article-clear" type="button" disabled>絞り込みを解除</button>
+              </div>
+              <p id="article-summary" role="status">記事一覧を準備しています。</p>
+            </details>
           </form>
         </search>
         <section class="samples" aria-label="検索例">

@@ -10,6 +10,8 @@ The server-only Rust analyzer generates readings, romanizations, synonyms and qu
 
 These features require Rust CLI and WASM 0.3+. Until that release is published, local verification requires explicitly supplied development artifacts. `ASEARCH_ANALYZER_CLI` can name a built analyzer CLI; it does not replace the WASM artifact. Switch to published Release pins after publication.
 
+Filter results by source article with a searchable title selector, or browse an article without a keyword. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
+
 ## Setup
 
 Use mise for Node/pnpm, `unzip` for the system dictionary, and wasm-bindgen-cli 0.2.129 to match Rust's Cargo.lock. The demo does not build the engine's Rust source. Select a published tag and OS bundle checksums with `tools/engine/select.ts`; missing OS checksums stop preparation. The committed initial pin records actual v0.1.0 checksums. Do not fabricate unpublished asset checksums. The following example requires v0.3.0 to have been published.

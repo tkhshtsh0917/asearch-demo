@@ -8,6 +8,7 @@ export default defineConfig({
     "recovery.spec.ts",
     "restore.spec.ts",
     "snippets.spec.ts",
+    "facets.spec.ts",
   ],
   fullyParallel: true,
   workers: 3,
