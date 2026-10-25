@@ -10,3 +10,5 @@ test-results/
 *.tgz
 public/site/
 .analysis/
+.artifact-download/
+/pages-files.json
