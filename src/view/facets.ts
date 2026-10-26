@@ -80,6 +80,17 @@ export class SearchFacets {
   }
 
   setEnabled(enabled: boolean) {
+    if (!enabled) {
+      const active = document.activeElement;
+      const ownsInput =
+        active instanceof HTMLInputElement && this.view.panel.contains(active);
+      const ownsButton =
+        active === this.view.clear ||
+        (active instanceof HTMLButtonElement &&
+          this.view.chips.contains(active));
+      if (ownsInput || ownsButton) this.view.focusTarget.focus();
+    }
+
     this.enabled = enabled;
     this.render();
   }
