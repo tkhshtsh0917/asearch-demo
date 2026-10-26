@@ -11,6 +11,7 @@ export default defineConfig({
     "restore.spec.ts",
     "snippets.spec.ts",
     "facets.spec.ts",
+    "facet-focus.spec.ts",
   ],
   fullyParallel: true,
   workers: 3,

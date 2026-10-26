@@ -26,6 +26,7 @@ test("facets appear only on the results screen and stay on the left on desktop",
   await query(page, "");
   await expect(page.locator("#filters")).toBeHidden();
   await expect(page.locator("#results li")).toHaveCount(0);
+  await expect(page.locator("#query")).toBeFocused();
 });
 
 test("article drill-down reaches candidates beyond top-20 and counts only matching questions", async ({

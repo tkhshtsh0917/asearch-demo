@@ -76,6 +76,9 @@ export class SearchFacets {
   }
 
   show(active: boolean) {
+    if (!active && this.view.panel.contains(document.activeElement))
+      this.view.focusTarget.focus();
+
     this.view.panel.hidden = !active;
     this.view.layout.dataset.active = String(active);
   }
@@ -110,6 +113,10 @@ export class SearchFacets {
 
   /** Counts exclude this group's own selection, so sibling choices stay available. */
   private render() {
+    this.view.filter.disabled = !this.enabled;
+    const focusFallback = this.enabled
+      ? this.view.filter
+      : this.view.focusTarget;
     const { options, matches } = articleOptions(
       this.facets.articles,
       this.view.filter.value,
@@ -127,6 +134,7 @@ export class SearchFacets {
           (!this.articles.has(facet.title) &&
             (facet.count === 0 || this.articles.size >= MAX_SELECTED_ARTICLES)),
       })),
+      focusFallback,
     );
     renderOptions(
       this.view.changes,
@@ -143,8 +151,8 @@ export class SearchFacets {
               (facet) => facet.kind === kind && facet.count > 0,
             )),
       })),
+      focusFallback,
     );
-    this.view.filter.disabled = !this.enabled;
     this.view.clear.disabled = !this.enabled || this.count === 0;
     this.view.selected.textContent = this.count
       ? `${this.count}件選択中`

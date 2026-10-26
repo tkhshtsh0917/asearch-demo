@@ -1,4 +1,4 @@
-/** Renders native checkbox options as text and restores keyboard focus after updates. */
+/** Renders text-only checkboxes and restores focus, with a fallback for unavailable options. */
 export interface FacetOption {
   value: string;
   label: string;
@@ -10,6 +10,7 @@ export interface FacetOption {
 export function renderOptions(
   target: HTMLElement,
   options: readonly FacetOption[],
+  fallback: HTMLElement,
 ) {
   const active = document.activeElement;
   const focused =
@@ -37,5 +38,7 @@ export function renderOptions(
     if (option.value === focused && !input.disabled) nextFocus = input;
   }
   target.replaceChildren(fragment);
-  nextFocus?.focus({ preventScroll: true });
+
+  if (nextFocus) nextFocus.focus({ preventScroll: true });
+  else if (focused !== undefined) fallback.focus();
 }
