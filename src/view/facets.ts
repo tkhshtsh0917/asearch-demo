@@ -7,6 +7,7 @@ import {
   MAX_SELECTED_ARTICLES,
   type SearchFilters,
 } from "../shared/facets.ts";
+import { FacetChips, type SelectionChip } from "./facet-chips.ts";
 import { renderOptions } from "./facet-options.ts";
 
 interface Elements {
@@ -36,10 +37,15 @@ export class SearchFacets {
   private enabled = false;
   private readonly view: Elements;
   private readonly change: () => void;
+  private readonly chips: FacetChips;
 
   constructor(view: Elements, change: () => void) {
     this.view = view;
     this.change = change;
+    this.chips = new FacetChips(view.chips, view.focusTarget, () => {
+      this.render();
+      change();
+    });
     view.filter.addEventListener("input", () => this.render());
     view.articles.addEventListener("change", (event) =>
       this.select(event, "articles"),
@@ -162,26 +168,19 @@ export class SearchFacets {
   }
 
   private renderChips() {
-    const fragment = document.createDocumentFragment();
-    const add = (label: string, remove: () => void) => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.textContent = `${label} ×`;
-      button.setAttribute("aria-label", `${label}の絞り込みを解除`);
-      button.disabled = !this.enabled;
-      button.addEventListener("click", () => {
-        remove();
-        this.render();
-        this.change();
-        this.view.focusTarget.focus();
-      });
-      fragment.append(button);
-    };
+    const chips: SelectionChip[] = [];
     for (const title of this.articles)
-      add(`記事：${title || "記事名なし"}`, () => this.articles.delete(title));
+      chips.push({
+        key: `article:${title}`,
+        label: `記事：${title || "記事名なし"}`,
+        remove: () => this.articles.delete(title),
+      });
     for (const kind of this.changes)
-      add(changeLabels[kind], () => this.changes.delete(kind));
-    this.view.chips.replaceChildren(fragment);
-    this.view.chips.hidden = this.count === 0;
+      chips.push({
+        key: `change:${kind}`,
+        label: changeLabels[kind],
+        remove: () => this.changes.delete(kind),
+      });
+    this.chips.update(chips, this.enabled);
   }
 }

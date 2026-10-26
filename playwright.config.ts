@@ -12,6 +12,7 @@ export default defineConfig({
     "snippets.spec.ts",
     "facets.spec.ts",
     "facet-focus.spec.ts",
+    "facet-chips.spec.ts",
   ],
   fullyParallel: true,
   workers: 3,

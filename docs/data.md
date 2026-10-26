@@ -40,6 +40,8 @@ Facets appear on the results screen after a keyword search, or while filters rem
 
 Keyboard focus stays on the same enabled checkbox after counts update. If the focused option disappears or becomes disabled, focus moves to the article-name search, or to the main query input when filtering controls are disabled. When the whole panel is hidden, focus inside it returns to the main query input; focus outside the panel is left unchanged.
 
+Selected chips retain their button nodes across search responses, including zero-count selections. A response arriving between Space keydown and keyup does not cancel removal of the focused selection.
+
 The article axis groups exact source `title` values; these are article names, not a Wikipedia category hierarchy. The second axis groups initial, added and updated questions relative to the base snapshot. A compacted snapshot preserves the same change labels; restoration returns every question to the initial state. Choices within an axis use OR; the article and update-status axes combine with AND.
 
 Counts use the complete deduplicated keyword matches, excluding that axis's own selections. Article counts therefore respect selected update states, and update-state counts respect selected articles. This lets users add sibling choices without their counts disappearing. Counts do not describe only the displayed top 20. Multiple literal/romanized matches for one key count once. Missing catalog keys and unexpectedly truncated native streams fail instead of silently changing counts.
