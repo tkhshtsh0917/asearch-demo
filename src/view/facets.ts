@@ -9,19 +9,16 @@ import {
 } from "../shared/facets.ts";
 import { FacetChips, type SelectionChip } from "./facet-chips.ts";
 import { renderOptions } from "./facet-options.ts";
+import { FacetPanel, type FacetPanelElements } from "./facet-panel.ts";
 
-interface Elements {
-  panel: HTMLElement;
+interface Elements extends FacetPanelElements {
   layout: HTMLElement;
-  toggle: HTMLButtonElement;
-  filter: HTMLInputElement;
   articles: HTMLElement;
   changes: HTMLElement;
   clear: HTMLButtonElement;
   summary: HTMLElement;
   selected: HTMLElement;
   chips: HTMLElement;
-  focusTarget: HTMLElement;
 }
 
 const changeLabels: Record<ChangeFilter, string> = {
@@ -38,10 +35,12 @@ export class SearchFacets {
   private readonly view: Elements;
   private readonly change: () => void;
   private readonly chips: FacetChips;
+  private readonly panel: FacetPanel;
 
   constructor(view: Elements, change: () => void) {
     this.view = view;
     this.change = change;
+    this.panel = new FacetPanel(view);
     this.chips = new FacetChips(view.chips, view.focusTarget, () => {
       this.render();
       change();
@@ -57,12 +56,6 @@ export class SearchFacets {
       this.reset();
       change();
       view.focusTarget.focus();
-    });
-    view.toggle.addEventListener("click", () => {
-      const open = view.toggle.getAttribute("aria-expanded") !== "true";
-      view.toggle.setAttribute("aria-expanded", String(open));
-      view.toggle.textContent = open ? "閉じる" : "条件を開く";
-      view.panel.dataset.open = String(open);
     });
     this.render();
   }
@@ -82,10 +75,7 @@ export class SearchFacets {
   }
 
   show(active: boolean) {
-    if (!active && this.view.panel.contains(document.activeElement))
-      this.view.focusTarget.focus();
-
-    this.view.panel.hidden = !active;
+    this.panel.show(active);
     this.view.layout.dataset.active = String(active);
   }
 

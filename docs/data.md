@@ -42,6 +42,8 @@ Keyboard focus stays on the same enabled checkbox after counts update. If the fo
 
 Selected chips retain their button nodes across search responses, including zero-count selections. A response arriving between Space keydown and keyup does not cancel removal of the focused selection.
 
+Collapsing the mobile panel moves focus from its content to its toggle. The same rule applies when entering the mobile layout with a closed panel preference. Returning to desktop moves focus from the disappearing toggle to the article-name search, or to the main query input if filtering is disabled. Focus outside the affected content or toggle is preserved. The mobile open preference survives layout changes; desktop content is always expanded. Visibility, `aria-expanded` and toggle text update together.
+
 The article axis groups exact source `title` values; these are article names, not a Wikipedia category hierarchy. The second axis groups initial, added and updated questions relative to the base snapshot. A compacted snapshot preserves the same change labels; restoration returns every question to the initial state. Choices within an axis use OR; the article and update-status axes combine with AND.
 
 Counts use the complete deduplicated keyword matches, excluding that axis's own selections. Article counts therefore respect selected update states, and update-state counts respect selected articles. This lets users add sibling choices without their counts disappearing. Counts do not describe only the displayed top 20. Multiple literal/romanized matches for one key count once. Missing catalog keys and unexpectedly truncated native streams fail instead of silently changing counts.

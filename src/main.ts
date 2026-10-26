@@ -31,6 +31,7 @@ const facets = new SearchFacets(
   {
     filter: element<HTMLInputElement>("article-search"),
     panel: element("filters"),
+    body: element("facet-body"),
     layout: element("search-layout"),
     toggle: element<HTMLButtonElement>("filters-toggle"),
     articles: element("article-options"),

@@ -216,7 +216,9 @@ button:disabled {
   color: #696273;
 }
 #filters-toggle {
-  display: none;
+  margin-left: auto;
+  font-size: 12px;
+  min-height: 44px;
 }
 #filters-clear {
   margin: 10px 0 0;
@@ -304,15 +306,6 @@ label.facet-option {
   }
   .facets {
     padding: 12px;
-  }
-  #filters-toggle {
-    display: block;
-    margin-left: auto;
-    font-size: 12px;
-    min-height: 44px;
-  }
-  .facets[data-open="false"] .facet-body {
-    display: none;
   }
 }
 
