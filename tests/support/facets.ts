@@ -4,11 +4,15 @@ import { searchAction } from "../helpers.ts";
 
 export async function openFacets(page: Page) {
   const toggle = page.locator("#filters-toggle");
-  if (
-    (await toggle.isVisible()) &&
-    (await toggle.getAttribute("aria-expanded")) !== "true"
-  )
-    await toggle.click();
+  const narrow = await page.evaluate(
+    () => matchMedia("(max-width: 800px)").matches,
+  );
+  if (narrow) {
+    await expect(toggle).toBeVisible();
+    if ((await toggle.getAttribute("aria-expanded")) !== "true")
+      await toggle.click();
+  } else await expect(toggle).toBeHidden();
+  await expect(page.locator("#facet-body")).toBeVisible();
 }
 
 export async function articleCheckbox(page: Page, title: string) {

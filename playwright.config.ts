@@ -15,6 +15,7 @@ export default defineConfig({
     "facet-chips.spec.ts",
     "facet-panel.spec.ts",
     "facet-recovery.spec.ts",
+    "facet-options.spec.ts",
   ],
   fullyParallel: true,
   workers: 3,

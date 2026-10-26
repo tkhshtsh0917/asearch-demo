@@ -1,4 +1,6 @@
 /** Controls response delivery and app render frames without replacing the DOM renderer. */
+
+import type { Facets } from "../../src/shared/facets.ts";
 import type { Request, Response } from "../../src/shared/protocol.ts";
 
 type Query = Extract<Request, { kind: "query" }>;
@@ -8,7 +10,7 @@ interface QueryHarness {
   requests: { worker: Worker; request: Query }[];
   replies: number;
   frames: number;
-  reply(index?: number, epoch?: number): void;
+  reply(index?: number, epoch?: number, facets?: Facets): void;
   fail(index?: number, message?: string, epoch?: number): void;
   operationError(message: string): void;
   paint(): void;
@@ -33,7 +35,7 @@ export function installQueryWorker(): void {
     get frames() {
       return frames.length;
     },
-    reply(index = harness.requests.length - 1, epoch = 0) {
+    reply(index = harness.requests.length - 1, epoch = 0, facets?: Facets) {
       const entry = harness.requests[index];
       if (!entry) throw new Error("Missing held query");
       const { request, worker } = entry;
@@ -43,7 +45,7 @@ export function installQueryWorker(): void {
         epoch,
         total: 85,
         totalIsExact: false,
-        facets: {
+        facets: facets ?? {
           articles: [{ title: `記事:${request.pattern}`, count: 85 }],
           changes: [
             { kind: "unchanged", count: 85 },

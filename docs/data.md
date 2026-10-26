@@ -42,6 +42,8 @@ Keyboard focus stays on the same enabled checkbox after counts update. If the fo
 
 Selected chips retain their button nodes across search responses, including zero-count selections. A response arriving between Space keydown and keyup does not cancel removal of the focused selection.
 
+Checkboxes also retain their input nodes across responses. When counts reorder options, siblings move around the focused option without detaching it, so Space selection and deselection continue to work. Removed or disabled options still use the focus fallback described above. Cached nodes are removed when their options disappear.
+
 Collapsing the mobile panel moves focus from its content to its toggle. The same rule applies when entering the mobile layout with a closed panel preference. Returning to desktop moves focus from the disappearing toggle to the article-name search, or to the main query input if filtering is disabled. Focus outside the affected content or toggle is preserved. The mobile open preference survives layout changes; desktop content is always expanded. Visibility, `aria-expanded` and toggle text update together.
 
 Before a Worker failure disables facet inputs, clear-all or selection chips, focus on those controls moves to the main query input. Enabled controls, including the disclosure toggle and restart button, keep their focus. Restart preserves the query and selections and makes the controls available again.

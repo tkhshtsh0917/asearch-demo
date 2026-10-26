@@ -1,5 +1,6 @@
 /** Coordinates withheld Worker responses with the real UI and accepted DOM observations. */
 import type { Page } from "@playwright/test";
+import type { Facets } from "../../src/shared/facets.ts";
 import {
   installObservation,
   type Observation,
@@ -32,8 +33,15 @@ export async function captureRequest(
 }
 
 /** Requires the latest accepted DOM render, including repeated input with identical text. */
-export async function releaseResult(page: Page, index?: number) {
-  await page.evaluate((index) => window.__queryHarness.reply(index), index);
+export async function releaseResult(
+  page: Page,
+  index?: number,
+  facets?: Facets,
+) {
+  await page.evaluate(
+    ({ index, facets }) => window.__queryHarness.reply(index, 0, facets),
+    { index, facets },
+  );
   await page.waitForFunction(() => {
     const observed = (window as unknown as { __asearchBench: Observation })
       .__asearchBench;

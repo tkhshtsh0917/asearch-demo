@@ -8,7 +8,7 @@ import {
   type SearchFilters,
 } from "../shared/facets.ts";
 import { FacetChips, type SelectionChip } from "./facet-chips.ts";
-import { renderOptions } from "./facet-options.ts";
+import { FacetOptions } from "./facet-options.ts";
 import { FacetPanel, type FacetPanelElements } from "./facet-panel.ts";
 
 interface Elements extends FacetPanelElements {
@@ -36,11 +36,15 @@ export class SearchFacets {
   private readonly change: () => void;
   private readonly chips: FacetChips;
   private readonly panel: FacetPanel;
+  private readonly articleChoices: FacetOptions;
+  private readonly changeChoices: FacetOptions;
 
   constructor(view: Elements, change: () => void) {
     this.view = view;
     this.change = change;
     this.panel = new FacetPanel(view);
+    this.articleChoices = new FacetOptions(view.articles);
+    this.changeChoices = new FacetOptions(view.changes);
     this.chips = new FacetChips(view.chips, view.focusTarget, () => {
       this.render();
       change();
@@ -129,8 +133,7 @@ export class SearchFacets {
       this.view.filter.value,
       [...this.articles],
     );
-    renderOptions(
-      this.view.articles,
+    this.articleChoices.update(
       options.map((facet) => ({
         value: facet.title,
         label: facet.title || "記事名なし",
@@ -143,8 +146,7 @@ export class SearchFacets {
       })),
       focusFallback,
     );
-    renderOptions(
-      this.view.changes,
+    this.changeChoices.update(
       changeKinds.map((kind) => ({
         value: kind,
         label: changeLabels[kind],
