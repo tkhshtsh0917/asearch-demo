@@ -10,15 +10,17 @@ import { siteHashes } from "../site/artifact.ts";
 const before = await siteHashes("dist"),
   script = await readFile(new URL(import.meta.url));
 const server = await preview({
-    preview: { host: "127.0.0.1", port: 4187, strictPort: true },
+    preview: { host: "127.0.0.1", port: 0, strictPort: true },
   }),
   browser = await chromium.launch();
 try {
+  const address = server.httpServer.address();
+  assert.ok(address && typeof address !== "string");
   const page = await browser.newPage();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   const start = performance.now();
-  await page.goto("http://127.0.0.1:4187/asearch-demo/");
+  await page.goto(`http://127.0.0.1:${address.port}/asearch-demo/`);
   await page.waitForFunction(() =>
     document.querySelector("#status")?.textContent?.includes("検索できます"),
   );
