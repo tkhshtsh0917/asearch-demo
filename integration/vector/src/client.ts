@@ -1,5 +1,7 @@
 /** Coordinates bounded ingress and cooperative Rust tasks without exposing numeric handles. */
+
 import { copyView } from "./bytes.ts";
+import { TurnScheduler } from "./scheduler.ts";
 import type {
   Artifact,
   Manifest,
@@ -10,8 +12,8 @@ import type {
   SnapshotInfo,
 } from "./types.ts";
 
-const turn = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 export class VectorClient {
+  private readonly scheduler = new TurnScheduler();
   private readonly handles = new WeakMap<object, number>();
   private readonly prepared = new Map<number, PreparedSnapshot>();
   private preparing = false;
@@ -124,7 +126,7 @@ export class VectorClient {
           this.native.seal_artifact();
         }
         if (this.native.step_prepare()) break;
-        await turn();
+        await this.scheduler.turn();
       }
       const id = this.native.finish_prepare();
       const existing = this.prepared.get(id);
@@ -191,7 +193,7 @@ export class VectorClient {
         this.assertOpen();
         signal?.throwIfAborted();
         if (this.native.step_search()) break;
-        await turn();
+        await this.scheduler.turn();
       }
       return JSON.parse(this.native.finish_search()) as SearchResult;
     } catch (error) {
@@ -211,6 +213,7 @@ export class VectorClient {
   dispose() {
     if (this.closed) return;
     this.closed = true;
+    this.scheduler.dispose();
     this.native.cancel_search();
     this.native.cancel_prepare();
     this.native.cancel_input();

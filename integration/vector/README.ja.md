@@ -40,3 +40,7 @@ python3 -m unittest discover -s tools -p 'test_*.py'
 ```
 
 固定したnative F32 encoderは`text`だけを使い、文書prefixを加え、切り詰めずに全件のtoken数を確認し、安定IDと256座標を出力します。消費した入力、model・script・Python lockのdigestと計測条件を記録します。出力とstagingは既存ファイルを上書きできません。offlineのI/OテストはML runtimeをimportしません。計測hostでは5万文書が74.41秒、最大87 tokenで、固定した256 tokenの方針内でした。これはサーバーでのencodingの観測で、ブラウザのクエリ遅延や移植可能なthroughput保証ではありません。
+
+## 協調スケジュールの計測
+
+`tools/bench.ts BUILD_DIRECTORY LABEL`は、明示的にビルドしたadapterを1万件のnative oracleで測り、実際のJS/WASM hashを記録します。読み込みとクエリの協調yieldを含み、encodingは含みません。5回のwarmup後に同じクエリを40回実行します。同じWASM・データによるChromiumの逐次確認では、timerによるyieldはクエリp95が200.8 ms、準備が1185.4 ms、MessageChannelはp95が1.9 ms、準備が196.5 msでした。host上の観測はadapterのスケジュールを分離したもので、modelの遅延や移植可能な端末保証ではありません。portはclientが所有し、queueは同時に存在しうる2つのtaskのyieldに制限し、disposeは待機yieldを解決してからportを閉じます。キャンセル・予算・正確なoracle一致の検証も維持します。

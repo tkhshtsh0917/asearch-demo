@@ -40,3 +40,7 @@ python3 -m unittest discover -s tools -p 'test_*.py'
 ```
 
 The locked native F32 encoder uses only `text`, adds the document prefix, checks all token counts without truncation, and emits stable IDs plus 256 coordinates. It captures the consumed input digest, model/script/Python-lock digests and timing conditions. Output and staging files cannot overwrite existing files. Offline I/O tests do not import the ML runtime. On the measured host, 50k documents took 74.41 seconds, with a maximum of 87 tokens under the fixed 256-token policy. This is a server encoding observation, not browser query latency or a portable throughput guarantee.
+
+## Cooperative scheduling measurement
+
+`tools/bench.ts BUILD_DIRECTORY LABEL` measures an explicitly built adapter against a 10k native oracle, recording actual JS/WASM hashes. It includes loading and cooperative query yields, and excludes encoding. Five warmups precede forty repeated queries. In a sequential Chromium confirmation with identical WASM/data, timer yielding gave 200.8 ms query p95 and 1185.4 ms preparation; MessageChannel gave 1.9 ms p95 and 196.5 ms preparation. These host observations isolate adapter scheduling, not model latency or portable device guarantees. Ports are client-owned, the queue is bounded to the two possible concurrent task yields, and disposal resolves pending yields before closing ports. Cancellation, budgets and exact oracle agreement remain covered.
