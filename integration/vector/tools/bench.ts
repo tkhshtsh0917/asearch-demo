@@ -4,7 +4,7 @@ import { createHash } from "node:crypto";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { chromium } from "@playwright/test";
+import { chromium, devices, firefox, webkit } from "@playwright/test";
 import { preview } from "vite";
 import type { Harness } from "../src/harness.ts";
 
@@ -14,6 +14,16 @@ const root = fileURLToPath(new URL("../", import.meta.url)),
 assert.match(label, /^[a-z0-9-]+$/);
 const rows = Number(process.argv[4] ?? 10000);
 assert.ok([10000, 50000].includes(rows));
+const project = process.argv[5] ?? "chromium";
+const choices = {
+  chromium: { engine: chromium, context: {} },
+  firefox: { engine: firefox, context: {} },
+  webkit: { engine: webkit, context: {} },
+  "android-profile": { engine: chromium, context: devices["Pixel 7"] },
+  "iphone-profile": { engine: webkit, context: devices["iPhone 13"] },
+};
+assert.ok(project in choices);
+const choice = choices[project as keyof typeof choices];
 const html = await readFile(resolve(root, out, "index.html"), "utf8");
 const script = /src="([^"]+\.js)"/.exec(html)?.[1];
 assert.ok(script);
@@ -31,9 +41,9 @@ const server = await preview({
     build: { outDir: out },
     preview: { host: "127.0.0.1", port: 4199, strictPort: true },
   }),
-  browser = await chromium.launch();
+  browser = await choice.engine.launch();
 try {
-  const page = await browser.newPage();
+  const page = await browser.newPage(choice.context);
   await page.goto("http://127.0.0.1:4199");
   await page.waitForFunction(() => "vectorHarness" in globalThis);
   const result = await page.evaluate(async (rows) => {
@@ -41,6 +51,23 @@ try {
         .vectorHarness,
       c = await api.create(rows === 50000);
     const name = rows === 10000 ? "bulk" : "bulk50k";
+    if (rows === 50000) {
+      const limited = await api.create();
+      try {
+        let rejected = false;
+        try {
+          await api.prepare(limited, name);
+        } catch {
+          rejected = true;
+        }
+        if (!rejected)
+          throw new Error("Default policy accepted expanded corpus");
+        const base = await api.prepare(limited, "base");
+        await api.query(limited, base);
+      } finally {
+        limited.dispose();
+      }
+    }
     try {
       const began = performance.now(),
         h = await api.prepare(c, name),
@@ -76,6 +103,7 @@ try {
   const record = {
     schema: 1,
     label,
+    project,
     adapterJsSha256: jsHash,
     wasmSha256: wasmHash,
     source,
