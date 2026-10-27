@@ -21,7 +21,7 @@ Only original question text is embedded with the document prefix. Titles, answer
 
 ## Runtime behavior
 
-The activation button explains the approximately 74 MB decoded first-use cost, including model, runtime, Worker code and vectors. Model inference and vector search run in dedicated Workers, independently of primary lexical search. The core vector module is scalar; the selected ONNX runtime additionally requires browser WASM SIMD. No query-bearing HTTP request or automatic server API fallback is used. Model cache entries are hash-checked; unavailable or quota-limited IndexedDB falls back to verified static fetches without storing queries.
+The activation button explains the approximately 80 MB decoded first-use cost, including model, runtime, Worker code and vectors. Model inference and vector search run in dedicated Workers, independently of primary lexical search. The core vector module is scalar; the selected ONNX runtime additionally requires browser WASM SIMD. No query-bearing HTTP request or automatic server API fallback is used. Model cache entries are hash-checked; unavailable or quota-limited IndexedDB falls back to verified static fetches without storing queries.
 
 After activation, a committed input runs semantic search after a 150 ms debounce when the filtered lexical total is zero, or when the user explicitly presses the button. Uncommitted IME text continues primary incremental search but never invokes semantic inference. A running inference is not claimed to be interruptible: the coordinator retains at most one running and one latest pending request. Query, filter, stage and reload changes invalidate old results and errors. Timeouts discard a failed inference Worker so a later request can retry.
 
@@ -44,3 +44,15 @@ Vector artifacts/manifests and binding directories use content-derived names; th
 After activation, verified catalog-wide article/change choices remain available even when lexical counts are zero. These zero counts retain their lexical meaning; they are not semantic match estimates. Choices are cached under the current publication and invalidated on stage/reload changes. The existing keyed checkbox/chip rendering preserves keyboard focus and Space activation.
 
 The checked-in model-assisted page is an explicit local experiment. Normal CI/Pages builds do not include the model unless its assets are supplied and checked. The primary engine stays usable without them.
+
+## Measured application interaction
+
+On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 425 ms; the first explicit semantic activation took 1.31 s. Files requested by that activation totalled 80,072,755 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
+
+After five warmups, forty automatic zero-lexical queries had 196.1 ms p50 and 201.6 ms p95 from committed input to accepted DOM mutation. This includes the deliberate 150 ms debounce, primary/semantic queueing, encoding, exact search and rendering. Five fixed synthetic phrases exercise the pipeline; they are not a relevance benchmark, a network-cold p95 or a device guarantee. Asset and harness hashes are checked before and after measurement.
+
+The application/harness revision was `17ce4cb3fe5061a5324617dfb6dcfa17c838e971` (clean), using the vector bundle from `c9d8fb99c71831ea5d71c765964de819f15617f3` and encoder profile `6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`. With prepared assets and the production-prefix build above, reproduce the separate interaction measurement with:
+
+```sh
+node tools/semantic/bench.ts
+```

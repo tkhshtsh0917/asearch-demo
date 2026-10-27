@@ -21,7 +21,7 @@ bundleは明示して検証する入力です。隣接するRust checkoutはビ�
 
 ## 実行時の動作
 
-有効化ボタンでは、model・runtime・Workerコード・ベクトルを含む初回約74 MBの展開後取得量を説明します。model推論とベクトル検索は、主要な文字検索から独立した専用Workerで動かします。ベクトルのコアmoduleはscalarですが、選択したONNX runtimeは追加でブラウザのWASM SIMDを必要とします。入力文を含むHTTP要求や自動的なサーバーAPIへのfallbackは使いません。model cacheはhashを確認し、IndexedDBが利用不可・容量制限の場合は、クエリを保存せず検証済みの静的取得に戻ります。
+有効化ボタンでは、model・runtime・Workerコード・ベクトルを含む初回約80 MBの展開後取得量を説明します。model推論とベクトル検索は、主要な文字検索から独立した専用Workerで動かします。ベクトルのコアmoduleはscalarですが、選択したONNX runtimeは追加でブラウザのWASM SIMDを必要とします。入力文を含むHTTP要求や自動的なサーバーAPIへのfallbackは使いません。model cacheはhashを確認し、IndexedDBが利用不可・容量制限の場合は、クエリを保存せず検証済みの静的取得に戻ります。
 
 有効化後は、確定した入力を150 ms debounceした後、絞り込み後の文字検索が0件の場合、または明示的にボタンを押した場合に意味検索を実行します。未確定のIME入力は主要なインクリメンタル検索を続けますが、意味検索の推論は呼びません。実行中の推論を中断可能とは主張せず、調整側は実行中1件と最新の待機1件だけを保持します。クエリ・フィルタ・世代・再読み込みの変更で古い結果とエラーを無効化します。timeout時は失敗した推論Workerを破棄し、後続要求で再試行できます。
 
@@ -44,3 +44,15 @@ vector artifact・manifest・bindingsディレクトリには内容由来の名�
 有効化後は、文字検索が0件でも、検証済みcatalog全体の記事・更新状態の選択肢を利用できます。0件は引き続き文字検索の意味であり、意味検索の一致推計ではありません。選択肢は現在の配信情報でcacheし、世代・再読み込みの変更時に無効化します。既存のkey付きcheckbox/chip描画で、keyboard focusとSpace操作を維持します。
 
 modelを使うページは明示的なローカル実験です。通常のCI/Pages buildには、資産を提供して検証しない限りmodelを含めません。主要エンジンはそれらなしでも利用できます。
+
+## アプリ操作の実測
+
+2026-10-28に、Apple Silicon macOSホスト上のChromium 156で1万件の配信をloopback経由で読み込みました。主要検索の準備は425 ms、最初の明示的な意味検索の有効化は1.31秒でした。この有効化で要求したファイルの展開後合計は、別途取得する表示カタログを含めて80,072,755バイトでした。これはHTTP cacheからの応答も含む、要求した静的ファイルの重複なしの合計であり、圧縮後の通信量ではありません。帯域制限下のmodel単体のcold実験は[encoder probe](../../integration/experiments/ruri/README.ja.md)で別に報告しています。
+
+5回のwarmup後、文字検索が0件になる自動検索40回について、確定入力から採用したDOM変更まではp50が196.1 ms、p95が201.6 msでした。意図的な150 msのdebounce、主要・意味検索の待ち行列、埋め込み、完全検索、描画を含みます。固定した合成文5種類でpipelineを検証しており、関連性ベンチマーク、network coldのp95、端末性能の保証ではありません。計測前後に資産とハーネスのhashを確認します。
+
+アプリ・ハーネスのrevisionは`17ce4cb3fe5061a5324617dfb6dcfa17c838e971`（clean）、ベクトルbundleは`c9d8fb99c71831ea5d71c765964de819f15617f3`、encoder profileは`6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`でした。準備済み資産と上記の本番prefixでのbuildを使い、独立した操作計測は次で再現します。
+
+```sh
+node tools/semantic/bench.ts
+```
