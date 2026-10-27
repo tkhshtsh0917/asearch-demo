@@ -47,7 +47,7 @@ The checked-in model-assisted page is an explicit local experiment. Normal CI/Pa
 
 ## Measured application interaction
 
-On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 441 ms; the first explicit semantic activation took 1.36 s. Files requested by that activation totalled 80,072,355 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
+On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 441 ms; the first explicit semantic activation took 1.36 s. Files requested by that activation totalled 80,072,371 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
 
 After five warmups, forty automatic zero-lexical queries had 195.3 ms p50 and 202.7 ms p95 from committed input to accepted DOM mutation. This includes the deliberate 150 ms debounce, primary/semantic queueing, encoding, exact search and rendering. Five fixed synthetic phrases exercise the pipeline; they are not a relevance benchmark, a network-cold p95 or a device guarantee. Asset and harness hashes are checked before and after measurement.
 
