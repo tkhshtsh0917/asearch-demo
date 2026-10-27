@@ -52,3 +52,34 @@ test("HTTP failures cancel unread segment bodies and fetches carry bounded deadl
   assert.equal(cancelled, true);
   assert.ok(signal instanceof AbortSignal);
 });
+
+test("optional metadata fetches combine caller cancellation with their finite deadline", async (t) => {
+  const signal = AbortSignal.abort();
+  t.mock.method(
+    globalThis,
+    "fetch",
+    async (_url: unknown, options?: RequestInit) => {
+      assert.equal(options?.signal?.aborted, true);
+      throw new DOMException("cancelled", "AbortError");
+    },
+  );
+  await assert.rejects(
+    jsonAsset(
+      new URL("https://example.test/"),
+      "manifest.json",
+      65536,
+      undefined,
+      signal,
+    ),
+    { name: "AbortError" },
+  );
+});
+
+test("content-addressed metadata filenames reject stale bodies even without a separate full digest", async (t) => {
+  const body = JSON.stringify({ value: "old" });
+  t.mock.method(globalThis, "fetch", async () => new Response(body));
+  await assert.rejects(
+    jsonAsset(base, `manifest.${"0".repeat(20)}.json`),
+    /integrity/,
+  );
+});

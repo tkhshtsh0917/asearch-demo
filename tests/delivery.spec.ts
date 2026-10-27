@@ -1,4 +1,5 @@
 /** Publication adoption, integrity and live-search behavior. */
+import { createHash } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { open, query } from "./helpers.ts";
 
@@ -126,23 +127,55 @@ test("search continues during a delayed update and latest input survives adoptio
 test("valid manifests are independent of JSON property ordering", async ({
   page,
 }) => {
-  await page.route("**/manifest.*.json", async (route) => {
+  await page.route("**/data/release.json", async (route) => {
     const response = await route.fetch();
-    const manifest = await response.json();
-    const index = manifest.index;
-    manifest.index = {
-      normalizer: {
-        options: index.normalizer.options,
-        version: index.normalizer.version,
-        id: index.normalizer.id,
-      },
-      symbol_unit: index.symbol_unit,
-      minor: index.minor,
-      major: index.major,
-    };
-    await route.fulfill({ response, json: manifest });
+    const publication = await response.json();
+    for (const stage of publication.stages) {
+      const source = await page.request.get(
+        new URL(stage.manifest, response.url()).href,
+      );
+      const manifest = await source.json(),
+        index = manifest.index;
+      manifest.index = {
+        normalizer: {
+          options: index.normalizer.options,
+          version: index.normalizer.version,
+          id: index.normalizer.id,
+        },
+        symbol_unit: index.symbol_unit,
+        minor: index.minor,
+        major: index.major,
+      };
+      const body = JSON.stringify(manifest),
+        hash = createHash("sha256").update(body).digest("hex").slice(0, 20);
+      stage.manifest = `manifest.${hash}.json`;
+      await page.route(`**/${stage.manifest}`, (asset) =>
+        asset.fulfill({ contentType: "application/json", body }),
+      );
+    }
+    await route.fulfill({ response, json: publication });
   });
   await open(page);
+  await page.locator("#advance").click();
+  await expect(page.locator("#status")).toContainText("世代 2");
+  await expect(page.locator("#error")).toBeEmpty();
+});
+
+test("a modified body at an immutable manifest URL cannot replace the active stage", async ({
+  page,
+}) => {
+  await open(page);
+  await query(page, "大学");
+  const before = await page.locator("#results .question").allTextContents();
+  await page.route("**/manifest.*.json", async (route) => {
+    const response = await route.fetch();
+    await route.fulfill({ response, body: `${await response.text()} ` });
+  });
+  await page.locator("#advance").click();
+  await expect(page.locator("#error")).toContainText("処理できませんでした");
+  await expect(page.locator("#status")).toContainText("世代 1");
+  await expect(page.locator("#results .question")).toHaveText(before);
+  await page.unroute("**/manifest.*.json");
   await page.locator("#advance").click();
   await expect(page.locator("#status")).toContainText("世代 2");
   await expect(page.locator("#error")).toBeEmpty();
