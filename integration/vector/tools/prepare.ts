@@ -40,6 +40,9 @@ assert.equal(
 );
 const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as {
   schema: number;
+  version: string;
+  sourceTreeSha256: string;
+  maxLinearMemoryBytes: number;
   abi: number;
   source: string;
   sourceDirty: boolean;
@@ -47,6 +50,35 @@ const metadata = JSON.parse(await readFile(metadataPath, "utf8")) as {
   wasmBindgen: string;
   files: { path: string; bytes: number; sha256: string }[];
 };
+assert.deepEqual(
+  Object.keys(metadata).toSorted(),
+  [
+    "schema",
+    "version",
+    "abi",
+    "source",
+    "sourceDirty",
+    "sourceTreeSha256",
+    "target",
+    "wasmBindgen",
+    "maxLinearMemoryBytes",
+    "files",
+  ].toSorted(),
+);
+assert.match(metadata.version, /^\d+\.\d+\.\d+$/);
+assert.match(metadata.sourceTreeSha256, /^[a-f0-9]{64}$/);
+assert.equal(metadata.maxLinearMemoryBytes, 536870912);
+const platform = `${process.platform}-${process.arch}`;
+const targets: Record<string, string> = {
+  "darwin-arm64": "aarch64-apple-darwin",
+  "linux-x64": "x86_64-unknown-linux-gnu",
+  "win32-x64": "x86_64-pc-windows-msvc",
+};
+assert.equal(
+  metadata.target,
+  targets[platform],
+  "Bundle native target must match this host",
+);
 assert.equal(metadata.schema, 1);
 assert.equal(metadata.abi, 1);
 assert.match(metadata.source, /^[0-9a-f]{40}$/);
@@ -76,6 +108,10 @@ assert.ok(
   metadata.files.reduce((sum, f) => sum + f.bytes, 0) <= 128 * 1024 ** 2,
 );
 for (const file of metadata.files) {
+  assert.deepEqual(
+    Object.keys(file).toSorted(),
+    ["path", "bytes", "sha256"].toSorted(),
+  );
   assert.ok(
     Number.isSafeInteger(file.bytes) &&
       file.bytes > 0 &&
@@ -103,6 +139,10 @@ try {
     `${JSON.stringify(metadata, null, 2)}\n`,
   );
   const cli = resolve(artifactRoot, executable);
+  assert.equal(
+    execFileSync(cli, ["--version"], { encoding: "utf8" }).trim(),
+    `vector-store ${metadata.version}`,
+  );
   const command = (args: string[]) =>
     JSON.parse(
       execFileSync(cli, args, { cwd: artifactRoot, encoding: "utf8" }),
