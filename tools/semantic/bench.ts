@@ -10,6 +10,7 @@ import { siteHashes } from "../site/artifact.ts";
 const before = await siteHashes("dist"),
   script = await readFile(new URL(import.meta.url));
 const server = await preview({
+    base: "/asearch-demo/",
     preview: { host: "127.0.0.1", port: 0, strictPort: true },
   }),
   browser = await chromium.launch();
