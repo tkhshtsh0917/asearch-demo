@@ -12,6 +12,8 @@ const root = fileURLToPath(new URL("../", import.meta.url)),
   out = process.argv[2] ?? "dist",
   label = process.argv[3] ?? "candidate";
 assert.match(label, /^[a-z0-9-]+$/);
+const rows = Number(process.argv[4] ?? 10000);
+assert.ok([10000, 50000].includes(rows));
 const html = await readFile(resolve(root, out, "index.html"), "utf8");
 const script = /src="([^"]+\.js)"/.exec(html)?.[1];
 assert.ok(script);
@@ -34,16 +36,19 @@ try {
   const page = await browser.newPage();
   await page.goto("http://127.0.0.1:4199");
   await page.waitForFunction(() => "vectorHarness" in globalThis);
-  const result = await page.evaluate(async () => {
+  const result = await page.evaluate(async (rows) => {
     const api = (globalThis as unknown as { vectorHarness: Harness })
         .vectorHarness,
-      c = await api.create();
+      c = await api.create(rows === 50000);
+    const name = rows === 10000 ? "bulk" : "bulk50k";
     try {
       const began = performance.now(),
-        h = await api.prepare(c, "bulk"),
+        h = await api.prepare(c, name),
         loadMs = performance.now() - began;
-      const query = await (await fetch("/fixtures/bulk-query.json")).json();
-      const expected = await (await fetch("/fixtures/bulk-oracle.json")).json();
+      const query = await (await fetch(`/fixtures/${name}-query.json`)).json();
+      const expected = await (
+        await fetch(`/fixtures/${name}-oracle.json`)
+      ).json();
       const samples: number[] = [];
       for (let i = 0; i < 45; i++) {
         const start = performance.now();
@@ -67,14 +72,14 @@ try {
     } finally {
       c.dispose();
     }
-  });
+  }, rows);
   const record = {
     schema: 1,
     label,
     adapterJsSha256: jsHash,
     wasmSha256: wasmHash,
     source,
-    rows: 10000,
+    rows,
     dimensions: 256,
     k: 10,
     browser: browser.version(),

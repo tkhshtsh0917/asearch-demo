@@ -2,10 +2,11 @@
 import { VectorClient } from "./client.ts";
 import type { Artifact, PreparedSnapshot, RawModule } from "./types.ts";
 
-async function create() {
+async function create(expanded = false) {
   return VectorClient.create(
     new URL("/bindings/vector_wasm.js", location.href),
     new URL("/bindings/vector_wasm_bg.wasm", location.href),
+    expanded,
   );
 }
 async function prepare(client: VectorClient, name: string) {
