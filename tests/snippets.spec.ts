@@ -36,6 +36,7 @@ test("catalog markup stays text in excerpts, facets and selection chips", async 
     })),
   );
   stage.catalogSha256 = createHash("sha256").update(bytes).digest("hex");
+  stage.catalog = `catalog.${stage.catalogSha256.slice(0, 20)}.json`;
   await page.route("**/data/release.json", (route) =>
     route.fulfill({ json: info }),
   );
