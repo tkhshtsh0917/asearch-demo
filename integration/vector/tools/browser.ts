@@ -102,6 +102,58 @@ try {
         await reject(() => raw.snapshot_info(value as number));
       }
       if (coercions !== 0) throw new Error("Raw ABI invoked numeric coercion");
+
+      // Exercise real allocation failure using unfilled, finite upload reservations.
+      const reservations: Awaited<ReturnType<Harness["raw"]>>[] = [];
+      let allocationRecovered = false,
+        allocationLinearBytes = 0;
+      try {
+        const payload = new TextEncoder().encode(
+          JSON.stringify({
+            schema: 1,
+            space: "0".repeat(64),
+            revision: "0".repeat(64),
+            generation: "0",
+            artifacts: [
+              {
+                sha256: "0".repeat(64),
+                bytes: "134217728",
+                generation: "0",
+                revision: "0".repeat(64),
+                parent: null,
+                url: "reservation.vecx",
+              },
+            ],
+          }),
+        );
+        for (let i = 0; i < 6; i++) {
+          const reservation = await api.raw(true);
+          reservations.push(reservation);
+          const store = reservation.native;
+          store.begin_input(1, payload.length);
+          new Uint8Array(
+            reservation.memory.buffer,
+            store.upload_pointer(),
+            payload.length,
+          ).set(payload);
+          store.append_input(payload.length);
+          store.finish_input();
+          try {
+            store.begin_artifact();
+          } catch (error) {
+            if (!String(error).startsWith("AllocationFailure:")) throw error;
+            if (JSON.parse(store.resources()).staging_reserved_bytes !== 0)
+              throw new Error("Failed allocation retained staging");
+            allocationRecovered = true;
+            allocationLinearBytes = reservation.memory.buffer.byteLength;
+            break;
+          }
+        }
+      } finally {
+        for (const reservation of reservations) reservation.native.free();
+      }
+      if (!allocationRecovered || allocationLinearBytes > 512 * 1024 * 1024)
+        throw new Error("Finite module allocation was not recoverable");
       await reject(() => api.query(other, base));
       await reject(() => c.search(base, new Float32Array([0, 0, 0]), 0));
       await reject(() => c.search(base, new Float32Array([NaN, 0, 0]), 0));
@@ -167,6 +219,10 @@ try {
         subclass,
         recovered,
         resources,
+        allocation: {
+          recovered: allocationRecovered,
+          linearBytes: allocationLinearBytes,
+        },
       };
     } finally {
       c.dispose();

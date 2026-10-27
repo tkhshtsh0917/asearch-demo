@@ -27,3 +27,5 @@ pnpm test:browser chromium
 VectorClientは、検証したmanifestと、呼出し元が渡す上限付き成果物streamを受け取ります。許可origin、展開後バイト上限、公開単位の識別情報、最新要求だけの描画は呼出し元が制御します。clientは数値handleを隠し、組込みmetadata・methodでtyped arrayをコピーし、準備済みsnapshotを保ちながら失敗したtaskを解放します。
 
 ベクトルの完全探索とモデル推論は別です。[Ruri実験](../experiments/ruri/README.ja.md)が初期の固定ブラウザエンコーダーを担当します。アプリケーション統合では任意機能として保ち、主系の字句検索を利用可能にする必要があります。
+
+ブラウザ回帰では、上限内の未完了uploadを使ってmoduleの512 MiBのlinear memory上限を意図的に使い切ります。失敗したfallible allocationはstagingを消去し、保持するupload予約領域を解放した後、正常なクエリを再度実行できる必要があります。これはホストブラウザのprocess memory保証とは区別します。

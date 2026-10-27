@@ -27,3 +27,5 @@ The asset command replaces only its generated .artifacts area and fixture/bindin
 VectorClient accepts a verified manifest and a caller-supplied bounded artifact stream. The caller enforces allowed origins, decoded byte limits, publication identity and latest-request rendering. The client keeps numeric handles private, copies typed arrays through intrinsic metadata and methods, and releases failed tasks while preserving prepared snapshots.
 
 Exact vector search and model inference are separate. The [Ruri experiment](../experiments/ruri/README.md) owns the initial pinned browser encoder; application integration must keep it optional and preserve primary lexical availability.
+
+The browser regression deliberately exhausts the module's 512 MiB linear-memory maximum with bounded, unfinished uploads. A failed fallible allocation must clear staging, release retained upload reservations and permit a later valid query. This is distinct from a host browser process-memory guarantee.
