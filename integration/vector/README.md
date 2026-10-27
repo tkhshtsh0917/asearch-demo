@@ -29,3 +29,14 @@ VectorClient accepts a verified manifest and a caller-supplied bounded artifact 
 Exact vector search and model inference are separate. The [Ruri experiment](../experiments/ruri/README.md) owns the initial pinned browser encoder; application integration must keep it optional and preserve primary lexical availability.
 
 The browser regression deliberately exhausts the module's 512 MiB linear-memory maximum with bounded, unfinished uploads. A failed fallible allocation must clear staging, release retained upload reservations and permit a later valid query. This is distinct from a host browser process-memory guarantee.
+
+## Native document vectors and 50k benchmark input
+
+`node tools/corpus.ts` retrieves the immutable 50,000-question prefix in corpus.lock.json using bounded HTTP ranges, then checks the complete materialized subset SHA-256. It does not claim verification of the whole Parquet shard. This CC BY-SA 4.0 derivative retains the source dataset/revision/license pins; no answers or source passages are embedded.
+
+```sh
+mise exec -- uv run --script --locked tools/embed.py --input .data/wiki50k-questions.jsonl --output .data/vectors.jsonl --limit 50000
+python3 -m unittest discover -s tools -p 'test_*.py'
+```
+
+The locked native F32 encoder uses only `text`, adds the document prefix, checks all token counts without truncation, and emits stable IDs plus 256 coordinates. It captures the consumed input digest, model/script/Python-lock digests and timing conditions. Output and staging files cannot overwrite existing files. Offline I/O tests do not import the ML runtime. On the measured host, 50k documents took 74.41 seconds, with a maximum of 87 tokens under the fixed 256-token policy. This is a server encoding observation, not browser query latency or a portable throughput guarantee.

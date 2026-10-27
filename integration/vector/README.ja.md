@@ -29,3 +29,14 @@ VectorClientは、検証したmanifestと、呼出し元が渡す上限付き成
 ベクトルの完全探索とモデル推論は別です。[Ruri実験](../experiments/ruri/README.ja.md)が初期の固定ブラウザエンコーダーを担当します。アプリケーション統合では任意機能として保ち、主系の字句検索を利用可能にする必要があります。
 
 ブラウザ回帰では、上限内の未完了uploadを使ってmoduleの512 MiBのlinear memory上限を意図的に使い切ります。失敗したfallible allocationはstagingを消去し、保持するupload予約領域を解放した後、正常なクエリを再度実行できる必要があります。これはホストブラウザのprocess memory保証とは区別します。
+
+## native文書ベクトルと5万件のベンチマーク入力
+
+`node tools/corpus.ts`はcorpus.lock.jsonの不変な先頭50,000質問を上限付きHTTP Rangeで取得し、実体化した部分集合全体のSHA-256を確認します。Parquet shard全体を検証したとは主張しません。このCC BY-SA 4.0の派生物は、元dataset・revision・licenseのpinを保持します。回答や元の本文は埋め込みません。
+
+```sh
+mise exec -- uv run --script --locked tools/embed.py --input .data/wiki50k-questions.jsonl --output .data/vectors.jsonl --limit 50000
+python3 -m unittest discover -s tools -p 'test_*.py'
+```
+
+固定したnative F32 encoderは`text`だけを使い、文書prefixを加え、切り詰めずに全件のtoken数を確認し、安定IDと256座標を出力します。消費した入力、model・script・Python lockのdigestと計測条件を記録します。出力とstagingは既存ファイルを上書きできません。offlineのI/OテストはML runtimeをimportしません。計測hostでは5万文書が74.41秒、最大87 tokenで、固定した256 tokenの方針内でした。これはサーバーでのencodingの観測で、ブラウザのクエリ遅延や移植可能なthroughput保証ではありません。
