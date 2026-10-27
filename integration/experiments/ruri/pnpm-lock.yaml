@@ -166,9 +166,9 @@ importers:
 
   .:
     dependencies:
-      '@huggingface/tokenizers':
-        specifier: 0.2.0
-        version: 0.2.0
+      '@mlc-ai/web-tokenizers':
+        specifier: 0.1.6
+        version: 0.1.6
       onnxruntime-web:
         specifier: 1.31.1
         version: 1.31.1
@@ -182,6 +182,9 @@ importers:
       '@types/node':
         specifier: 24.19.2
         version: 24.19.2
+      hyparquet:
+        specifier: 1.31.5
+        version: 1.31.5
       prettier:
         specifier: 3.9.10
         version: 3.9.10
@@ -263,8 +266,8 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@huggingface/tokenizers@0.2.0':
-    resolution: {integrity: sha512-LidMHe1FpcSYH4vcSjXooda34pC0M8m1gmDOv7SQi6Iv+ib1zX7J3sHBCC9/3FPCkn2k1b55FneVqMRxrr99pg==}
+  '@mlc-ai/web-tokenizers@0.1.6':
+    resolution: {integrity: sha512-A5GSqUSnMjDkPoXBFFtbbW3F/qygCixuwbi7/EUMzcpgwFOAhD9vSZZBchK3IpC0c6TKlcDqAYDYp8vpb8/4vA==}
 
   '@oxc-project/types@0.155.0':
     resolution: {integrity: sha512-SeE8JPwW1xs1tHeNycjUtUBdhorRa8o4jlvjwk49R7/Z291i+4DQa7JJIgOm/TaYQZx+QrPQbVJ/9c8dMIZN8Q==}
@@ -547,6 +550,9 @@ packages:
   guid-typescript@1.0.9:
     resolution: {integrity: sha512-Y8T4vYhEfwJOTbouREvG+3XDsjr8E3kIr7uf+JZ0BYloFsttiHU0WfvANVsR7TxNUJa/WpCnw/Ino/p+DeBhBQ==}
 
+  hyparquet@1.31.5:
+    resolution: {integrity: sha512-KPVfaxW8xOiO2/4fjeiBfFNEXhGVw9tfcb9ha2iNZdJ3J/yBjEwIeAnTyyuhllFFTb9YO9wg0DfRAOnm6KCvBg==}
+
   lightningcss-android-arm64@1.33.0:
     resolution: {integrity: sha512-gEpRTalKdosp4Bb8qWtc2iOgE5SeIHlpS1up9bFq2wAyYhl1UdTObYiHe98zEM9SQvSoqQZ1IQD0JNpg3Ml5pg==}
     engines: {node: '>= 12.0.0'}
@@ -777,7 +783,7 @@ snapshots:
   '@biomejs/cli-win32-x64@2.6.2':
     optional: true
 
-  '@huggingface/tokenizers@0.2.0': {}
+  '@mlc-ai/web-tokenizers@0.1.6': {}
 
   '@oxc-project/types@0.155.0': {}
 
@@ -928,6 +934,8 @@ snapshots:
     optional: true
 
   guid-typescript@1.0.9: {}
+
+  hyparquet@1.31.5: {}
 
   lightningcss-android-arm64@1.33.0:
     optional: true

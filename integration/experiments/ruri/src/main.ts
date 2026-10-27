@@ -2,16 +2,30 @@
 import type { Role } from "./policy.ts";
 
 class Probe {
+  readonly sourceIdentity = __PROBE_SOURCE_ID__;
   private worker = new Worker(new URL("./worker.ts", import.meta.url), {
     type: "module",
   });
   private sequence = 0;
   private busy = false;
 
-  async request(
+  request(
     text?: string,
     role: Role = "query",
   ): Promise<Record<string, unknown>> {
+    return this.send(text === undefined ? {} : { text, role });
+  }
+
+  async dispose() {
+    await this.send({ dispose: true });
+    this.worker.terminate();
+  }
+
+  private async send(payload: {
+    text?: string;
+    role?: Role;
+    dispose?: boolean;
+  }): Promise<Record<string, unknown>> {
     if (this.busy) throw new Error("Probe is busy");
     this.busy = true;
     const id = ++this.sequence;
@@ -49,7 +63,7 @@ class Probe {
       };
       this.worker.postMessage({
         id,
-        ...(text === undefined ? {} : { text, role }),
+        ...payload,
       });
     });
   }

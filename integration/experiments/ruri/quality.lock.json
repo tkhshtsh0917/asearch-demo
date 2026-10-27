@@ -1,0 +1,27 @@
+{
+  "dataset": "sbintuitions/JMTEB",
+  "revision": "6064d6d00e3eccca0f9673621022b409f79d1a18",
+  "subset": "jagovfaqs_22k",
+  "upstream": "https://huggingface.co/datasets/matsuxr/JaGovFaqs-22k",
+  "license": "CC-BY-4.0",
+  "selection": {
+    "queries": 128,
+    "documents": 1000,
+    "seed": "ruri-e0-1",
+    "tokenEligibility": 256
+  },
+  "files": [
+    {
+      "path": "corpus.parquet",
+      "url": "https://huggingface.co/datasets/sbintuitions/JMTEB/resolve/6064d6d00e3eccca0f9673621022b409f79d1a18/data/jagovfaqs_22k-corpus/corpus.parquet",
+      "bytes": 5887153,
+      "sha256": "ce26ade1303207b89be5df9b07246de8f71f9609cf5593549fb17b8c473ae4c6"
+    },
+    {
+      "path": "queries.parquet",
+      "url": "https://huggingface.co/datasets/sbintuitions/JMTEB/resolve/6064d6d00e3eccca0f9673621022b409f79d1a18/data/jagovfaqs_22k-query/test.parquet",
+      "bytes": 361795,
+      "sha256": "d60870c9406c4f371a526044f54c6948b31661d4c20a3d15039009edd73ae180"
+    }
+  ]
+}

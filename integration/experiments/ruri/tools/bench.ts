@@ -15,6 +15,7 @@ import {
   webkit,
 } from "@playwright/test";
 import { preview } from "vite";
+import { assertBuild } from "./build-check.ts";
 import { sourceIdentity } from "./identity.ts";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
@@ -116,6 +117,25 @@ try {
   page.on("pageerror", (error) => errors.push(error.message));
   await page.goto(origin);
   await page.waitForFunction(() => "ruriProbe" in globalThis);
+  await assertBuild(page, root);
+  const measuredIdentity = await sourceIdentity(root);
+  await page.evaluate(() =>
+    Object.defineProperty(
+      (globalThis as unknown as { ruriProbe: object }).ruriProbe,
+      "sourceIdentity",
+      { value: "stale", configurable: true },
+    ),
+  );
+  await assert.rejects(() => assertBuild(page, root), /does not match source/);
+  await page.evaluate(
+    (value) =>
+      Object.defineProperty(
+        (globalThis as unknown as { ruriProbe: object }).ruriProbe,
+        "sourceIdentity",
+        { value, configurable: true },
+      ),
+    measuredIdentity,
+  );
   const initialized = await page.evaluate(async () => {
     const api = (
       globalThis as unknown as {
@@ -154,6 +174,7 @@ try {
     cwd: root,
     encoding: "utf8",
   }).trim();
+  await assertBuild(page, root);
   const result = {
     schema: 1,
     recordedAt: new Date().toISOString(),
@@ -207,7 +228,7 @@ try {
       localRequests: [...new Set(localRequests)],
     },
     scope:
-      "Encoder feasibility only; no vector-store search, internet cold-start or native-F32 quality parity measured.",
+      "Encoder warm latency only; independent parity, labeled retrieval quality and cold/cache/memory records are separate experiments.",
   };
   const output = resolve(root, "results");
   await mkdir(output, { recursive: true });

@@ -11,6 +11,10 @@
     "dev": "vite --host 127.0.0.1 --port 4197 --strictPort",
     "build": "vite build",
     "bench": "node tools/bench.ts",
+    "bench:startup": "node tools/startup.ts",
+    "prepare:quality": "node tools/prepare-quality.ts",
+    "test:parity": "node tools/parity.ts",
+    "test:quality": "node tools/quality.ts",
     "test": "node --test test/*.test.ts",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
@@ -19,13 +23,14 @@
     "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check"
   },
   "dependencies": {
-    "@huggingface/tokenizers": "0.2.0",
+    "@mlc-ai/web-tokenizers": "0.1.6",
     "onnxruntime-web": "1.31.1"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
     "@playwright/test": "1.64.1",
     "@types/node": "24.19.2",
+    "hyparquet": "1.31.5",
     "prettier": "3.9.10",
     "typescript": "7.0.2",
     "vite": "8.3.5"

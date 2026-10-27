@@ -1,18 +1,30 @@
 /** Runs the pinned Ruri ONNX encoder on a single CPU thread. */
-import { Tokenizer } from "@huggingface/tokenizers";
 import * as ort from "onnxruntime-web/wasm";
 import lock from "../model.lock.json";
-import { verifiedAsset } from "./assets.ts";
+import runtime from "../runtime.lock.json";
+import { assetStats, verifiedAsset } from "./assets.ts";
+import { cacheStats } from "./cache.ts";
 import { meanPool, prefixText, type Role } from "./policy.ts";
+import { loadTokenizer } from "./tokenizer.ts";
 
 export async function loadEncoder() {
   ort.env.wasm.numThreads = 1;
   ort.env.wasm.wasmPaths = new URL("/runtime/", globalThis.location.href).href;
 
   const start = performance.now();
-  const buffers = await Promise.all(
-    lock.files.map((file) => verifiedAsset(file.path, file.bytes, file.sha256)),
-  );
+  const buffers = await Promise.all([
+    ...lock.files.map((file) =>
+      verifiedAsset(file.path, file.bytes, file.sha256),
+    ),
+    ...runtime.files
+      .filter((file) => file.path.endsWith(".wasm"))
+      .map((file) =>
+        verifiedAsset(file.path, file.bytes, file.sha256, "/runtime/"),
+      ),
+  ]);
+  const runtimeBytes = buffers[lock.files.length];
+  if (!runtimeBytes) throw new Error("Missing pinned runtime");
+  ort.env.wasm.wasmBinary = runtimeBytes;
   const assetsReadyMs = performance.now() - start;
   const json = (path: string) => {
     const index = lock.files.findIndex((file) => file.path === path);
@@ -20,10 +32,10 @@ export async function loadEncoder() {
     if (!buffer) throw new Error(`Missing pinned asset: ${path}`);
     return JSON.parse(new TextDecoder().decode(buffer));
   };
-  const tokenizer = new Tokenizer(
-    json("tokenizer.json"),
-    json("tokenizer_config.json"),
-  );
+  const tokenizerBytes =
+    buffers[lock.files.findIndex((file) => file.path === "tokenizer.json")];
+  if (!tokenizerBytes) throw new Error("Missing tokenizer");
+  const tokenizer = await loadTokenizer(tokenizerBytes, json("config.json"));
   const model = buffers[0];
   if (!model) throw new Error("Missing model");
   const session = await ort.InferenceSession.create(model, {
@@ -41,7 +53,18 @@ export async function loadEncoder() {
   const readyMs = performance.now() - start;
 
   return {
-    initialization: { assetsReadyMs, readyMs, dimensions: lock.dimensions },
+    async dispose() {
+      await session.release();
+      tokenizer.dispose();
+      delete ort.env.wasm.wasmBinary;
+    },
+    initialization: {
+      assetsReadyMs,
+      readyMs,
+      dimensions: lock.dimensions,
+      ...assetStats,
+      cache: { ...cacheStats },
+    },
     async encode(text: string, role: Role) {
       const began = performance.now();
       const encoded = tokenizer.encode(prefixText(text, role));
@@ -78,6 +101,7 @@ export async function loadEncoder() {
         const vector = meanPool(output.data, mask, lock.dimensions);
         return {
           vector,
+          tokens: encoded.ids,
           tokenCount: mask.length,
           tokenizationMs,
           encodeMs: performance.now() - began,

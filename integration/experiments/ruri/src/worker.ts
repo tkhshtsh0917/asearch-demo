@@ -5,7 +5,12 @@ import type { Role } from "./policy.ts";
 let encoder: Awaited<ReturnType<typeof loadEncoder>> | undefined;
 let running = false;
 self.onmessage = async (
-  event: MessageEvent<{ id: number; text?: string; role?: Role }>,
+  event: MessageEvent<{
+    id: number;
+    text?: string;
+    role?: Role;
+    dispose?: boolean;
+  }>,
 ) => {
   const { id, text, role } = event.data;
   if (running) {
@@ -14,6 +19,12 @@ self.onmessage = async (
   }
   running = true;
   try {
+    if (event.data.dispose) {
+      await encoder?.dispose();
+      encoder = undefined;
+      self.postMessage({ id, disposed: true });
+      return;
+    }
     encoder ??= await loadEncoder();
     if (text === undefined)
       self.postMessage({ id, initialization: encoder.initialization });

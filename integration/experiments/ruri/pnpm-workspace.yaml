@@ -2,6 +2,7 @@ packages: []
 
 allowBuilds:
   esbuild@0.28.2: true
+  protobufjs@7.6.6: false
 
 minimumReleaseAgeExclude:
   - onnxruntime-common@1.31.1

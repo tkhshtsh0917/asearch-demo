@@ -1,0 +1,17 @@
+[
+  { "text": "日本で一番高い山は？", "role": "query" },
+  { "text": "富士山は日本で最も高い山です。", "role": "document" },
+  { "text": "申し込みを取り消したい", "role": "query" },
+  { "text": "申し込みのキャンセル方法は？", "role": "document" },
+  { "text": "瑠璃色はどんな色？", "role": "query" },
+  { "text": "瑠璃色は紫みを帯びた濃い青です。", "role": "document" },
+  { "text": "びーt", "role": "query" },
+  { "text": "ビートルズはどこの国のバンド？", "role": "document" },
+  { "text": "電車を乗り過ごしたらどうすればよい？", "role": "query" },
+  { "text": "列車で目的の駅を通り過ぎた場合の対応は？", "role": "document" },
+  { "text": " 食べた／食べる ABC １２３\n日本語・English", "role": "query" },
+  {
+    "text": "not nonexistent — 無いという意味を含めた質問です",
+    "role": "document"
+  }
+]
