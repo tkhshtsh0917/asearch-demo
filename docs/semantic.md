@@ -47,11 +47,11 @@ The checked-in model-assisted page is an explicit local experiment. Normal CI/Pa
 
 ## Measured application interaction
 
-On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 425 ms; the first explicit semantic activation took 1.31 s. Files requested by that activation totalled 80,072,755 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
+On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 441 ms; the first explicit semantic activation took 1.36 s. Files requested by that activation totalled 80,072,355 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
 
-After five warmups, forty automatic zero-lexical queries had 196.1 ms p50 and 201.6 ms p95 from committed input to accepted DOM mutation. This includes the deliberate 150 ms debounce, primary/semantic queueing, encoding, exact search and rendering. Five fixed synthetic phrases exercise the pipeline; they are not a relevance benchmark, a network-cold p95 or a device guarantee. Asset and harness hashes are checked before and after measurement.
+After five warmups, forty automatic zero-lexical queries had 195.3 ms p50 and 202.7 ms p95 from committed input to accepted DOM mutation. This includes the deliberate 150 ms debounce, primary/semantic queueing, encoding, exact search and rendering. Five fixed synthetic phrases exercise the pipeline; they are not a relevance benchmark, a network-cold p95 or a device guarantee. Asset and harness hashes are checked before and after measurement.
 
-The application/harness revision was `17ce4cb3fe5061a5324617dfb6dcfa17c838e971` (clean), using the vector bundle from `c9d8fb99c71831ea5d71c765964de819f15617f3` and encoder profile `6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`. With prepared assets and the production-prefix build above, reproduce the separate interaction measurement with:
+The application revision was `5e34976e755e0058aeeeaf1aab796b2c7b1e98ae` (clean), with harness `17ce4cb3fe5061a5324617dfb6dcfa17c838e971`, using the vector bundle from `9ca185c320d118faac16e9669df69509de4e0fab` and encoder profile `6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`. With prepared assets and the production-prefix build above, reproduce the separate interaction measurement with:
 
 ```sh
 node tools/semantic/bench.ts

@@ -47,11 +47,11 @@ modelを使うページは明示的なローカル実験です。通常のCI/Pag
 
 ## アプリ操作の実測
 
-2026-10-28に、Apple Silicon macOSホスト上のChromium 156で1万件の配信をloopback経由で読み込みました。主要検索の準備は425 ms、最初の明示的な意味検索の有効化は1.31秒でした。この有効化で要求したファイルの展開後合計は、別途取得する表示カタログを含めて80,072,755バイトでした。これはHTTP cacheからの応答も含む、要求した静的ファイルの重複なしの合計であり、圧縮後の通信量ではありません。帯域制限下のmodel単体のcold実験は[encoder probe](../../integration/experiments/ruri/README.ja.md)で別に報告しています。
+2026-10-28に、Apple Silicon macOSホスト上のChromium 156で1万件の配信をloopback経由で読み込みました。主要検索の準備は441 ms、最初の明示的な意味検索の有効化は1.36秒でした。この有効化で要求したファイルの展開後合計は、別途取得する表示カタログを含めて80,072,355バイトでした。これはHTTP cacheからの応答も含む、要求した静的ファイルの重複なしの合計であり、圧縮後の通信量ではありません。帯域制限下のmodel単体のcold実験は[encoder probe](../../integration/experiments/ruri/README.ja.md)で別に報告しています。
 
-5回のwarmup後、文字検索が0件になる自動検索40回について、確定入力から採用したDOM変更まではp50が196.1 ms、p95が201.6 msでした。意図的な150 msのdebounce、主要・意味検索の待ち行列、埋め込み、完全検索、描画を含みます。固定した合成文5種類でpipelineを検証しており、関連性ベンチマーク、network coldのp95、端末性能の保証ではありません。計測前後に資産とハーネスのhashを確認します。
+5回のwarmup後、文字検索が0件になる自動検索40回について、確定入力から採用したDOM変更まではp50が195.3 ms、p95が202.7 msでした。意図的な150 msのdebounce、主要・意味検索の待ち行列、埋め込み、完全検索、描画を含みます。固定した合成文5種類でpipelineを検証しており、関連性ベンチマーク、network coldのp95、端末性能の保証ではありません。計測前後に資産とハーネスのhashを確認します。
 
-アプリ・ハーネスのrevisionは`17ce4cb3fe5061a5324617dfb6dcfa17c838e971`（clean）、ベクトルbundleは`c9d8fb99c71831ea5d71c765964de819f15617f3`、encoder profileは`6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`でした。準備済み資産と上記の本番prefixでのbuildを使い、独立した操作計測は次で再現します。
+アプリのrevisionは`5e34976e755e0058aeeeaf1aab796b2c7b1e98ae`（clean）、ハーネスは`17ce4cb3fe5061a5324617dfb6dcfa17c838e971`、ベクトルbundleは`9ca185c320d118faac16e9669df69509de4e0fab`、encoder profileは`6f7bd88f8903d3cb27d0bc64ebee4e3d2e4a8aa9fea3d57e350c3a72713dbdc7`でした。準備済み資産と上記の本番prefixでのbuildを使い、独立した操作計測は次で再現します。
 
 ```sh
 node tools/semantic/bench.ts
