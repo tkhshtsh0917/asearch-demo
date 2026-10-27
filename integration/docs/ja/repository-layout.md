@@ -13,6 +13,7 @@
 - `tools/build`: wasm-bindgen・最適化・JS配布物の生成。
 - `tools/fixtures`, `tools/reference`, `vendor/upstream`: 独立oracleと互換fixture。原本のライセンス・ハッシュを保持。
 - `tools/bench`: ネイティブCLI・Node・ブラウザの計測。
+- `experiments/ruri`: 独立した[ブラウザEmbedding試験](../../experiments/ruri/README.ja.md)。専用の固定依存・オフライン検査・明示的なモデル準備を持ち、公開デモのビルドには含めない。
 - `fixtures`: JS回帰用の固定入力。Rustも独立テスト用の同じfixtureを保持。
 - `.engine/release`: 検証済みでGit追跡しないRelease Assets。
 

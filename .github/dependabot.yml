@@ -1,7 +1,7 @@
 version: 2
 updates:
   - package-ecosystem: npm
-    directories: ["/", "/integration"]
+    directories: ["/", "/integration", "/integration/experiments/ruri"]
     schedule:
       interval: weekly
     open-pull-requests-limit: 5

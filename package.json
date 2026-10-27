@@ -25,7 +25,7 @@
     "preview": "vite preview",
     "test:e2e": "playwright test",
     "test:dev": "playwright test --config playwright.dev.config.ts",
-    "security:check": "node tools/security/runtime.ts && pnpm audit --audit-level low && pnpm --dir integration audit --audit-level low"
+    "security:check": "node tools/security/runtime.ts && pnpm audit --audit-level low && pnpm --dir integration audit --audit-level low && pnpm --dir integration/experiments/ruri audit --audit-level low"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.14.0",

@@ -1,0 +1,33 @@
+{
+  "name": "ruri-browser-probe",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@12.14.0",
+  "engines": {
+    "node": ">=24.22.1 <25"
+  },
+  "scripts": {
+    "prepare:model": "node tools/prepare.ts",
+    "dev": "vite --host 127.0.0.1 --port 4197 --strictPort",
+    "build": "vite build",
+    "bench": "node tools/bench.ts",
+    "test": "node --test test/*.test.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "fmt": "biome check --write .",
+    "docs:check": "prettier --check '*.md' pnpm-workspace.yaml",
+    "check": "pnpm lint && pnpm typecheck && pnpm test && pnpm docs:check"
+  },
+  "dependencies": {
+    "@huggingface/tokenizers": "0.2.0",
+    "onnxruntime-web": "1.31.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.2",
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "prettier": "3.9.10",
+    "typescript": "7.0.2",
+    "vite": "8.3.5"
+  }
+}

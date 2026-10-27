@@ -13,6 +13,7 @@
 - `tools/build`: wasm-bindgen, optimization and JS distribution generation.
 - `tools/fixtures`, `tools/reference`, `vendor/upstream`: Independent oracles and compatibility fixtures, retaining original licenses and hashes.
 - `tools/bench`: Native CLI, Node and browser measurements.
+- `experiments/ruri`: An isolated [browser embedding probe](../experiments/ruri/README.md), with its own pinned dependencies, offline checks and explicit model preparation; not part of the production demo build.
 - `fixtures`: Fixed JS regression inputs; Rust keeps identical fixtures for independent tests.
 - `.engine/release`: Verified, Git-ignored Release Assets.
 

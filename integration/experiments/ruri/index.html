@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Ruri browser encoder probe</title>
+  </head>
+  <body>
+    <h1>Ruri browser encoder probe</h1>
+    <p>Experimental CPU inference. Search indexing and the production demo are separate.</p>
+    <form>
+      <label>Query <input value="日本で一番高い山は？" maxlength="1000" /></label>
+      <button type="submit">Encode</button>
+    </form>
+    <pre role="status" aria-live="polite">Ready to load the model.</pre>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
