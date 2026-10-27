@@ -3,6 +3,7 @@ export default defineConfig({
   testDir: "tests",
   testMatch: [
     "search.spec.ts",
+    "semantic.spec.ts",
     "query.spec.ts",
     "query-wait.spec.ts",
     "query-errors.spec.ts",

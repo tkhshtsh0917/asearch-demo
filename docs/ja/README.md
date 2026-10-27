@@ -14,3 +14,5 @@
 [integrationの仕様](../../integration/docs/ja/spec/README.md)がライブラリ境界を説明します。
 
 [セキュリティ](security.md)は、ランタイムの管理責務、依存監査、非公開の報告方法を説明します。
+
+[任意の意味検索による提案](semantic.md)では、明示的な資産準備、クエリ・modelのprivacy、整合したvector世代、facet、実験の制約を説明します。

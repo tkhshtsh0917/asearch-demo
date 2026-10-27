@@ -160,6 +160,14 @@
           </section>
         </div>
       </section>
+      <section class="panel semantic" aria-labelledby="semantic-heading">
+        <h2 id="semantic-heading">意味が近い質問も探す <small>実験</small></h2>
+        <p>有効にすると初回に約74 MB（展開後）のモデル・runtime・索引などを取得します。入力文は端末内で処理し、送信しません。環境によって準備に時間やメモリを要します。</p>
+        <button id="semantic-enable" type="button" disabled>意味検索を有効にして試す</button>
+        <p id="semantic-status" role="status">文字検索とは別の提案欄です。</p>
+        <p class="facet-help">確定した入力で文字検索が0件のとき、またはボタンを押したときに実行します。選択した記事・更新状態を全質問に適用してから上位5件を選びます。左の件数は文字検索だけの集計です。</p>
+        <ol id="semantic-results" aria-label="意味が近い質問"></ol>
+      </section>
       <section class="notes" aria-label="仕組みと出典">
         <div>
           <h2>検索は、端末の中で。</h2>

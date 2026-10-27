@@ -6,6 +6,8 @@ import {
   type Facets,
   MAX_SELECTED_ARTICLES,
   type SearchFilters,
+  type SemanticAvailability,
+  semanticArticleOptions,
 } from "../shared/facets.ts";
 import { FacetChips, type SelectionChip } from "./facet-chips.ts";
 import { FacetOptions } from "./facet-options.ts";
@@ -32,6 +34,7 @@ export class SearchFacets {
   private readonly articles = new Set<string>();
   private readonly changes = new Set<ChangeFilter>();
   private enabled = false;
+  private semantic: SemanticAvailability | undefined;
   private readonly view: Elements;
   private readonly change: () => void;
   private readonly chips: FacetChips;
@@ -75,6 +78,11 @@ export class SearchFacets {
   update(facets: Facets, active: boolean) {
     this.facets = facets;
     this.show(active);
+    this.render();
+  }
+
+  setSemanticAvailability(value: SemanticAvailability | undefined) {
+    this.semantic = value;
     this.render();
   }
 
@@ -129,7 +137,10 @@ export class SearchFacets {
       ? this.view.filter
       : this.view.focusTarget;
     const { options, matches } = articleOptions(
-      this.facets.articles,
+      semanticArticleOptions(
+        this.facets.articles,
+        this.semantic?.articles ?? [],
+      ),
       this.view.filter.value,
       [...this.articles],
     );
@@ -142,7 +153,9 @@ export class SearchFacets {
         disabled:
           !this.enabled ||
           (!this.articles.has(facet.title) &&
-            (facet.count === 0 || this.articles.size >= MAX_SELECTED_ARTICLES)),
+            ((facet.count === 0 &&
+              !this.semantic?.articles.includes(facet.title)) ||
+              this.articles.size >= MAX_SELECTED_ARTICLES)),
       })),
       focusFallback,
     );
@@ -156,6 +169,7 @@ export class SearchFacets {
         disabled:
           !this.enabled ||
           (!this.changes.has(kind) &&
+            !this.semantic?.changes.includes(kind) &&
             !this.facets.changes.some(
               (facet) => facet.kind === kind && facet.count > 0,
             )),
@@ -166,7 +180,7 @@ export class SearchFacets {
     this.view.selected.textContent = this.count
       ? `${this.count}件選択中`
       : "未選択";
-    this.view.summary.textContent = `${matches.toLocaleString()}記事${matches > 50 ? "・先頭50件と選択中の記事を表示" : ""}。件数はキーワードと更新状態による候補数です。記事は最大50件選べます。`;
+    this.view.summary.textContent = `${matches.toLocaleString()}記事${matches > 50 ? "・先頭50件と選択中の記事を表示" : ""}。件数は文字検索のキーワードと更新状態による候補数です。${this.semantic ? "意味検索用に0件の記事も選べます。" : ""}記事は最大50件選べます。`;
     this.renderChips();
   }
 

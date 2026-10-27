@@ -14,3 +14,5 @@ Start with the [root README](../README.md) for setup and behavior, or [Contribut
 The [integration specifications](../integration/docs/spec/README.md) describe the library boundary.
 
 [Security](security.md) explains runtime ownership, dependency audits and private reporting.
+
+[Optional semantic suggestions](semantic.md) covers explicit asset preparation, query/model privacy, coherent vector stages, facets and experimental limitations.

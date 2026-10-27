@@ -1,4 +1,5 @@
 /** Coordinates IME input, Worker generations and rendering of accepted responses. */
+import { SemanticView } from "./semantic/view.ts";
 import type { Request, Response } from "./shared/protocol.ts";
 import { type DeliveryView, renderDelivery } from "./view/delivery.ts";
 import { SearchErrors } from "./view/errors.ts";
@@ -45,6 +46,13 @@ const facets = new SearchFacets(
   query,
 );
 
+const semantic = new SemanticView(
+  element<HTMLButtonElement>("semantic-enable"),
+  element("semantic-status"),
+  element("semantic-results"),
+  (available) => facets.setSemanticAvailability(available),
+);
+
 let worker: Worker,
   serial = 0,
   latest = 0,
@@ -62,6 +70,7 @@ function send(request: Request) {
 /** Searches the current input value, including uncommitted IME text. */
 function query() {
   latest = ++serial;
+  semantic.update(input.value, facets.filters, composing);
   changeLegend.hidden = stage === 0;
   if (!loaded) return;
   send({
@@ -90,6 +99,16 @@ function handleState(message: Extract<Response, { kind: "state" }>) {
   epoch = message.epoch;
 
   loaded = true;
+  semantic.setContext(
+    message.semantic
+      ? {
+          stage: message.stage,
+          catalogSha256: message.catalogSha256,
+          lexicalManifest: message.lexicalManifest,
+          pin: message.semantic,
+        }
+      : undefined,
+  );
   facets.setEnabled(true);
   renderDelivery(delivery, message);
 
@@ -116,6 +135,10 @@ function handleResults(
       Boolean(input.value.trim()) || facets.count > 0,
     );
     renderRows(results, message.rows);
+    semantic.accept(
+      message.total,
+      message.rows.map((row) => row.key),
+    );
     metrics.textContent =
       input.value.trim() || facets.count > 0
         ? `${message.totalIsExact === false ? "少なくとも" : ""}${message.total.toLocaleString()}件一致 · 上位${message.rows.length}件 · Worker内検索・説明 ${message.elapsed.toFixed(2)} ms${message.stats ? ` · ${message.stats.engine}` : ""}`
@@ -127,6 +150,7 @@ function handleResults(
 /** Invalidates queued responses and disables commands until a fresh Worker starts. */
 function stopWorker(message: string, statusText: string) {
   loaded = false;
+  semantic.setContext();
   facets.setEnabled(false);
   ++run;
   latest = ++serial;
@@ -143,6 +167,8 @@ function stopWorker(message: string, statusText: string) {
 /** Replaces the Worker and resets only UI state owned by its generation. */
 function start() {
   worker?.terminate();
+  semantic.dispose();
+  semantic.setContext();
   const generation = ++run;
   loaded = false;
   facets.setEnabled(false);
@@ -214,6 +240,7 @@ function bindEvents() {
   input.addEventListener("input", schedule);
   input.addEventListener("compositionstart", () => {
     composing = true;
+    semantic.update(input.value, facets.filters, true);
     latest = ++serial;
   });
   input.addEventListener("compositionend", () => {
@@ -246,7 +273,10 @@ function bindEvents() {
     if (!composing) query();
   });
   window.addEventListener("pagehide", (event) => {
-    if (!event.persisted) worker.terminate();
+    if (!event.persisted) {
+      worker.terminate();
+      semantic.dispose();
+    }
   });
 }
 

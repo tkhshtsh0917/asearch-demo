@@ -124,6 +124,8 @@ export function installQueryWorker(): void {
         queueMicrotask(() =>
           this.emit({
             kind: "state",
+            catalogSha256: "0".repeat(64),
+            lexicalManifest: "test-manifest.json",
             stage: 0,
             epoch: 0,
             pending: null,

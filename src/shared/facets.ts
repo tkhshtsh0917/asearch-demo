@@ -83,3 +83,22 @@ export function articleOptions(
   );
   return { options, matches: matches.length };
 }
+
+/** Adds catalog-wide choices without inventing semantic match counts. */
+export function semanticArticleOptions(
+  primary: readonly ArticleFacet[],
+  available: readonly string[],
+): ArticleFacet[] {
+  const existing = new Set(primary.map((row) => row.title)),
+    rows = [...primary];
+  for (const title of available)
+    if (!existing.has(title)) {
+      existing.add(title);
+      rows.push({ title, count: 0 });
+    }
+  return rows;
+}
+export interface SemanticAvailability {
+  articles: readonly string[];
+  changes: readonly ChangeFilter[];
+}

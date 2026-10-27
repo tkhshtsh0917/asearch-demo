@@ -14,6 +14,8 @@ The committed setup uses the published Rust CLI and WASM **v0.4.0** Release Asse
 
 On the results screen, a left sidebar provides article and update-status checkboxes, with multiple choices and keyword-dependent counts. Mobile screens offer a collapsible panel. Selected filters remain visible as removable chips, including zero-count selections after restore. See [facets](docs/data.md#article-facets) for the OR/AND rules and limits. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
 
+An explicitly prepared [optional semantic experiment](docs/semantic.md) adds pinned browser encoding and an independent exact-vector suggestion group. It is disabled in ordinary builds until its native/vector/model assets are supplied; the primary release pin remains v0.4.0.
+
 ## Setup
 
 Use mise for Node/pnpm, `unzip` for the system dictionary, and wasm-bindgen-cli 0.2.129 to match the selected Rust Release. The demo does not build the engine's Rust source. `release.lock.json` pins published v0.4.0 and all three OS bundle checksums. The commands below select that same Release with `tools/engine/select.ts`; missing OS checksums stop preparation.

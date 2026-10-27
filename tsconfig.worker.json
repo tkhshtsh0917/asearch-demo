@@ -4,5 +4,10 @@
     "lib": ["ES2024", "ESNext.Disposable", "WebWorker"],
     "types": []
   },
-  "include": ["src/worker.ts", "src/worker/**/*.ts", "src/shared/**/*.ts"]
+  "include": [
+    "src/worker.ts",
+    "src/worker/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/semantic/worker.ts"
+  ]
 }

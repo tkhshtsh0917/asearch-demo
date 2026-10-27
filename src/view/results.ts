@@ -39,9 +39,10 @@ export function renderRows(target: HTMLElement, rows: Row[]): void {
       text = highlightedText(row.text, row.spans, "question");
     const meta = document.createElement("div");
     item.dataset.article = row.title;
+    item.dataset.key = String(row.key);
     meta.className = "result-meta";
     const label = document.createElement("span");
-    label.textContent = `${row.browsing ? "記事内の質問" : `距離 ${row.level}`} · ${row.title}`;
+    label.textContent = `${row.semanticDistance !== undefined ? `意味距離 ${row.semanticDistance.toFixed(3)}` : row.browsing ? "記事内の質問" : `距離 ${row.level}`} · ${row.title}`;
     meta.append(label);
     if (row.url) {
       const link = document.createElement("a");

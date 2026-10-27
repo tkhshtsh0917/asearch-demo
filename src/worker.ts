@@ -40,8 +40,13 @@ const limits = { maxPatternUnits: 128, maxWorkingBytes: 64 * 1024 * 1024 };
 
 /** Publishes metadata only for the currently adopted index and catalog. */
 function state() {
+  const descriptor = info.stages[stage];
+  if (!descriptor) throw new Error("Missing current stage");
   post({
     kind: "state",
+    ...(info.semantic ? { semantic: info.semantic } : {}),
+    catalogSha256: descriptor.catalogSha256,
+    lexicalManifest: descriptor.manifest,
     stage,
     epoch,
     pending,

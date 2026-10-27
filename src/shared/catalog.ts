@@ -1,5 +1,10 @@
 /** Validates publication metadata and safe question/source records before display. */
+import { type SemanticPin, semanticPin } from "../semantic/identity.ts";
+import { assetName } from "./asset.ts";
 import { MAX_SNIPPET_CODE_POINTS } from "./snippets.ts";
+
+export { assetName } from "./asset.ts";
+
 export const MAX_CATALOG_QUESTIONS = 20000;
 
 export interface Question {
@@ -15,20 +20,10 @@ export interface Stage {
   catalogSha256: string;
 }
 export interface Release {
+  semantic?: SemanticPin;
   stages: Stage[];
   queryRules: { url: string; sha256: string };
   attribution: { creator: string; license: string; changes: string };
-}
-
-export function assetName(value: unknown): string {
-  if (
-    typeof value !== "string" ||
-    !/^[a-zA-Z0-9._-]+$/.test(value) ||
-    value === "." ||
-    value === ".."
-  )
-    throw new Error("Invalid asset filename");
-  return value;
 }
 
 export function sourceUrl(value: unknown): string {
@@ -81,7 +76,7 @@ export function catalog(value: unknown): Question[] {
 
 export function release(value: unknown): Release {
   if (!value || typeof value !== "object") throw new Error("Invalid release");
-  const { stages, attribution, queryRules } = value as Release;
+  const { stages, attribution, queryRules, semantic } = value as Release;
   if (
     !queryRules ||
     !/^[a-f0-9]{64}$/.test(queryRules.sha256) ||
@@ -94,6 +89,7 @@ export function release(value: unknown): Release {
   )
     throw new Error("Invalid release metadata");
   return {
+    ...(semantic === undefined ? {} : { semantic: semanticPin(semantic) }),
     queryRules: { url: assetName(queryRules.url), sha256: queryRules.sha256 },
     stages: stages.map(({ manifest, catalog, catalogSha256 }) => {
       if (!/^[a-f0-9]{64}$/.test(catalogSha256))

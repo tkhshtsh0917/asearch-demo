@@ -1,0 +1,46 @@
+# 任意の意味検索による提案
+
+[English](../semantic.md)
+
+playgroundはasearch v0.4.0と並べて、Vector Storeの明示的なnative/WASM bundleを使用できます。Rustソースと文書側の構築はブラウザアプリの外に置きます。クエリの埋め込みは、固定したRuri v3 30m ONNX q8による**明示的に有効化する実験**で、一般に受容できるブラウザメモリprofileではありません。通常の文字検索はmodelを取得しません。
+
+## 公開候補の配信を準備する
+
+通常の主要資産を先に準備し、integration/vectorとintegration/experiments/ruriの固定ツールをinstallして、宣言したツールをmiseでinstallします。明示的なsemanticコマンドが固定probeのmodel/runtimeを準備します。リポジトリルートから実行します。
+
+```sh
+pnpm data:index
+pnpm semantic:prepare /path/to/verified-vector-bundle
+BASE_PATH=/asearch-demo/ pnpm build
+SEMANTIC_REQUIRED=1 pnpm exec playwright test semantic.spec.ts --workers=1
+```
+
+bundleは明示して検証する入力です。隣接するRust checkoutはビルドしません。開発bundleは`--allow-dirty`が必要ですが、リリース用の設定ではありません。このコマンドは固定したnative F32文書encoderを動かし、再利用するベクトルcacheの来歴を確認し、指定CLIで基本・差分・圧縮済みVECXを構築し、hash付きの任意の配信情報を主要release pointerに紐付けます。生成データ・model・bindingsはソースGitの外に置きます。明示的に準備した資産がなければ、通常buildは文字検索を保持して意味検索ボタンを無効にします。主要カタログが変わった場合は紐付けに失敗するため、意味検索の配信を再構築する必要があります。
+
+文書prefixと元の質問文だけを埋め込みます。記事名・回答・本文抜粋・ローマ字・同義語・文字検索の正規化は含めません。変更3質問と追加した合成質問をサーバーで再度埋め込み、削除1 IDをtombstoneにします。圧縮は更新後の内容を維持します。5万件の拡張性ベンチマークは別で、UIは引き続き1万質問です。
+
+## 実行時の動作
+
+有効化ボタンでは、model・runtime・Workerコード・ベクトルを含む初回約74 MBの展開後取得量を説明します。model推論とベクトル検索は、主要な文字検索から独立した専用Workerで動かします。ベクトルのコアmoduleはscalarですが、選択したONNX runtimeは追加でブラウザのWASM SIMDを必要とします。入力文を含むHTTP要求や自動的なサーバーAPIへのfallbackは使いません。model cacheはhashを確認し、IndexedDBが利用不可・容量制限の場合は、クエリを保存せず検証済みの静的取得に戻ります。
+
+有効化後は、確定した入力を150 ms debounceした後、絞り込み後の文字検索が0件の場合、または明示的にボタンを押した場合に意味検索を実行します。未確定のIME入力は主要なインクリメンタル検索を続けますが、意味検索の推論は呼びません。実行中の推論を中断可能とは主張せず、調整側は実行中1件と最新の待機1件だけを保持します。クエリ・フィルタ・世代・再読み込みの変更で古い結果とエラーを無効化します。timeout時は失敗した推論Workerを破棄し、後続要求で再試行できます。
+
+意味検索欄は、正確なcosine距離と安定IDの順に最大5件の近い質問を表示します。主要欄で表示したIDはtop-k前に除外します。文字検索とcosineのscoreは混ぜず、関連性の閾値も設けず、最近傍が正解だとは主張しません。文字検索の結果がある場合もボタンを利用できます。独立したhold-outのJMTEB部分集合はencoderの忠実性を測るもので、playgroundの人間による有用性評価や調整済みの回答なし判定ではありません。
+
+## 整合性とファセット
+
+アプリの配信情報は、主要manifest名とcatalogのSHA-256、vector manifestのSHA-256、埋め込み空間の識別情報、厳密なencoder profileを紐付けます。準備時は、採用前に全vectorのdigest・内容revision・行数・live-ID digestを確認します。不適合や失敗した任意の世代で主要な状態を置き換えることはできません。復元は完全な基本配信を選び、圧縮済みvectorは更新後の内容を維持します。
+
+記事の選択はOR、更新状態の選択はOR、両軸間はANDです。文字検索の一致とは独立して、対応する全catalogを絞り込んでからvector top-kを選びます。対象が空であることと、絞り込みがないことを区別します。左側のファセット件数は**文字検索の一致だけ**で、全体の意味検索一致件数ではありません。意味検索結果は主要欄と同じ、安全なテキスト・抜粋・出典リンク描画と変更ラベルを使います。
+
+ブラウザ回帰では、実encoder/vectorの実行、失敗回復、古い応答、IMEによる無効化、世代の遷移、320 px表示を、本番CSPとPagesのprefix配下で確認します。互換性は検証したPlaywrightエンジン／mobile profileの範囲で、実機のメモリや遅延は保証しません。
+
+準備済みのアプリカタログは、1つの不変な配信情報の下で最大3世代までcacheします。配信情報が変わった場合はcacheとvector clientを破棄します。native文書cacheの識別情報には、安定IDと元の質問文、および取得時に固定したmodel・script・Python lockのhashだけを使うため、表示専用メタデータの変更で再度埋め込む必要はありません。不適合や変更されたencoderで、別profileのcache vectorを公開することはできません。
+
+consumerのrelease検証workflowは、公開されたLinux archiveのURLとSHA-256を明示的に受け取り、上限付きの通常ファイルだけのtar構造、nativeのtarget・version、payload 5ファイルのdigestを確認し、3エンジン・mobile 2 profileの適合fixtureを実行します。実験modelの有効化や配信を自動的には行いません。
+
+vector artifact・manifest・bindingsディレクトリには内容由来の名前を使い、encoderのディレクトリはmodel・runtime・semanticsの厳密なprofileに紐付けます。通常のHTTP cache再利用で、可変ファイル名に置かれた前のprofileを暗黙に選ぶことはありません。配信準備ではURLの移動がnative snapshotと完全探索結果を変えないことを確認します。コピーするmodel/runtimeの各byteを検証し、準備中にソースが変わった場合は拒否します。静的配信が保持するのは公開したasset集合だけで、廃止されたassetがなくなった場合、旧タブではデプロイ後にページ全体の再読み込みが必要な場合があります。
+
+有効化後は、文字検索が0件でも、検証済みcatalog全体の記事・更新状態の選択肢を利用できます。0件は引き続き文字検索の意味であり、意味検索の一致推計ではありません。選択肢は現在の配信情報でcacheし、世代・再読み込みの変更時に無効化します。既存のkey付きcheckbox/chip描画で、keyboard focusとSpace操作を維持します。
+
+modelを使うページは明示的なローカル実験です。通常のCI/Pages buildには、資産を提供して検証しない限りmodelを含めません。主要エンジンはそれらなしでも利用できます。

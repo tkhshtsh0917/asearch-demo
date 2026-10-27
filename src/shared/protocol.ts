@@ -1,5 +1,7 @@
 /** Defines typed commands and responses exchanged by the UI and search Worker. */
+
 import type { SearchStats } from "asearch-wasm";
+import type { SemanticPin } from "../semantic/identity.ts";
 import type { ChangeKind, ChangeSummary } from "./changes.ts";
 import type { Facets, SearchFilters } from "./facets.ts";
 export type Request =
@@ -18,11 +20,15 @@ export interface Row {
   change?: ChangeKind;
   snippet?: string;
   browsing?: boolean;
+  semanticDistance?: number;
 }
 export type Response =
   | { kind: "boot" }
   | {
       kind: "state";
+      semantic?: SemanticPin;
+      catalogSha256: string;
+      lexicalManifest: string;
       stage: number;
       epoch: number;
       pending: "advance" | "restore" | null;

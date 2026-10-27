@@ -571,3 +571,22 @@ summary {
     padding: 12px;
   }
 }
+
+.semantic {
+  margin-block: 1.5rem;
+  overflow-wrap: anywhere;
+}
+.semantic h2 {
+  font-size: 1.15rem;
+}
+.semantic small {
+  font-size: 0.75rem;
+  font-weight: normal;
+}
+#semantic-results {
+  padding-inline-start: 1.5rem;
+}
+#semantic-results article {
+  padding-block: 0.8rem;
+  border-bottom: 1px solid #d9dee7;
+}

@@ -13,5 +13,10 @@
     "lib": ["ES2024", "ESNext.Disposable", "DOM", "DOM.Iterable"],
     "types": ["vite/client"]
   },
-  "include": ["src/main.ts", "src/view/**/*.ts", "src/shared/**/*.ts"]
+  "include": [
+    "src/main.ts",
+    "src/view/**/*.ts",
+    "src/shared/**/*.ts",
+    "src/semantic/**/*.ts"
+  ]
 }

@@ -12,3 +12,7 @@ public/site/
 .analysis/
 .artifact-download/
 /pages-files.json
+
+/.semantic/
+
+/integration/vector/.stage-*/
