@@ -1,0 +1,5 @@
+# Encoder redistribution notices
+
+These files retain the upstream ONNX Runtime 1.31.1 license and third-party notice inventory, tokenizers-cpp 0.1.6 license and identified native-component licenses. `pins.json` records immutable source URLs, byte counts and SHA-256. The npm tokenizer source is identified by its registry `gitHead`; its repository pins SentencePiece and msgpack as submodules and declares Hugging Face tokenizers 0.21.0. Upstream does not publish the historical resolved Rust lockfile for the precompiled npm tokenizer. These component notices do not constitute an exact transitive binary SBOM or an audit of unknown historical transitive versions.
+
+The Ruri model and ONNX conversion are Apache-2.0 according to the pinned model cards referenced by model.lock.json. Model/runtime/tokenizer code is not part of the Rust store. The consumer additionally preserves the Ruri Apache license, primary dataset attribution, Vector Store's complete supplied notice inventory and Vite's modulepreload license when building an optional site publication.

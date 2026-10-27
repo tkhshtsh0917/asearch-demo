@@ -1,4 +1,6 @@
 /** Stores optional model blobs by digest; cache failures never prevent verified network loads. */
+import { cacheDeadline } from "./cache-deadline.ts";
+
 const DATABASE = "ruri-pinned-assets-v1";
 const MAX_BYTES = 64 * 1024 * 1024;
 const MAX_ENTRIES = 16;
@@ -57,15 +59,23 @@ export async function cachedBlob(
     const connection = db;
     return await new Promise((resolve, reject) => {
       const tx = connection.transaction("assets", "readonly");
+      const stop = cacheDeadline(tx, reject);
       const request = tx.objectStore("assets").get(key);
       request.onsuccess = () => {
+        stop();
         const value: unknown = request.result;
         resolve(
           value instanceof Blob && value.size === bytes ? value : undefined,
         );
       };
-      request.onerror = () => reject(request.error);
-      tx.onabort = () => reject(tx.error);
+      request.onerror = () => {
+        stop();
+        reject(request.error);
+      };
+      tx.onabort = () => {
+        stop();
+        reject(tx.error);
+      };
     });
   } catch (error) {
     cacheStats.readFailures++;
@@ -87,6 +97,7 @@ export async function saveBlob(
     const connection = db;
     await new Promise<void>((resolve, reject) => {
       const tx = connection.transaction("assets", "readwrite");
+      const stop = cacheDeadline(tx, reject);
       const store = tx.objectStore("assets");
       const cursor = store.openCursor();
       let total = bytes.byteLength,
@@ -105,8 +116,14 @@ export async function saveBlob(
         if (total > MAX_BYTES || count > MAX_ENTRIES) return;
         row.continue();
       };
-      tx.oncomplete = () => resolve();
-      tx.onabort = () => reject(tx.error);
+      tx.oncomplete = () => {
+        stop();
+        resolve();
+      };
+      tx.onabort = () => {
+        stop();
+        reject(tx.error);
+      };
     });
   } catch (error) {
     cacheStats.writeFailures++;
