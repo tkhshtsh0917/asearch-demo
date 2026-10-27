@@ -74,7 +74,12 @@ type Reply = {
     cacheHits: number;
     fetchedDecodedBytes: number;
     readyMs: number;
-    cache: { readFailures: number; writeFailures: number; lastFailure: string };
+    cache: {
+      readFailures: number;
+      writeFailures: number;
+      writeSkips: number;
+      lastFailure: string;
+    };
   };
   roundTripMs: number;
 };
@@ -120,9 +125,9 @@ try {
   const fresh = await initialize(page);
   sampleRss();
   phases.fresh = rssCurrent;
+  const navigationThroughReadyMs = performance.now() - start;
   const freshFirst = await infer(page);
   const navigationThroughFirstInferenceMs = performance.now() - start;
-  const navigationThroughReadyMs = performance.now() - start;
   assert.equal(fresh.initialization.cacheHits, 0);
   assert.equal(
     fresh.initialization.fetchedDecodedBytes,
@@ -155,7 +160,8 @@ try {
   } else {
     assert.ok(
       cached.initialization.cache.readFailures +
-        cached.initialization.cache.writeFailures >
+        cached.initialization.cache.writeFailures +
+        cached.initialization.cache.writeSkips >
         0,
       "Unexpected silent cache miss",
     );

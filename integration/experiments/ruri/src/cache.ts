@@ -7,6 +7,7 @@ const MAX_ENTRIES = 16;
 export const cacheStats = {
   readFailures: 0,
   writeFailures: 0,
+  writeSkips: 0,
   lastFailure: "",
 };
 function failureName(error: unknown): string {
@@ -113,7 +114,11 @@ export async function saveBlob(
           count++;
           total += row.value instanceof Blob ? row.value.size : MAX_BYTES;
         }
-        if (total > MAX_BYTES || count > MAX_ENTRIES) return;
+        if (total > MAX_BYTES || count > MAX_ENTRIES) {
+          cacheStats.writeSkips++;
+          cacheStats.lastFailure = "CacheLimit";
+          return;
+        }
         row.continue();
       };
       tx.oncomplete = () => {

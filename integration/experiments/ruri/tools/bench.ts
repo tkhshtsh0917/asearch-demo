@@ -175,6 +175,30 @@ try {
     encoding: "utf8",
   }).trim();
   await assertBuild(page, root);
+  const lifecycle = await page.evaluate(async () => {
+    const api = (
+      globalThis as unknown as {
+        ruriProbe: {
+          request(text?: string): Promise<unknown>;
+          dispose(): Promise<void>;
+        };
+      }
+    ).ruriProbe;
+    const pending = api.request("dispose during inference").then(
+      () => false,
+      () => true,
+    );
+    await api.dispose();
+    await api.dispose();
+    if (!(await pending))
+      throw new Error("Disposed request unexpectedly succeeded");
+    const rejected = await api.request().then(
+      () => false,
+      () => true,
+    );
+    if (!rejected) throw new Error("Disposed probe accepted a request");
+    return { pendingRejected: true, idempotent: true, closedRejected: true };
+  });
   const result = {
     schema: 1,
     recordedAt: new Date().toISOString(),
@@ -227,6 +251,7 @@ try {
       remoteRequests,
       localRequests: [...new Set(localRequests)],
     },
+    lifecycle,
     scope:
       "Encoder warm latency only; independent parity, labeled retrieval quality and cold/cache/memory records are separate experiments.",
   };

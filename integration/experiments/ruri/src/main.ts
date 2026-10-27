@@ -9,6 +9,7 @@ class Probe {
   private sequence = 0;
   private busy = false;
   private closed = false;
+  private cancel: ((message: string) => void) | undefined;
 
   request(
     text?: string,
@@ -19,6 +20,12 @@ class Probe {
 
   async dispose() {
     if (this.closed) return;
+    if (this.busy) {
+      this.closed = true;
+      this.cancel?.("Probe disposed");
+      this.worker.terminate();
+      return;
+    }
     try {
       await this.send({ dispose: true });
     } finally {
@@ -43,15 +50,18 @@ class Probe {
         this.worker.onmessage = null;
         this.worker.onerror = null;
         this.busy = false;
+        this.cancel = undefined;
       };
       const fail = (message: string) => {
         this.worker.terminate();
         cleanup();
-        this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
-          type: "module",
-        });
+        if (!this.closed)
+          this.worker = new Worker(new URL("./worker.ts", import.meta.url), {
+            type: "module",
+          });
         reject(new Error(message));
       };
+      this.cancel = fail;
       const timer = setTimeout(() => fail("Inference timeout"), 120_000);
       this.worker.onerror = (event) => fail(event.message);
       this.worker.onmessage = (event) => {
