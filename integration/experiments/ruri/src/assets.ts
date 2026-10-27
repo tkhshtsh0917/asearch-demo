@@ -28,6 +28,7 @@ export async function verifiedAsset(
   }
   const response = await fetch(`${base}${path}`, {
     signal: AbortSignal.timeout(60_000),
+    redirect: "error",
   });
   if (!response.ok || !response.body)
     throw new Error(`Asset unavailable: ${path}`);

@@ -71,3 +71,5 @@ Keep browser encoding an explicit opt-in experiment. Preserve lexical availabili
 ## Attribution
 
 The upstream model and the selected ONNX conversion declare Apache-2.0. Preserve their model-card attribution and license requirements when redistributing assets. Web Tokenizers and ONNX Runtime retain their own dependency licenses. No model weights are stored in source Git.
+
+The encoder Worker accepts a same-origin directory base for application reuse under a Pages path prefix. Replies include the SHA-256 of the exact imported model/runtime profile. Initialization failure disposes the tokenizer, and encoder/probe disposal is idempotent. Redirects are rejected for pinned assets. Startup records distinguish initialization, first inference and a subsequent warm inference; the cold gate includes first inference. Historical ready-only observations are not relabeled as full first-use latency.

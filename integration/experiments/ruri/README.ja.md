@@ -71,3 +71,5 @@ pnpm bench:startup webkit
 ## 帰属
 
 上流モデルと選択したONNX変換はApache-2.0を宣言しています。成果物を再配布する際は、model cardの帰属とlicense要件を維持してください。Web TokenizersとONNX Runtimeは各依存のlicenseに従います。モデルweightsをsource Gitに格納しません。
+
+encoder WorkerはPagesのパスprefix配下でアプリから再利用できるよう、同一originのディレクトリbaseを受け取ります。応答にはimportしたmodel/runtime profileそのもののSHA-256を含めます。初期化失敗時はtokenizerを解放し、encoder/probeのdisposeは冪等です。固定資産のredirectは拒否します。startup記録では初期化・初回推論・その後のwarm推論を分け、coldの判定には初回推論を含めます。過去のreadyまでの観測を、完全な初回利用の遅延と言い換えることはありません。

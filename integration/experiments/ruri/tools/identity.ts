@@ -19,6 +19,7 @@ export async function sourceIdentity(root: string): Promise<string> {
     "src/assets.ts",
     "src/cache.ts",
     "src/policy.ts",
+    "src/profile.ts",
     "src/tokenizer.ts",
     "tools/parity.ts",
     "tools/build-check.ts",

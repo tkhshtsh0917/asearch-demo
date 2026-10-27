@@ -7,19 +7,39 @@ import { cacheStats } from "./cache.ts";
 import { meanPool, prefixText, type Role } from "./policy.ts";
 import { loadTokenizer } from "./tokenizer.ts";
 
-export async function loadEncoder() {
+export async function loadEncoder(
+  base = new URL("/", globalThis.location.href).href,
+) {
+  const root = new URL(base);
+  if (
+    root.origin !== globalThis.location.origin ||
+    root.search ||
+    root.hash ||
+    !root.pathname.endsWith("/")
+  )
+    throw new Error("Invalid encoder asset base");
   ort.env.wasm.numThreads = 1;
-  ort.env.wasm.wasmPaths = new URL("/runtime/", globalThis.location.href).href;
+  ort.env.wasm.wasmPaths = new URL("runtime/", root).href;
 
   const start = performance.now();
   const buffers = await Promise.all([
     ...lock.files.map((file) =>
-      verifiedAsset(file.path, file.bytes, file.sha256),
+      verifiedAsset(
+        file.path,
+        file.bytes,
+        file.sha256,
+        new URL("models/ruri/", root).href,
+      ),
     ),
     ...runtime.files
       .filter((file) => file.path.endsWith(".wasm"))
       .map((file) =>
-        verifiedAsset(file.path, file.bytes, file.sha256, "/runtime/"),
+        verifiedAsset(
+          file.path,
+          file.bytes,
+          file.sha256,
+          new URL("runtime/", root).href,
+        ),
       ),
   ]);
   const runtimeBytes = buffers[lock.files.length];
@@ -38,25 +58,40 @@ export async function loadEncoder() {
   const tokenizer = await loadTokenizer(tokenizerBytes, json("config.json"));
   const model = buffers[0];
   if (!model) throw new Error("Missing model");
-  const session = await ort.InferenceSession.create(model, {
-    executionProviders: ["wasm"],
-    graphOptimizationLevel: "all",
-  });
+  let session: ort.InferenceSession;
+  try {
+    session = await ort.InferenceSession.create(model, {
+      executionProviders: ["wasm"],
+      graphOptimizationLevel: "all",
+    });
+  } catch (error) {
+    tokenizer.dispose();
+    delete ort.env.wasm.wasmBinary;
+    throw error;
+  }
   if (
     session.inputNames.some(
       (name) => name !== "input_ids" && name !== "attention_mask",
     )
   ) {
     await session.release();
+    tokenizer.dispose();
+    delete ort.env.wasm.wasmBinary;
     throw new Error(`Unexpected model inputs: ${session.inputNames.join(",")}`);
   }
   const readyMs = performance.now() - start;
 
+  let closed = false;
   return {
     async dispose() {
-      await session.release();
-      tokenizer.dispose();
-      delete ort.env.wasm.wasmBinary;
+      if (closed) return;
+      closed = true;
+      try {
+        await session.release();
+      } finally {
+        tokenizer.dispose();
+        delete ort.env.wasm.wasmBinary;
+      }
     },
     initialization: {
       assetsReadyMs,
@@ -66,6 +101,7 @@ export async function loadEncoder() {
       cache: { ...cacheStats },
     },
     async encode(text: string, role: Role) {
+      if (closed) throw new Error("Encoder disposed");
       const began = performance.now();
       const encoded = tokenizer.encode(prefixText(text, role));
       if (encoded.ids.length > lock.limits.tokens)

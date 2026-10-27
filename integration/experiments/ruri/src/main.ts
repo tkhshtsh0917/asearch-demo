@@ -8,6 +8,7 @@ class Probe {
   });
   private sequence = 0;
   private busy = false;
+  private closed = false;
 
   request(
     text?: string,
@@ -17,8 +18,13 @@ class Probe {
   }
 
   async dispose() {
-    await this.send({ dispose: true });
-    this.worker.terminate();
+    if (this.closed) return;
+    try {
+      await this.send({ dispose: true });
+    } finally {
+      this.closed = true;
+      this.worker.terminate();
+    }
   }
 
   private async send(payload: {
@@ -26,6 +32,7 @@ class Probe {
     role?: Role;
     dispose?: boolean;
   }): Promise<Record<string, unknown>> {
+    if (this.closed) throw new Error("Probe disposed");
     if (this.busy) throw new Error("Probe is busy");
     this.busy = true;
     const id = ++this.sequence;

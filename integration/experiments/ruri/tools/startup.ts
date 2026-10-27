@@ -94,6 +94,16 @@ async function initialize(page: Page): Promise<Reply> {
     ).ruriProbe.request(),
   );
 }
+async function infer(page: Page) {
+  return page.evaluate(() =>
+    (
+      globalThis as unknown as {
+        ruriProbe: { request(text: string): Promise<{ roundTripMs: number }> };
+      }
+    ).ruriProbe.request("申請を取り消したい"),
+  );
+}
+
 try {
   const context = await browser.newContext();
   const fetched: string[] = [];
@@ -110,6 +120,8 @@ try {
   const fresh = await initialize(page);
   sampleRss();
   phases.fresh = rssCurrent;
+  const freshFirst = await infer(page);
+  const navigationThroughFirstInferenceMs = performance.now() - start;
   const navigationThroughReadyMs = performance.now() - start;
   assert.equal(fresh.initialization.cacheHits, 0);
   assert.equal(
@@ -135,6 +147,7 @@ try {
   const cached = await initialize(page);
   sampleRss();
   phases.cached = rssCurrent;
+  const cachedFirst = await infer(page);
   const cacheAvailable = cached.initialization.cacheHits === cachedFiles.length;
   if (cacheAvailable) {
     assert.equal(cached.initialization.fetchedDecodedBytes, 0);
@@ -177,6 +190,7 @@ try {
     recovered = await initialize(page);
     sampleRss();
     phases.recovered = rssCurrent;
+    await infer(page);
     assert.equal(recovered.initialization.cacheHits, cachedFiles.length - 1);
     assert.equal(
       recovered.initialization.fetchedDecodedBytes,
@@ -208,8 +222,10 @@ try {
     acceptance,
     cacheAvailable,
     gates: {
-      cold: navigationThroughReadyMs <= acceptance.coldMs,
-      cached: cacheAvailable && cached.roundTripMs <= acceptance.cachedMs,
+      cold: navigationThroughFirstInferenceMs <= acceptance.coldMs,
+      cached:
+        cacheAvailable &&
+        cached.roundTripMs + cachedFirst.roundTripMs <= acceptance.cachedMs,
       warm: warm.roundTripMs <= acceptance.warmMs,
       rss:
         project === "webkit"
@@ -226,6 +242,9 @@ try {
       rss: "100ms samples: owned browser process subtree, summed RSS; may double-count shared pages; not a true peak or WASM-only memory. WebKit on macOS can launch content processes outside this subtree: comparable total unavailable.",
     },
     navigationThroughReadyMs,
+    navigationThroughFirstInferenceMs,
+    freshFirst,
+    cachedFirst,
     fetchedBytes,
     firstTransferBytes,
     freshRequests,
