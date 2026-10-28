@@ -25,6 +25,10 @@ The activation button explains the approximately 80 MB decoded first-use cost, i
 
 After activation, a committed input runs semantic search after a 150 ms debounce when the filtered lexical total is zero, or when the user explicitly presses the button. Uncommitted IME text continues primary incremental search but never invokes semantic inference. A running inference is not claimed to be interruptible: the coordinator retains at most one running and one latest pending request. Query, filter, stage and reload changes invalidate old results and errors. Timeouts discard a failed inference Worker so a later request can retry.
 
+Worker failures retire the failed instance even if its originating request has been superseded. Only status updates are guarded by the current request token; a later attempt starts a fresh Worker. Synchronous construction failures and message-decoding failures are also reported without disabling primary search.
+
+An inference Worker's `messageerror` immediately rejects the running encoding request and retires that instance, allowing the coordinator to advance to a pending query without waiting for the 120-second timeout. Request completion removes its listeners and timer. Late callbacks from a completed request cannot retire a replacement or a reused Worker; synchronous send failures use the same cleanup path.
+
 The semantic group contains up to five nearest questions, ordered by exact cosine distance and stable ID. It excludes primary displayed IDs before top-k. There is no lexical/cosine score mixing, no relevance cutoff and no claim that a nearest neighbor is a correct answer. The button remains available when lexical results exist. The independent held-out JMTEB subset measures encoder fidelity; it is not a human usefulness evaluation of the playground or a tuned no-answer detector.
 
 ## Coherence and facets
@@ -56,5 +60,3 @@ The application revision was `5e34976e755e0058aeeeaf1aab796b2c7b1e98ae` (clean),
 ```sh
 node tools/semantic/bench.ts
 ```
-
-Worker failures retire the failed instance even if its originating request has been superseded. Only status updates are guarded by the current request token; a later attempt starts a fresh Worker. Synchronous construction failures and message-decoding failures are also reported without disabling primary search.

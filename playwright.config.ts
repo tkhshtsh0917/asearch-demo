@@ -5,6 +5,7 @@ export default defineConfig({
     "search.spec.ts",
     "semantic.spec.ts",
     "semantic-recovery.spec.ts",
+    "semantic-encoder.spec.ts",
     "query.spec.ts",
     "query-wait.spec.ts",
     "query-errors.spec.ts",
