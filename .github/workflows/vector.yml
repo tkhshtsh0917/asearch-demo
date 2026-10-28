@@ -24,5 +24,12 @@ jobs:
       - run: npm install --global pnpm@12.14.0
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
+      - name: Check native document encoder without model dependencies
+        run: |
+          python3 -m venv "$RUNNER_TEMP/vector-python"
+          "$RUNNER_TEMP/vector-python/bin/pip" install --disable-pip-version-check --no-deps ruff==0.17.3
+          "$RUNNER_TEMP/vector-python/bin/ruff" check tools
+          "$RUNNER_TEMP/vector-python/bin/ruff" format --check tools
+          "$RUNNER_TEMP/vector-python/bin/python" -m unittest discover -s tools -p 'test_*.py'
       - run: pnpm build
       - run: pnpm audit --audit-level low

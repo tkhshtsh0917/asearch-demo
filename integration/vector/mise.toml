@@ -4,4 +4,4 @@ uv = "0.12.10"
 ruff = "0.17.3"
 
 [tasks.check-python]
-run = ["ruff check tools", "ruff format --check tools"]
+run = ["ruff check tools", "ruff format --check tools", "python3 -m unittest discover -s tools -p 'test_*.py'"]
