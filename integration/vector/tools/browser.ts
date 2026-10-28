@@ -49,6 +49,7 @@ try {
       other = await api.create();
     const { native: raw } = await api.raw();
     try {
+      const readyResources = await api.readyResources();
       const base = await api.prepare(c, "base");
       c.adopt(base);
       const first = await api.query(c, base);
@@ -210,6 +211,7 @@ try {
       )
         throw new Error("Task allocations retained");
       return {
+        readyResources,
         first,
         changed,
         filtered,

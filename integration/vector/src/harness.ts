@@ -1,5 +1,6 @@
 /** Exposes the exact asset consumer to browser conformance tests. */
 import { VectorClient } from "./client.ts";
+import { readyResources } from "./fixtures/ready.ts";
 import type { Artifact, PreparedSnapshot, RawModule } from "./types.ts";
 
 async function create(expanded = false) {
@@ -33,6 +34,14 @@ export const harness = {
   },
   create,
   prepare,
+  async readyResources() {
+    const { native, memory } = await harness.raw();
+    try {
+      return await readyResources(native, memory);
+    } finally {
+      native.free();
+    }
+  },
   query: (c: VectorClient, h: PreparedSnapshot, ids?: number[]) =>
     c.search(
       h,
