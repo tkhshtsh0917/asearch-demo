@@ -12,8 +12,10 @@ Prepare the ordinary primary assets first, install the pinned tools in integrati
 pnpm data:index
 pnpm semantic:prepare /path/to/verified-vector-bundle
 BASE_PATH=/asearch-demo/ pnpm build
-SEMANTIC_REQUIRED=1 pnpm exec playwright test semantic.spec.ts --workers=1
+SEMANTIC_REQUIRED=1 pnpm exec playwright test semantic --workers=1
 ```
+
+The test selector includes every semantic spec in the checked-in configuration, including coordinator and inference-Worker recovery. `SEMANTIC_REQUIRED=1` prevents missing optional assets from silently skipping these tests.
 
 The bundle is an explicit verified input. No adjacent Rust checkout is built. Development bundles require `--allow-dirty`; this is not a release setting. The command runs the locked native F32 document encoder, verifies reusable vector-cache provenance, builds base/delta/compacted VECX through the supplied CLI, and attaches a hashed optional publication to the primary release pointer. Generated data, model files and bindings remain outside source Git. Without explicitly prepared assets, ordinary builds retain lexical search and disable the semantic button. If primary catalogs change, attachment fails and the semantic publication must be rebuilt.
 

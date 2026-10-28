@@ -12,8 +12,10 @@ playgroundはasearch v0.4.0と並べて、Vector Storeの明示的なnative/WASM
 pnpm data:index
 pnpm semantic:prepare /path/to/verified-vector-bundle
 BASE_PATH=/asearch-demo/ pnpm build
-SEMANTIC_REQUIRED=1 pnpm exec playwright test semantic.spec.ts --workers=1
+SEMANTIC_REQUIRED=1 pnpm exec playwright test semantic --workers=1
 ```
+
+このテスト指定は、調整処理と推論Workerの回復も含め、リポジトリ内の設定にあるすべてのsemantic specを対象にします。`SEMANTIC_REQUIRED=1`により、任意の資産が欠けていてもテストを黙ってskipしません。
 
 bundleは明示して検証する入力です。隣接するRust checkoutはビルドしません。開発bundleは`--allow-dirty`が必要ですが、リリース用の設定ではありません。このコマンドは固定したnative F32文書encoderを動かし、再利用するベクトルcacheの来歴を確認し、指定CLIで基本・差分・圧縮済みVECXを構築し、hash付きの任意の配信情報を主要release pointerに紐付けます。生成データ・model・bindingsはソースGitの外に置きます。明示的に準備した資産がなければ、通常buildは文字検索を保持して意味検索ボタンを無効にします。主要カタログが変わった場合は紐付けに失敗するため、意味検索の配信を再構築する必要があります。
 
