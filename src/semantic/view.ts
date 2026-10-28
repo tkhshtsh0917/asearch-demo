@@ -9,6 +9,7 @@ import type {
 
 export class SemanticView {
   private worker: Worker | undefined;
+  private messageErrorListener: (() => void) | undefined;
   private context: SemanticContext | undefined;
   private token = 0;
   private enabled = false;
@@ -75,12 +76,30 @@ export class SemanticView {
 
   dispose() {
     this.clear(true);
-    this.worker?.terminate();
-    this.worker = undefined;
+    if (this.worker) this.retire(this.worker);
   }
 
   private setStatus(text: string) {
     if (this.status.textContent !== text) this.status.textContent = text;
+  }
+
+  /** Retires only the failed instance, independently of the request that created it. */
+  private retire(worker: Worker): boolean {
+    if (this.worker !== worker) return false;
+    worker.onmessage = null;
+    worker.onerror = null;
+    if (this.messageErrorListener)
+      worker.removeEventListener("messageerror", this.messageErrorListener);
+    this.messageErrorListener = undefined;
+    worker.terminate();
+    this.worker = undefined;
+    return true;
+  }
+
+  private unavailable(token: number, message: string) {
+    if (token !== this.token) return;
+    clearTimeout(this.timeout);
+    this.setStatus(message);
   }
 
   private clear(catalog = false) {
@@ -110,9 +129,17 @@ export class SemanticView {
     this.manual = false;
     const token = ++this.token,
       context = this.context;
-    this.worker ??= new Worker(new URL("./worker.ts", import.meta.url), {
-      type: "module",
-    });
+    try {
+      this.worker ??= new Worker(new URL("./worker.ts", import.meta.url), {
+        type: "module",
+      });
+    } catch {
+      this.unavailable(
+        token,
+        "意味検索Workerを起動できません。ボタンから再試行できます。",
+      );
+      return;
+    }
     const worker = this.worker;
     this.setStatus(
       "意味検索を準備・実行しています… 初回はモデルを取得します。文字検索は引き続き利用できます。",
@@ -120,10 +147,7 @@ export class SemanticView {
     clearTimeout(this.timeout);
     const fail = (message: string) => {
       if (token !== this.token) return;
-      clearTimeout(this.timeout);
-      worker.terminate();
-      this.worker = undefined;
-      this.setStatus(message);
+      if (this.retire(worker)) this.unavailable(token, message);
     };
     this.timeout = setTimeout(
       () =>
@@ -132,8 +156,25 @@ export class SemanticView {
         ),
       180000,
     );
-    worker.onerror = () =>
-      fail("意味検索Workerが停止しました。ボタンから再試行できます。");
+    worker.onerror = (event) => {
+      event.preventDefault();
+      if (this.retire(worker))
+        this.unavailable(
+          token,
+          "意味検索Workerが停止しました。ボタンから再試行できます。",
+        );
+    };
+    if (this.messageErrorListener)
+      worker.removeEventListener("messageerror", this.messageErrorListener);
+    this.messageErrorListener = () => {
+      if (this.retire(worker))
+        this.unavailable(
+          token,
+          "意味検索Workerの応答を受け取れません。ボタンから再試行できます。",
+        );
+    };
+    // Some engines expose this event without the onmessageerror attribute.
+    worker.addEventListener("messageerror", this.messageErrorListener);
     worker.onmessage = (event: MessageEvent<SemanticReply>) => {
       const reply = event.data;
       if (reply.token !== this.token || token !== this.token) return;

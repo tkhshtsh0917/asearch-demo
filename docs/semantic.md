@@ -56,3 +56,5 @@ The application revision was `5e34976e755e0058aeeeaf1aab796b2c7b1e98ae` (clean),
 ```sh
 node tools/semantic/bench.ts
 ```
+
+Worker failures retire the failed instance even if its originating request has been superseded. Only status updates are guarded by the current request token; a later attempt starts a fresh Worker. Synchronous construction failures and message-decoding failures are also reported without disabling primary search.

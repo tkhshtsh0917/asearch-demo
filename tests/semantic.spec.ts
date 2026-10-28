@@ -1,19 +1,16 @@
 /** Verifies the real optional encoder/vector pipeline under the production CSP and Pages prefix. */
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { expect, type Page, test } from "@playwright/test";
 
-const prepared = existsSync(".semantic/pin.json");
-const required = process.env.SEMANTIC_REQUIRED === "1";
-test.skip(
-  !prepared && !required,
-  "Optional semantic artifacts were not explicitly prepared",
-);
+import {
+  semanticReady as ready,
+  requireSemanticAssets,
+  semanticQuery as semantic,
+  semanticWorkerAsset,
+} from "./support/semantic.ts";
 
-async function ready(page: Page) {
-  await page.goto("./");
-  await expect(page.locator("#status")).toContainText("検索できます");
-  await expect(page.locator("#semantic-enable")).toBeEnabled();
-}
+requireSemanticAssets();
+
 async function compose(page: Page, text: string) {
   await page.locator("#query").evaluate((element, text) => {
     const input = element as HTMLInputElement;
@@ -25,19 +22,6 @@ async function compose(page: Page, text: string) {
       new InputEvent("input", { bubbles: true, isComposing: true }),
     );
   }, text);
-}
-async function semantic(page: Page) {
-  const before = await page
-    .locator("#semantic-results")
-    .getAttribute("data-token");
-  await page.locator("#semantic-enable").click();
-  await expect(page.locator("#semantic-status")).toContainText("件提案", {
-    timeout: 120000,
-  });
-  await expect(page.locator("#semantic-results")).not.toHaveAttribute(
-    "data-token",
-    before ?? "",
-  );
 }
 
 test("explicit activation, filtering, coherent delta/compaction/restore and mobile layout", async ({
@@ -175,14 +159,7 @@ test("semantic failure leaves primary available and a later attempt recovers", a
 test("late semantic results/errors cannot paint over a new query or IME composition", async ({
   page,
 }) => {
-  const worker = readdirSync("dist/assets").find(
-    (name) =>
-      name.endsWith(".js") &&
-      readFileSync(`dist/assets/${name}`, "utf8").includes(
-        "Lexical/vector publication mismatch",
-      ),
-  );
-  expect(worker).toBeTruthy();
+  const worker = semanticWorkerAsset();
   await page.route(`**/assets/${worker}`, (route) =>
     route.fulfill({
       contentType: "text/javascript",
