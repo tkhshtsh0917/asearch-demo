@@ -5,8 +5,8 @@ import type { Artifact, PreparedSnapshot, RawModule } from "./types.ts";
 
 async function create(expanded = false) {
   return VectorClient.create(
-    new URL("/bindings/vector_wasm.js", location.href),
-    new URL("/bindings/vector_wasm_bg.wasm", location.href),
+    new URL("/bindings/vectide_wasm.js", location.href),
+    new URL("/bindings/vectide_wasm_bg.wasm", location.href),
     expanded,
   );
 }
@@ -25,10 +25,10 @@ async function prepare(client: VectorClient, name: string) {
 }
 export const harness = {
   async raw(profile: unknown = false) {
-    const moduleURL = new URL("/bindings/vector_wasm.js", location.href);
+    const moduleURL = new URL("/bindings/vectide_wasm.js", location.href);
     const api = (await import(/* @vite-ignore */ moduleURL.href)) as RawModule;
     const { memory } = await api.default({
-      module_or_path: new URL("/bindings/vector_wasm_bg.wasm", location.href),
+      module_or_path: new URL("/bindings/vectide_wasm_bg.wasm", location.href),
     });
     return { native: new api.BrowserStore(profile as boolean), memory };
   },

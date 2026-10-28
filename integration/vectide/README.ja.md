@@ -1,8 +1,8 @@
-# Vector-storeのブラウザ統合
+# Vectideのブラウザ統合
 
 [English](README.md)
 
-このprivateなTypeScript workspaceは、明示的に指定したnative CLI・raw WASM成果物を利用します。安全なbyte入力、clientに紐付くsnapshot handle、協調型のブラウザ実行制御、独立したnative・WASM適合性検査を担当します。Rustエンジン・builderのsourceはvector-storeに置き、npm packageは公開しません。
+このprivateなTypeScript workspaceは、明示的に指定したnative CLI・raw WASM成果物を利用します。安全なbyte入力、clientに紐付くsnapshot handle、協調型のブラウザ実行制御、独立したnative・WASM適合性検査を担当します。Rustエンジン・builderのsourceは[Vectide](https://github.com/tkhshtsh0917/vectide)に置き、npm packageは公開しません。
 
 ## 準備と検査
 
@@ -16,7 +16,7 @@ pnpm build
 pnpm test:browser chromium
 ```
 
-パスは明示的な入力であり、隣のcheckoutを推測しません。bundleはrelease.json、SHA256SUMS、native vector-store、raw vector_wasm.wasm、projectのlicenseを含みます。準備でschema、sourceの識別情報、ファイル長、SHA-256を検証し、対応するwasm-bindgen 0.2.129でweb bindingsを生成します。渡されたCLIでbase・delta・圧縮済みfixtureと完全探索の参照結果を作り、Rustはコンパイルしません。sourceに差分のある開発用bundleには明示的な--allow-dirty引数が必要で、製品成果物はcleanなsourceを識別する必要があります。
+パスは明示的な入力であり、隣のcheckoutを推測しません。bundleはrelease.json、SHA256SUMS、native vectide、raw vectide_wasm.wasm、projectのlicenseを含みます。準備でschema、sourceの識別情報、ファイル長、SHA-256を検証し、対応するwasm-bindgen 0.2.129でweb bindingsを生成します。渡されたCLIでbase・delta・圧縮済みfixtureと完全探索の参照結果を作り、Rustはコンパイルしません。sourceに差分のある開発用bundleには明示的な--allow-dirty引数が必要で、製品成果物はcleanなsourceを識別する必要があります。
 
 他のブラウザprofileはfirefox、webkit、android-profile、iphone-profileです。preview portを共有するため順に実行します。nativeとの正確な順位一致、top-k前のfilter、更新・復元、handleの所有、不正入力、typed-arrayサブクラス・独自getter、detach済みbuffer、キャンセル、回復を検査します。モバイルprofileはhost上のエミュレーションであり、実機やブラウザ推論のメモリを保証しません。
 

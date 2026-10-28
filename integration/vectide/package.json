@@ -1,5 +1,5 @@
 {
-  "name": "vector-store-browser-integration",
+  "name": "vectide-browser-integration",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@12.14.0",

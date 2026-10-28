@@ -22,4 +22,4 @@ jobs:
       - run: pnpm audit --audit-level low
       - run: pnpm --dir integration audit --audit-level low
       - run: pnpm --dir integration/experiments/ruri audit --audit-level low
-      - run: pnpm --dir integration/vector audit --audit-level low
+      - run: pnpm --dir integration/vectide audit --audit-level low

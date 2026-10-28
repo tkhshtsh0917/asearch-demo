@@ -66,7 +66,7 @@ The optional IndexedDB cache stores six hash-keyed model/runtime blobs, totaling
 
 The recorded experiment targets are 90 seconds cold preparation, 10 seconds cached initialization, 100 ms warm round trip, 64 MiB fresh decoded resources and 1 GiB summed browser-subtree RSS. They are not all met: Firefox exceeds the RSS target; WebKit Blob persistence fails with UnknownError in the tested environment, while inference continues. A comparable total WebKit RSS is unavailable because macOS can launch content processes outside the sampled subtree. RSS sampling can double-count shared pages and miss peaks. --require-budget makes unmet/unknown targets fail after saving the record.
 
-Keep browser encoding an explicit opt-in experiment. Preserve lexical availability and expose loading/unavailability; do not enable model downloads automatically or claim all-browser memory acceptance. The vector-store engine has its own separate, bounded resource and browser checks.
+Keep browser encoding an explicit opt-in experiment. Preserve lexical availability and expose loading/unavailability; do not enable model downloads automatically or claim all-browser memory acceptance. The vectide engine has its own separate, bounded resource and browser checks.
 
 ## Attribution
 

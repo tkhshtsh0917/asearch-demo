@@ -2,11 +2,11 @@
 
 [日本語](ja/semantic.md)
 
-The playground can consume Vector Store's explicit native/WASM bundle beside asearch v0.4.0. Rust source and document construction stay outside the browser application. Query encoding is an **opt-in experiment** using pinned Ruri v3 30m ONNX q8, not a generally accepted browser-memory profile. Normal lexical search does not fetch the model.
+The playground can consume [Vectide](https://github.com/tkhshtsh0917/vectide)'s explicit native/WASM bundle beside asearch v0.4.0. Rust source and document construction stay outside the browser application. Query encoding is an **opt-in experiment** using pinned Ruri v3 30m ONNX q8, not a generally accepted browser-memory profile. Normal lexical search does not fetch the model.
 
 ## Prepare a prospective publication
 
-Prepare the ordinary primary assets first, install the pinned tools in integration/vector and integration/experiments/ruri, and install its declared tools with mise. The explicit semantic command prepares the pinned probe model/runtime files. From the repository root:
+Prepare the ordinary primary assets first, install the pinned tools in integration/vectide and integration/experiments/ruri, and install its declared tools with mise. The explicit semantic command prepares the pinned probe model/runtime files. From the repository root:
 
 ```sh
 pnpm data:index
@@ -52,6 +52,8 @@ After activation, verified catalog-wide article/change choices remain available 
 The checked-in model-assisted page is an explicit local experiment. Normal CI/Pages builds do not include the model unless its assets are supplied and checked. The primary engine stays usable without them.
 
 ## Measured application interaction
+
+These measurements predate the Vectide rename and the integration/vectide path. Their recorded revisions retain the earlier names; use the layout and artifact names from the selected revision when reproducing them.
 
 On 2026-10-28, Chromium 156 on an Apple Silicon macOS host loaded the 10k publication over loopback. Primary readiness was 441 ms; the first explicit semantic activation took 1.36 s. Files requested by that activation totalled 80,072,371 decoded bytes, including the separately fetched display catalog. This sums unique requested static files, including HTTP-cache responses; it is not compressed wire traffic. A throttled cold model-only experiment is reported separately in the [encoder probe](../integration/experiments/ruri/README.md).
 

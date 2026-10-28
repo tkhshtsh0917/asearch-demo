@@ -18,7 +18,7 @@ const root = fileURLToPath(new URL("../../", import.meta.url));
 const bundle = process.argv[2];
 if (!bundle)
   throw new Error("Pass an explicit vector release bundle directory");
-const integration = resolve(root, "integration/vector");
+const integration = resolve(root, "integration/vectide");
 const ruri = resolve(root, "integration/experiments/ruri");
 const encoderSource = await sourceIdentity(ruri);
 const run = (file: string, args: string[], cwd = root) =>
@@ -37,7 +37,7 @@ run(
 );
 const cli = resolve(
   integration,
-  `.artifacts/vector-store${process.platform === "win32" ? ".exe" : ""}`,
+  `.artifacts/vectide${process.platform === "win32" ? ".exe" : ""}`,
 );
 const native = (...args: string[]) =>
   JSON.parse(execFileSync(cli, args, { encoding: "utf8" }));

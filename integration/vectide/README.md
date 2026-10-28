@@ -1,8 +1,8 @@
-# Vector-store browser integration
+# Vectide browser integration
 
 [日本語](README.ja.md)
 
-This private TypeScript workspace consumes explicit native CLI/raw WASM assets. It owns safe byte ingress, client-branded snapshot handles, cooperative browser scheduling and independent native/WASM conformance. Rust engine/build sources remain in vector-store. It publishes no npm package.
+This private TypeScript workspace consumes explicit native CLI/raw WASM assets. It owns safe byte ingress, client-branded snapshot handles, cooperative browser scheduling and independent native/WASM conformance. Rust engine/build sources remain in [Vectide](https://github.com/tkhshtsh0917/vectide). It publishes no npm package.
 
 ## Prepare and check
 
@@ -16,7 +16,7 @@ pnpm build
 pnpm test:browser chromium
 ```
 
-The path is an explicit input, not an inferred sibling checkout. A bundle contains release.json, SHA256SUMS, native vector-store, raw vector_wasm.wasm and project licenses. Preparation checks the schema, source identity, file lengths and SHA-256, then uses matching wasm-bindgen 0.2.129 to generate web bindings. It calls the supplied CLI to build base/delta/compacted fixtures and exact query oracles. It does not compile Rust. Dirty-source development bundles require an explicit --allow-dirty argument; production assets must identify a clean source.
+The path is an explicit input, not an inferred sibling checkout. A bundle contains release.json, SHA256SUMS, native vectide, raw vectide_wasm.wasm and project licenses. Preparation checks the schema, source identity, file lengths and SHA-256, then uses matching wasm-bindgen 0.2.129 to generate web bindings. It calls the supplied CLI to build base/delta/compacted fixtures and exact query oracles. It does not compile Rust. Dirty-source development bundles require an explicit --allow-dirty argument; production assets must identify a clean source.
 
 Other browser profiles are firefox, webkit, android-profile and iphone-profile. Run them serially on the shared preview port. Tests cover exact native rankings, pre-top-k filters, updates/restore, handle ownership, malformed input, typed-array subclasses/custom getters, detached buffers, cancellation and recovery. Mobile profiles are host emulation, without a physical-device or browser-inference memory guarantee.
 

@@ -14,7 +14,7 @@ The committed setup uses the published Rust CLI and WASM **v0.4.0** Release Asse
 
 On the results screen, a left sidebar provides article and update-status checkboxes, with multiple choices and keyword-dependent counts. Mobile screens offer a collapsible panel. Selected filters remain visible as removable chips, including zero-count selections after restore. See [facets](docs/data.md#article-facets) for the OR/AND rules and limits. Short, plain-text excerpts from the original `text` passages provide context; they are not generated answers or additional searchable content.
 
-An explicitly prepared [optional semantic experiment](docs/semantic.md) adds pinned browser encoding and an independent exact-vector suggestion group. It is disabled in ordinary builds until its native/vector/model assets are supplied; the primary release pin remains v0.4.0.
+An explicitly prepared [optional semantic experiment](docs/semantic.md) uses [Vectide](https://github.com/tkhshtsh0917/vectide) to add pinned browser encoding and an independent exact-vector suggestion group. It is disabled in ordinary builds until its native/vector/model assets are supplied; the primary release pin remains v0.4.0.
 
 ## Setup
 

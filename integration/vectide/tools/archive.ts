@@ -1,10 +1,10 @@
 /** Decodes only the fixed regular-file layout of a bounded Linux release bundle. */
 import { gunzipSync } from "node:zlib";
 
-const ROOT = "vector-store-x86_64-unknown-linux-gnu";
+const ROOT = "vectide-x86_64-unknown-linux-gnu";
 const LIMITS: Record<string, number> = {
-  "vector-store": 64 * 1024 ** 2,
-  "vector_wasm.wasm": 16 * 1024 ** 2,
+  vectide: 64 * 1024 ** 2,
+  "vectide_wasm.wasm": 16 * 1024 ** 2,
   "THIRD-PARTY-NOTICES.txt": 16 * 1024 ** 2,
   "LICENSE-MIT": 131072,
   "LICENSE-APACHE": 131072,

@@ -12,7 +12,7 @@ assert.ok(url && expected && url.length <= 2048);
 assert.match(expected, /^[a-f0-9]{64}$/);
 assert.match(
   url,
-  /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/releases\/download\/v[0-9][A-Za-z0-9_.-]*\/vector-store-x86_64-unknown-linux-gnu\.tar\.gz$/,
+  /^https:\/\/github\.com\/[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/releases\/download\/v[0-9][A-Za-z0-9_.-]*\/vectide-x86_64-unknown-linux-gnu\.tar\.gz$/,
 );
 const response = await fetch(url, {
   signal: AbortSignal.timeout(120000),
@@ -50,7 +50,7 @@ for (const [name, content] of files) {
     if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
     await writeFile(output, content, {
       flag: "wx",
-      mode: name === "vector-store" ? 0o755 : 0o644,
+      mode: name === "vectide" ? 0o755 : 0o644,
     });
   }
 }

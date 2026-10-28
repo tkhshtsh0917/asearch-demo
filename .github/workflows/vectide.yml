@@ -1,10 +1,10 @@
-name: Vector consumer checks
+name: Vectide consumer checks
 on:
   pull_request:
-    paths: ["integration/vector/**", ".github/workflows/vector.yml"]
+    paths: ["integration/vectide/**", ".github/workflows/vectide.yml"]
   push:
     branches: [main]
-    paths: ["integration/vector/**", ".github/workflows/vector.yml"]
+    paths: ["integration/vectide/**", ".github/workflows/vectide.yml"]
 permissions:
   contents: read
 jobs:
@@ -13,7 +13,7 @@ jobs:
     timeout-minutes: 10
     defaults:
       run:
-        working-directory: integration/vector
+        working-directory: integration/vectide
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:

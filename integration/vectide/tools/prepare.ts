@@ -91,13 +91,13 @@ assert.equal(metadata.wasmBindgen, "0.2.129");
 assert.equal(metadata.files.length, 5);
 assert.equal(sums.size, metadata.files.length + 1);
 const executable = metadata.target.endsWith("windows-msvc")
-  ? "vector-store.exe"
-  : "vector-store";
+  ? "vectide.exe"
+  : "vectide";
 assert.deepEqual(
   metadata.files.map((f) => f.path).toSorted(),
   [
     executable,
-    "vector_wasm.wasm",
+    "vectide_wasm.wasm",
     "LICENSE-MIT",
     "LICENSE-APACHE",
     "THIRD-PARTY-NOTICES.txt",
@@ -141,7 +141,7 @@ try {
   const cli = resolve(artifactRoot, executable);
   assert.equal(
     execFileSync(cli, ["--version"], { encoding: "utf8" }).trim(),
-    `vector-store ${metadata.version}`,
+    `vectide ${metadata.version}`,
   );
   const command = (args: string[]) =>
     JSON.parse(
@@ -156,13 +156,13 @@ try {
   execFileSync(
     "wasm-bindgen",
     [
-      resolve(artifactRoot, "vector_wasm.wasm"),
+      resolve(artifactRoot, "vectide_wasm.wasm"),
       "--target",
       "web",
       "--out-dir",
       bindings,
       "--out-name",
-      "vector_wasm",
+      "vectide_wasm",
     ],
     { stdio: "pipe" },
   );

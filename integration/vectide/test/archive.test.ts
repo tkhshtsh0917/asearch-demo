@@ -5,8 +5,8 @@ import { bundleRoot, releaseFiles } from "../tools/archive.ts";
 
 function archive(change?: (headers: Buffer[]) => void) {
   const names = [
-    "vector-store",
-    "vector_wasm.wasm",
+    "vectide",
+    "vectide_wasm.wasm",
     "THIRD-PARTY-NOTICES.txt",
     "LICENSE-MIT",
     "LICENSE-APACHE",

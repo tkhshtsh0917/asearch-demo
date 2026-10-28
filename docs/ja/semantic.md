@@ -2,11 +2,11 @@
 
 [English](../semantic.md)
 
-playgroundはasearch v0.4.0と並べて、Vector Storeの明示的なnative/WASM bundleを使用できます。Rustソースと文書側の構築はブラウザアプリの外に置きます。クエリの埋め込みは、固定したRuri v3 30m ONNX q8による**明示的に有効化する実験**で、一般に受容できるブラウザメモリprofileではありません。通常の文字検索はmodelを取得しません。
+playgroundはasearch v0.4.0と並べて、[Vectide](https://github.com/tkhshtsh0917/vectide)の明示的なnative/WASM bundleを使用できます。Rustソースと文書側の構築はブラウザアプリの外に置きます。クエリの埋め込みは、固定したRuri v3 30m ONNX q8による**明示的に有効化する実験**で、一般に受容できるブラウザメモリprofileではありません。通常の文字検索はmodelを取得しません。
 
 ## 公開候補の配信を準備する
 
-通常の主要資産を先に準備し、integration/vectorとintegration/experiments/ruriの固定ツールをinstallして、宣言したツールをmiseでinstallします。明示的なsemanticコマンドが固定probeのmodel/runtimeを準備します。リポジトリルートから実行します。
+通常の主要資産を先に準備し、integration/vectideとintegration/experiments/ruriの固定ツールをinstallして、宣言したツールをmiseでinstallします。明示的なsemanticコマンドが固定probeのmodel/runtimeを準備します。リポジトリルートから実行します。
 
 ```sh
 pnpm data:index
@@ -52,6 +52,8 @@ vector artifact・manifest・bindingsディレクトリには内容由来の名�
 modelを使うページは明示的なローカル実験です。通常のCI/Pages buildには、資産を提供して検証しない限りmodelを含めません。主要エンジンはそれらなしでも利用できます。
 
 ## アプリ操作の実測
+
+これらの計測はVectideへの改名とintegration/vectideへの移動より前のものです。記録したrevisionは当時の名前を保持しているため、再現するときは、選択したrevisionの構成と成果物名を使ってください。
 
 2026-10-28に、Apple Silicon macOSホスト上のChromium 156で1万件の配信をloopback経由で読み込みました。主要検索の準備は441 ms、最初の明示的な意味検索の有効化は1.36秒でした。この有効化で要求したファイルの展開後合計は、別途取得する表示カタログを含めて80,072,371バイトでした。これはHTTP cacheからの応答も含む、要求した静的ファイルの重複なしの合計であり、圧縮後の通信量ではありません。帯域制限下のmodel単体のcold実験は[encoder probe](../../integration/experiments/ruri/README.ja.md)で別に報告しています。
 

@@ -6,7 +6,7 @@ updates:
         "/",
         "/integration",
         "/integration/experiments/ruri",
-        "/integration/vector",
+        "/integration/vectide",
       ]
     schedule:
       interval: weekly

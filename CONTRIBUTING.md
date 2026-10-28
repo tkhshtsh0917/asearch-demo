@@ -4,7 +4,7 @@
 
 ## Scope and setup
 
-This repository owns the demo UI, data preparation, TS/JS adapter, browser tests, reference models and measurement tools. Rust algorithms and the CLI/WASM source belong to [asearch](https://github.com/tkhshtsh0917/asearch). Follow the [README setup](README.md#setup) before running checks; use verified Release Assets rather than implicitly building a sibling checkout.
+This repository owns the demo UI, data preparation, TS/JS adapter, browser tests, reference models and measurement tools. Rust lexical search and its CLI/WASM source belong to [asearch](https://github.com/tkhshtsh0917/asearch); the optional vector store's Rust source belongs to [Vectide](https://github.com/tkhshtsh0917/vectide). Follow the [README setup](README.md#setup) before running checks; use verified Release Assets rather than implicitly building a sibling checkout.
 
 ## Development checks
 

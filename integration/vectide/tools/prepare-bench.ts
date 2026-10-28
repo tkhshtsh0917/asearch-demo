@@ -14,7 +14,7 @@ const source = resolve(dirname(input), entry.url);
 assert.ok((await stat(source)).size <= 128 * 1024 ** 2);
 const cli = resolve(
   ".artifacts",
-  process.platform === "win32" ? "vector-store.exe" : "vector-store",
+  process.platform === "win32" ? "vectide.exe" : "vectide",
 );
 const info = JSON.parse(
   execFileSync(cli, ["inspect", "--input", source, "--profile", "expanded"], {

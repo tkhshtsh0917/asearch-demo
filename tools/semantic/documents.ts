@@ -24,7 +24,7 @@ export async function prepareDocuments(
   changes: Question[],
 ) {
   const workspace = resolve(root, ".semantic"),
-    integration = resolve(root, "integration/vector"),
+    integration = resolve(root, "integration/vectide"),
     ruri = resolve(root, "integration/experiments/ruri");
   const inputs = [
     resolve(ruri, "model.lock.json"),

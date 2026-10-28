@@ -31,7 +31,7 @@ const sha = (bytes: Uint8Array) =>
   createHash("sha256").update(bytes).digest("hex");
 const jsHash = sha(await readFile(resolve(root, out, script.slice(1))));
 const wasmHash = sha(
-  await readFile(resolve(root, out, "bindings/vector_wasm_bg.wasm")),
+  await readFile(resolve(root, out, "bindings/vectide_wasm_bg.wasm")),
 );
 const source = JSON.parse(
   await readFile(resolve(root, ".artifacts/release.json"), "utf8"),

@@ -4,7 +4,7 @@
 
 ## 範囲とセットアップ
 
-このリポジトリはデモ画面、データ準備、TS/JSアダプター、ブラウザテスト、参照モデル、計測ツールを担当します。RustのアルゴリズムとCLI/WASMソースは[asearch](https://github.com/tkhshtsh0917/asearch)が担当します。検証前に[READMEのセットアップ](README.ja.md#セットアップ)を行い、隣接checkoutを暗黙にビルドせず、検証済みのRelease Assetsを使ってください。
+このリポジトリはデモ画面、データ準備、TS/JSアダプター、ブラウザテスト、参照モデル、計測ツールを担当します。Rustの文字検索とそのCLI/WASMソースは[asearch](https://github.com/tkhshtsh0917/asearch)、任意のベクトルストアのRustソースは[Vectide](https://github.com/tkhshtsh0917/vectide)が担当します。検証前に[READMEのセットアップ](README.ja.md#セットアップ)を行い、隣接checkoutを暗黙にビルドせず、検証済みのRelease Assetsを使ってください。
 
 ## 開発時の検証
 

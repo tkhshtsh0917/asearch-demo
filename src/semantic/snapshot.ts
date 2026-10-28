@@ -1,6 +1,6 @@
 /** Loads matching catalogs and vector snapshots without partially adopting an application stage. */
-import { VectorClient } from "../../integration/vector/src/client.ts";
-import type { PreparedSnapshot } from "../../integration/vector/src/types.ts";
+import { VectorClient } from "../../integration/vectide/src/client.ts";
+import type { PreparedSnapshot } from "../../integration/vectide/src/types.ts";
 import { assetName, catalog, type Question } from "../shared/catalog.ts";
 import { type ChangeKind, catalogChanges } from "../shared/changes.ts";
 import { jsonAsset } from "../worker/load.ts";
@@ -80,8 +80,8 @@ export class Publications {
           );
     signal.throwIfAborted();
     this.client ??= await VectorClient.create(
-      new URL(`${publication.bindingsDirectory}/vector_wasm.js`, base),
-      new URL(`${publication.bindingsDirectory}/vector_wasm_bg.wasm`, base),
+      new URL(`${publication.bindingsDirectory}/vectide_wasm.js`, base),
+      new URL(`${publication.bindingsDirectory}/vectide_wasm_bg.wasm`, base),
     );
     let handle = this.snapshots.get(stage.vectorManifestSha256);
     if (!handle) {
