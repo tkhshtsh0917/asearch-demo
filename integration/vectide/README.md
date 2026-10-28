@@ -22,6 +22,8 @@ Other browser profiles are firefox, webkit, android-profile and iphone-profile. 
 
 The asset command replaces only its generated .artifacts area and fixture/binding outputs. Bulk question/vector data belongs to the ignored .data area. Ordinary unit/type/lint checks do not download models or read another repository.
 
+The corpus tool reuses dependency-free extraction and HTTP-range helpers from the root tools. Reader-specific types are checked at the caller using this workspace's own `hyparquet` dependency, so isolated checks do not require the repository root's node_modules. Changes to those shared helpers also trigger the consumer workflow.
+
 ## Adapter responsibilities
 
 VectorClient accepts a verified manifest and a caller-supplied bounded artifact stream. The caller enforces allowed origins, decoded byte limits, publication identity and latest-request rendering. The client keeps numeric handles private, copies typed arrays through intrinsic metadata and methods, and releases failed tasks while preserving prepared snapshots.

@@ -1,10 +1,20 @@
 name: Vectide consumer checks
 on:
   pull_request:
-    paths: ["integration/vectide/**", ".github/workflows/vectide.yml"]
+    paths:
+      - "integration/vectide/**"
+      - "tools/data/corpus.ts"
+      - "tools/data/range-file.ts"
+      - "tools/security/runtime.ts"
+      - ".github/workflows/vectide.yml"
   push:
     branches: [main]
-    paths: ["integration/vectide/**", ".github/workflows/vectide.yml"]
+    paths:
+      - "integration/vectide/**"
+      - "tools/data/corpus.ts"
+      - "tools/data/range-file.ts"
+      - "tools/security/runtime.ts"
+      - ".github/workflows/vectide.yml"
 permissions:
   contents: read
 jobs:

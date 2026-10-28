@@ -22,6 +22,8 @@ pnpm test:browser chromium
 
 成果物コマンドが置き換えるのは、自身が生成する.artifacts領域とfixture・binding出力だけです。大きな質問・ベクトルデータはGit対象外の.dataへ置きます。通常の単体・型・lint検査は、モデルのdownloadや別repoの読み取りを行いません。
 
+コーパスのツールは、ルートのtoolsにある依存パッケージ不要の抽出・HTTP rangeヘルパーを再利用します。reader固有の型は、このworkspace自身の`hyparquet`依存を使って呼出し側で検査するため、独立した検査にリポジトリルートのnode_modulesは不要です。これらの共有ヘルパーの変更時もconsumer workflowを実行します。
+
 ## Adapterの責務
 
 VectorClientは、検証したmanifestと、呼出し元が渡す上限付き成果物streamを受け取ります。許可origin、展開後バイト上限、公開単位の識別情報、最新要求だけの描画は呼出し元が制御します。clientは数値handleを隠し、組込みmetadata・methodでtyped arrayをコピーし、準備済みsnapshotを保ちながら失敗したtaskを解放します。

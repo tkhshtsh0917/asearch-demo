@@ -1,6 +1,5 @@
 /** Adapts bounded, validated HTTP ranges to the Parquet reader interface. */
 import "../security/runtime.ts";
-import type { AsyncBuffer } from "hyparquet";
 
 /** Reject servers ignoring Range instead of downloading a complete shard.
  * The transfer ceiling includes repeated/parallel reads, not just retained data. */
@@ -8,11 +7,11 @@ export function rangeFile(
   url: string,
   byteLength: number,
   fetcher: typeof fetch = fetch,
-): AsyncBuffer {
+) {
   let requestedBytes = 0;
   return {
     byteLength,
-    async slice(start, end = byteLength) {
+    async slice(start: number, end = byteLength) {
       const size = end - start;
       if (
         !Number.isSafeInteger(start) ||
